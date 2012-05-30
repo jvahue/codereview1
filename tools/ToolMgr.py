@@ -15,6 +15,7 @@ violation checks, review violations, etc.
 #---------------------------------------------------------------------------------------------------
 import os
 import subprocess
+import io
 
 #---------------------------------------------------------------------------------------------------
 # Third Party Modules
@@ -71,8 +72,9 @@ class ToolManager:
           1. Update the tool output
           2. Generate Reivew data
         """
-        self.job = subprocess.Popen( self.jobCmd, bufsize=-1, cwd=self.projToolRoot, shell=True)#,
-                                     #stdout=subprocess.PIPE)#, stderr=subprocess.PIPE)
+        self.stdout = open (os.path.join( self.projToolRoot, 'stdout.dat'), 'w+')
+        self.job = subprocess.Popen( self.jobCmd, bufsize=-1, cwd=self.projToolRoot,
+                                     stderr=self.stdout)
 
     #-----------------------------------------------------------------------------------------------
     def ReviewActive(self):
@@ -84,6 +86,7 @@ class ToolManager:
             else:
                 # collect all the final output and result code from the process
                 pass
+            self.stdout.close()
         else:
             self.job
 

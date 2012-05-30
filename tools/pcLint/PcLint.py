@@ -46,6 +46,8 @@ class PcLintSetup( ToolSetup):
         """ Handle all PcLint setup
         """
         ToolSetup.__init__( self, projRoot)
+        self.projToolRoot = os.path.join( self.projRoot, eToolRoot)
+        self.fileCount = 0
 
     #-----------------------------------------------------------------------------------------------
     def CreateProject( self, srcCodeFiles, options, toolExe=None):
@@ -66,8 +68,10 @@ class PcLintSetup( ToolSetup):
 
         # create the required files
         self.CreateFile( eBatchName, batTmpl % (toolExe, pcLintRoot))
-        #self.CreateFile( 'options.lnt', optTmpl.format_map(options))
+        self.CreateFile( 'options.lnt', optTmpl.format_map(options))
         self.CreateFile( 'srcFiles.lnt', '\n'.join(srcCodeFiles))
+
+        self.fileCount = len( srcCodeFiles)
 
     #-----------------------------------------------------------------------------------------------
     def CreateFile( self, name, content):
@@ -75,6 +79,13 @@ class PcLintSetup( ToolSetup):
         """
         pcLintPath = os.path.join( self.projRoot, eToolRoot, name)
         ToolSetup.CreateFile( self, pcLintPath, content)
+
+    #-----------------------------------------------------------------------------------------------
+    def FileCount( self):
+        f = open( os.path.join( self.projToolRoot, 'srcFiles.lnt'), 'r')
+        lines = f.readlines()
+        f.close()
+        self.fileCount = len( lines)
 
 #---------------------------------------------------------------------------------------------------
 class PcLint( ToolManager):
@@ -139,14 +150,18 @@ def TestCreate():
     pcls.CreateProject( srcFiles, options)
 
 def TestRun():
+    ps = PcLintSetup( projRoot)
+    ps.FileCount()
     tool = PcLint( projRoot)
     tool.Review()
+    lastSize = 119
     counter = 1
     while 1 and tool.ReviewActive():
-        pass #print( 'poll', tool.job.poll())
-        time.sleep(1)
-        print( counter)
-        counter += 1
+        newSize = os.path.getsize( tool.stdout.name)
+        if (newSize - lastSize) > len('--- Module:   '):
+            lastSize = newSize
+            print( '%d of %d: %d' % (counter, ps.fileCount, newSize))
+            counter += 1
 
 
     print('\nall done\n')
