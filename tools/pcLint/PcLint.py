@@ -8,6 +8,7 @@ Design Assumptions:
 #---------------------------------------------------------------------------------------------------
 # Python Modules
 #---------------------------------------------------------------------------------------------------
+import csv
 import os
 import sys
 import time
@@ -31,8 +32,9 @@ from ToolMgr import ToolSetup, ToolManager
 eDefaultPcLintPath = r'C:\lint\lint-nt.exe'
 eToolRoot = r'tool\pclint'
 
-eBatchName = 'runLint.bat'
-eLntSrcFileName = 'srcFiles.lnt'
+eBatchName = r'runLint.bat'
+eLntSrcFileName = r'srcFiles.lnt'
+eResultFile = r'results\result.csv'
 
 #---------------------------------------------------------------------------------------------------
 # Functions
@@ -67,7 +69,7 @@ class PcLintSetup( ToolSetup):
         pcLintRoot = os.path.split( toolExe)[0]
 
         # create the required files
-        self.CreateFile( eBatchName, batTmpl % (toolExe, pcLintRoot))
+        self.CreateFile( eBatchName, batTmpl % (toolExe, pcLintRoot, eResultFile))
         self.CreateFile( 'options.lnt', optTmpl.format_map(options))
         self.CreateFile( 'srcFiles.lnt', '\n'.join(srcCodeFiles))
 
@@ -109,20 +111,76 @@ class PcLint( ToolManager):
         self.jobCmd = '%s' % os.path.join( self.projToolRoot, eBatchName)
         ToolManager.Review(self)
 
+    #-----------------------------------------------------------------------------------------------
+    def CleanUp( self):
+        """  Celan up the PcLint output - remove file names, blank lines
+          Insert into the DB and count
+            new items
+            repeat open items
+            repeats closed items
+        """
+        fn0 = os.path.join( self.projToolRoot, eResultFile)
+        print( '\nCleanup %s\n' % fn0)
+        fi = open( fn0, 'r', newline='')
+        csvIn = csv.reader( fi)
+
+        fno = os.path.splitext( fn0)[0] + '_1.csv'
+        fo = open( fno, 'w',newline='')
+        csvOut = csv.writer(fo)
+
+        csvOut.writerow(['Cnt','Filename','Function','Line','Type','ErrNo','Description'])
+
+        lineNum = 0
+        for l in csvIn:
+            lineNum += 1
+            if len( l) > 0:
+                if l[0].find('---') == -1:
+                    if len(l) != 6:# and l[1:6] == l[6:]:
+                        l = l[:6]
+
+                    # remove full pathname
+                    if l[0] and l[0][0] != '.':
+                        path, fn = os.path.split(l[0])
+                        subdir = os.path.split( path)[1]
+                        l = [r'%s\%s' % (subdir, fn)] + l[1:]
+
+                    opv = [1] + l
+                    csvOut.writerow(opv)
+                else:
+                    print('Delete[%4d]: %s' % (lineNum, ','.join(l)))
+            else:
+                print('Delete[%4d]: Blank Line' % ( lineNum))
+
+        fo.close()
+        fi.close()
+
+        # rename
+        #os.remove( fn0)
+        #os.rename( fno, fn0)
+
 
 #========================================================================================================================
-projRoot = r'D:\Knowlogic\zzzCodereviewPROJ'
-srcCodeRoot = r'D:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP'
+projRoot = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ'
+srcCodeRoot = r'C:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP'
 options = {}
-options['sizeOptions'] = '-si4 -sp4'
+options['sizeOptions'] = """
+-si4 -sp4
+
+"""
 
 incStr = r"""
--iD:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\GhsInclude
--iD:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP\application
--iD:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP\drivers
--iD:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP\drivers\hwdef
--iD:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP\system
--iD:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP\test
+-iC:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\GhsInclude
+-iC:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP\application
+-iC:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP\drivers
+-iC:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP\drivers\hwdef
+-iC:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP\system
+-iC:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP\test
+
+"""
+
+misc = """
++fem // needed for things like __interrupt void TTMR_GPT0ISR
+-D__m68k
 
 +libdir(D:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\GhsInclude)
 +macros  // make macros accept string 2*4096
@@ -134,7 +192,7 @@ def TestCreate():
     includes = [i.strip() for i in incStr.split('\n') if i.strip() ]
     options['includes'] = '\n'.join(includes)
 
-    options['defines'] = '-D__m68k'
+    options['defines'] = misc
 
     # get the srcFiles only take .c for testing
     srcFiles = []
@@ -156,15 +214,23 @@ def TestRun():
     tool.Review()
     lastSize = 119
     counter = 1
-    while 1 and tool.ReviewActive():
+    while tool.ReviewActive():
         newSize = os.path.getsize( tool.stdout.name)
         if (newSize - lastSize) > len('--- Module:   '):
             lastSize = newSize
             print( '%d of %d: %d' % (counter, ps.fileCount, newSize))
             counter += 1
 
+    tool.CleanUp()
+
+def Clean():
+    tool = PcLint( projRoot)
+    tool.Review()
+    tool.CleanUp()
+
 
     print('\nall done\n')
 
-#TestCreate()
+TestCreate()
 TestRun()
+#Clean()

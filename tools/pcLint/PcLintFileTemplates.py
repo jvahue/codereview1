@@ -22,7 +22,7 @@ ePcLintBatTemplate = r"""
 ::-
 cls
 mkdir results
-"%s" +v -i"%s" options.lnt -os(results\result.csv) srcFiles.lnt
+"%s" +v -i"%s" options.lnt -os(%s) srcFiles.lnt
 exit
 """
 
