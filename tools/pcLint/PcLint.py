@@ -160,21 +160,35 @@ class PcLint( ToolManager):
 
 
 #========================================================================================================================
-projRoot = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ'
-srcCodeRoot = r'C:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP'
+import socket
+host = socket.gethostname()
+
+if host == 'Jeff-Laptop':
+    projRoot = r'D:\Knowlogic\zzzCodereviewPROJ'
+    srcCodeRoot = r'D:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP'
+    incStr = r"""
+    -iD:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\GhsInclude
+    -iD:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP\application
+    -iD:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP\drivers
+    -iD:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP\drivers\hwdef
+    -iD:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP\system
+    -iD:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP\test
+    """
+else:
+    projRoot = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ'
+    srcCodeRoot = r'C:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP'
+    incStr = r"""
+    -iC:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\GhsInclude
+    -iC:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP\application
+    -iC:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP\drivers
+    -iC:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP\drivers\hwdef
+    -iC:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP\system
+    -iC:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP\tes
+    """
+
 options = {}
 options['sizeOptions'] = """
 -si4 -sp4
-
-"""
-
-incStr = r"""
--iC:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\GhsInclude
--iC:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP\application
--iC:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP\drivers
--iC:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP\drivers\hwdef
--iC:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP\system
--iC:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP\test
 
 """
 
