@@ -5,6 +5,7 @@ This file handles loading PC-Lint issues into the DB
 # Python Modules
 #---------------------------------------------------------------------------------------------------
 import csv
+import datetime
 
 #---------------------------------------------------------------------------------------------------
 # Third Party Modules
@@ -62,18 +63,20 @@ class LintLoader:
         for i in self.rawData:
             if i not in self.reducedData:
                 self.reducedData.append(i)
-            else:
+            elif i not in self.duplicates:
                 self.duplicates.append(i)
 
     def InsertDb(self, data):
         """ CSV => [filename,function,line,severity,violationId,errText]
              DB => [filename,line,function,severity,detectedBy,violationId,errText]
         """
+        updateTime = datetime.datetime.today()
+
         print( 'Inserting %d rows' % (len(data)))
         counter = 0
         db = self.db
-        for filename,function,lineNumber,severity,violationId,description in data:
-            db.Insert( filename,function,severity,violationId,description, lineNumber,'PcLint')
+        for filename,func,line,severity,violationId,desc in data:
+            db.Insert( filename,func,severity,violationId,desc,line,'PcLint',updateTime)
             counter += 1
             if (counter % 100) == 0:
                 print( '%d\r' % counter),

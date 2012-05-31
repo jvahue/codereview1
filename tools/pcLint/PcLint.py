@@ -13,9 +13,6 @@ import os
 import sys
 import time
 
-sys.path.append( '..')
-sys.path.append( '..\\..')
-
 #---------------------------------------------------------------------------------------------------
 # Third Party Modules
 #---------------------------------------------------------------------------------------------------
@@ -23,12 +20,11 @@ sys.path.append( '..\\..')
 #---------------------------------------------------------------------------------------------------
 # Knowlogic Modules
 #---------------------------------------------------------------------------------------------------
-import PcLintFileTemplates
 import ViolationDb
 
-from KsCrLnt import LintLoader
-
-from ToolMgr import ToolSetup, ToolManager
+from tools.pcLint import PcLintFileTemplates
+from tools.pcLint.KsCrLnt import LintLoader
+from tools.ToolMgr import ToolSetup, ToolManager
 
 #---------------------------------------------------------------------------------------------------
 # Data
@@ -274,7 +270,8 @@ def Load():
     tool = PcLint( projRoot)
     tool.LoadDb()
 
-#TestCreate()
-#TestRun()
-#Clean()
-Load()
+if __name__ == '__main__':
+    #TestCreate()
+    TestRun()
+    #Clean()
+    #Load()
