@@ -24,11 +24,11 @@ eLintFields = 6
 #---------------------------------------------------------------------------------------------------
 # Classes / Functions
 #---------------------------------------------------------------------------------------------------
-class LntOutput:
-    def __init__( self, fn=''):
-        self.Reset( fn)
+class LintLoader:
+    def __init__( self, fn, db):
+        self.Reset( fn, db)
 
-    def Reset(self, fn):
+    def Reset(self, fn, db):
         self.isValid = False
         self.hdr = ''
         self.rawData = []
@@ -38,14 +38,15 @@ class LntOutput:
         self.possibleMatch = []
         self.unmatched = []
         self.fn = fn
+        self.db = db
         if fn:
             self.fn = fn
             self.Read()
 
     def Read(self):
-        f = open( self.fn, 'rb')
+        f = open( self.fn, 'r', newline='')
         csvf = csv.reader( f)
-        self.hdr = csvf.next()
+        self.hdr = csvf.__next__()
         # validate the contents
         self.isValid = True
         for i in csvf:
@@ -68,27 +69,26 @@ class LntOutput:
         """ CSV => [filename,function,line,severity,violationId,errText]
              DB => [filename,line,function,severity,detectedBy,violationId,errText]
         """
-        print 'Inserting %d rows' % (len(data))
+        print( 'Inserting %d rows' % (len(data)))
         counter = 0
-        db = database.DB('__DEFAULT_DB__')
-        for filename,function,line,severity,violationId,errText in data:
-            s = """insert into KsCrLnt (filename,line,function,severity,detectedBy,violationId,errText)
-                   values ('%s',%s,'%s','%s','%s','%s','%s')
-                """ % (filename,line,function,severity,'Lint',violationId,errText)
-            data = database.Query( s, db)
+        db = self.db
+        for filename,function,lineNumber,severity,violationId,description in data:
+            db.Insert( filename,function,severity,violationId,description, lineNumber,'PcLint')
             counter += 1
             if (counter % 100) == 0:
-                print counter
+                print( '%d\r' % counter),
+        db.Commit()
 
     def MatchDb(self):
         pass
 
-csvf = r'C:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\Pc-Lint\results\all_1.csv'
+if __name__ == '__main__':
+    csvf = r'C:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\Pc-Lint\results\all_1.csv'
 
-lo = LntOutput( csvf)
-print 'raw', len(lo.rawData)
+    lo = LintLoader( csvf)
+    print( 'raw', len(lo.rawData))
 
-lo.RemoveDuplicate()
-print 'reduced', len(lo.reducedData)
+    lo.RemoveDuplicate()
+    print( 'reduced', len(lo.reducedData))
 
-lo.InsertDb( lo.reducedData)
+    lo.InsertDb( lo.reducedData)

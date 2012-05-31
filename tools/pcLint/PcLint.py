@@ -14,6 +14,7 @@ import sys
 import time
 
 sys.path.append( '..')
+sys.path.append( '..\\..')
 
 #---------------------------------------------------------------------------------------------------
 # Third Party Modules
@@ -23,6 +24,9 @@ sys.path.append( '..')
 # Knowlogic Modules
 #---------------------------------------------------------------------------------------------------
 import PcLintFileTemplates
+import ViolationDb
+
+from KsCrLnt import LintLoader
 
 from ToolMgr import ToolSetup, ToolManager
 
@@ -112,21 +116,21 @@ class PcLint( ToolManager):
         ToolManager.Review(self)
 
     #-----------------------------------------------------------------------------------------------
-    def CleanUp( self):
-        """  Celan up the PcLint output - remove file names, blank lines
-          Insert into the DB and count
+    def CleanLint( self):
+        """ Load the new Lint info into the DB
             new items
             repeat open items
             repeats closed items
         """
-        fn0 = os.path.join( self.projToolRoot, eResultFile)
-        print( '\nCleanup %s\n' % fn0)
-        fi = open( fn0, 'r', newline='')
-        csvIn = csv.reader( fi)
+        # open the source file
+        finName = os.path.join( self.projToolRoot, eResultFile)
+        print( '\nCleanup %s\n' % finName)
+        fin = open( finName, 'r', newline='')
+        csvIn = csv.reader( fin)
 
-        fno = os.path.splitext( fn0)[0] + '_1.csv'
-        fo = open( fno, 'w',newline='')
-        csvOut = csv.writer(fo)
+        foutName = os.path.splitext( finName)[0] + '_1.csv'
+        fout = open( foutName, 'w',newline='')
+        csvOut = csv.writer(fout)
 
         csvOut.writerow(['Cnt','Filename','Function','Line','Type','ErrNo','Description'])
 
@@ -151,12 +155,28 @@ class PcLint( ToolManager):
             else:
                 print('Delete[%4d]: Blank Line' % ( lineNum))
 
-        fo.close()
-        fi.close()
+        fout.close()
+        fin.close()
 
         # rename
-        #os.remove( fn0)
-        #os.rename( fno, fn0)
+        os.remove( finName)
+        os.rename( foutName, finName)
+
+    #-----------------------------------------------------------------------------------------------
+    def LoadDb( self):
+        """ We should now have a clean PcLint output to load into the DB
+        """
+        # open the source file
+        finName = os.path.join( self.projToolRoot, eResultFile)
+
+        # open the PCLint DB
+        sl3 = ViolationDb.ViolationDb( self.projRoot)
+        sl3._debug = True
+
+        # move to the DB
+        lintLoader = LintLoader( finName, sl3)
+        lintLoader.RemoveDuplicate()
+        lintLoader.InsertDb( lintLoader.reducedData)
 
 
 #========================================================================================================================
@@ -200,6 +220,10 @@ misc = """
 +macros  // make macros accept string 2*4096
 -wlib(1) // turn of lib warnings
 
+-e793
+-e830
+-e831
+
 """
 
 def TestCreate():
@@ -235,16 +259,22 @@ def TestRun():
             print( '%d of %d: %d' % (counter, ps.fileCount, newSize))
             counter += 1
 
-    tool.CleanUp()
+    tool.CleanLint()
+    tool.LoadDb()
 
 def Clean():
     tool = PcLint( projRoot)
     tool.Review()
-    tool.CleanUp()
+    tool.CleanLint()
 
 
     print('\nall done\n')
 
-TestCreate()
-TestRun()
+def Load():
+    tool = PcLint( projRoot)
+    tool.LoadDb()
+
+#TestCreate()
+#TestRun()
 #Clean()
+Load()

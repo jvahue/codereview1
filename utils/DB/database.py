@@ -53,6 +53,7 @@ def MakeTupleStr( l):
 #----------------------------------------------------------------------------------------------
 class DB:
     """ Quick class to encapsulate DB access """
+    _debug = False
     def __init__( self):
         self.conn = None
         self.cursor = None
@@ -61,7 +62,7 @@ class DB:
     #------------------------------------------------------------------------------------------
     def __del__( self):
         if self.conn:
-            Close( self.conn)
+            self.Close()
 
     #------------------------------------------------------------------------------------------
     def Close( self):
@@ -97,7 +98,7 @@ class DB:
         self.queryValid = False
 
         if self.cursor is not None:
-            if (_debug): print("Execute: ", sql)
+            if (DB._debug): print("Execute: ", sql)
             self.queryValid = True
             try:
                 if args:
@@ -107,7 +108,7 @@ class DB:
                 rv = 1
             except :
                 self.queryValid = False
-                if _debug:
+                if DB._debug:
                     print(traceback.print_exc())
                     print()
                     print(sql)
@@ -163,7 +164,7 @@ class DB:
         try:
             self.cursor = self.conn.cursor()
         except:
-            if self.debug:
+            if DB._debug:
                 print("GetCursor: Unexpected error:\n", sys.exc_info())
                 traceback.print_exc()
             self.cursor =  None
@@ -182,7 +183,7 @@ class DB:
                 allOfThem = []
             return allOfThem
         except:
-            if (_debug):
+            if (DB._debug):
                 print("GetAll: Unexpected error:\n", sys.exc_info())
                 traceback.print_exc()
             return []
@@ -197,7 +198,7 @@ class DB:
                 theOne = ()
             return theOne
         except:
-            if (_debug):
+            if (DB._debug):
                 print("GetOne: Unexpected error:\n", sys.exc_info())
                 traceback.print_exc()
             return ()
