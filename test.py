@@ -13,7 +13,6 @@ Code review Main
 # Knowlogic Modules
 #---------------------------------------------------------------------------------------------------
 from utils.DB.database import Query
-from utils.DB.odbc.database import DB_Access
 from utils.DB.sqlLite.database import DB_SQLite
 
 from tools.pcLint import PcLint
@@ -86,6 +85,8 @@ def TestPcLint():
 
 
 def Test():
+    PcLint.TestCreate()
     PcLint.TestRun()
+    #PcLint.Load()
 
 Test()

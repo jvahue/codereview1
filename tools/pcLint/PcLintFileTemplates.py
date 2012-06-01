@@ -28,10 +28,10 @@ exit
 
 eOptionsTemplate = r"""
 // Format display for CSV
--h1
+-hr2
 -width(0,1)
--"format=%f,%i,%l,%t,%n,\q%m\q"
--"format_specific=%f,%i,%l,%t,%n,\q%m\q"
+-"format=<*>%f,%i,%l,%t,%n,\q%m\q\n"
+-"format_specific=<*>%f,%i,%l,%t,%n,\q%m\q\n"
 
 // Size Options
 {sizeOptions}

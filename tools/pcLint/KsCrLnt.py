@@ -20,7 +20,7 @@ from utils.DB.sqlLite.database import DB_SQLite
 #---------------------------------------------------------------------------------------------------
 # Data
 #---------------------------------------------------------------------------------------------------
-eLintFields = 6
+eLintFields = 7
 
 #---------------------------------------------------------------------------------------------------
 # Classes / Functions
@@ -29,6 +29,7 @@ class LintLoader:
     def __init__( self, fn, db):
         self.Reset( fn, db)
 
+    #-----------------------------------------------------------------------------------------------
     def Reset(self, fn, db):
         self.isValid = False
         self.hdr = ''
@@ -44,6 +45,7 @@ class LintLoader:
             self.fn = fn
             self.Read()
 
+    #-----------------------------------------------------------------------------------------------
     def Read(self):
         f = open( self.fn, 'r', newline='')
         csvf = csv.reader( f)
@@ -59,6 +61,7 @@ class LintLoader:
                 break
         f.close()
 
+    #-----------------------------------------------------------------------------------------------
     def RemoveDuplicate(self):
         for i in self.rawData:
             if i not in self.reducedData:
@@ -66,25 +69,24 @@ class LintLoader:
             elif i not in self.duplicates:
                 self.duplicates.append(i)
 
+    #-----------------------------------------------------------------------------------------------
     def InsertDb(self, data):
-        """ CSV => [filename,function,line,severity,violationId,errText]
-             DB => [filename,line,function,severity,detectedBy,violationId,errText]
+        """ CSV => [1,filename,function,line,severity,violationId,errText,details]
+             DB => [filename,function,severity,violationId,errText,details,line,detectedBy]
         """
         updateTime = datetime.datetime.today()
 
         print( 'Inserting %d rows' % (len(data)))
         counter = 0
         db = self.db
-        for filename,func,line,severity,violationId,desc in data:
-            db.Insert( filename,func,severity,violationId,desc,line,'PcLint',updateTime)
+        for filename,func,line,severity,violationId,desc,details in data:
+            db.Insert( filename,func,severity,violationId,desc,details,line,'PcLint',updateTime)
             counter += 1
             if (counter % 100) == 0:
                 print( '%d\r' % counter),
         db.Commit()
 
-    def MatchDb(self):
-        pass
-
+#===================================================================================================
 if __name__ == '__main__':
     csvf = r'C:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\Pc-Lint\results\all_1.csv'
 

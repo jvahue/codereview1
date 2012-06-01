@@ -32,6 +32,10 @@ _debug = False
 _askDBGagain = True
 _debugQueryTime = 0
 
+eDbDebugOff = 0
+eDbDebugErr = 1
+eDbDebugAll = 2
+
 #---------------------------------------------------------------------------------------------------
 # Functions
 #---------------------------------------------------------------------------------------------------
@@ -53,11 +57,11 @@ def MakeTupleStr( l):
 #----------------------------------------------------------------------------------------------
 class DB:
     """ Quick class to encapsulate DB access """
-    _debug = False
     def __init__( self):
         self.conn = None
         self.cursor = None
         self.queryValid = False
+        self.debug = 0
 
     #------------------------------------------------------------------------------------------
     def __del__( self):
@@ -70,7 +74,7 @@ class DB:
             self.conn.close()
             return 1
         except:
-            if self.debug:
+            if self.debug > eDbDebugOff:
                 print("Close: Unexpected error:\n", sys.exc_info())
                 traceback.print_exc()
             return 0
@@ -98,7 +102,7 @@ class DB:
         self.queryValid = False
 
         if self.cursor is not None:
-            if (DB._debug): print("Execute: ", sql)
+            if (self.debug > eDbDebugErr): print("Execute: ", sql)
             self.queryValid = True
             try:
                 if args:
@@ -108,10 +112,13 @@ class DB:
                 rv = 1
             except :
                 self.queryValid = False
-                if DB._debug:
+                if self.debug > eDbDebugOff:
                     print(traceback.print_exc())
                     print()
                     print(sql)
+                    if args:
+                        for i in args[0]:
+                            print(i)
                 rv = 0
         return rv
 
@@ -153,10 +160,7 @@ class DB:
     # Utility Functions
     #------------------------------------------------------------------------------------------
     def DebugState( self, state):
-        if state:
-            self.debug = True
-        else:
-            self.debug = False
+        self.debug = state
 
     #----------------------------------------------------------------------------------------------
     def _GetCursor( self):
@@ -164,7 +168,7 @@ class DB:
         try:
             self.cursor = self.conn.cursor()
         except:
-            if DB._debug:
+            if self.debug > eDbDebugOff:
                 print("GetCursor: Unexpected error:\n", sys.exc_info())
                 traceback.print_exc()
             self.cursor =  None
@@ -183,7 +187,7 @@ class DB:
                 allOfThem = []
             return allOfThem
         except:
-            if (DB._debug):
+            if (self.debug > eDbDebugOff):
                 print("GetAll: Unexpected error:\n", sys.exc_info())
                 traceback.print_exc()
             return []
@@ -198,7 +202,7 @@ class DB:
                 theOne = ()
             return theOne
         except:
-            if (DB._debug):
+            if (self.debug  > eDbDebugOff):
                 print("GetOne: Unexpected error:\n", sys.exc_info())
                 traceback.print_exc()
             return ()

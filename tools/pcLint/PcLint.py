@@ -118,6 +118,7 @@ class PcLint( ToolManager):
             repeat open items
             repeats closed items
         """
+        eFieldCount = 6
         # open the source file
         finName = os.path.join( self.projToolRoot, eResultFile)
         print( '\nCleanup %s\n' % finName)
@@ -128,28 +129,35 @@ class PcLint( ToolManager):
         fout = open( foutName, 'w',newline='')
         csvOut = csv.writer(fout)
 
-        csvOut.writerow(['Cnt','Filename','Function','Line','Type','ErrNo','Description'])
+        csvOut.writerow(['Cnt','Filename','Function','Line','Type','ErrNo','Description','Details'])
 
         lineNum = 0
-        for l in csvIn:
+        details = ''
+        for line in csvIn:
             lineNum += 1
-            if len( l) > 0:
-                if l[0].find('---') == -1:
-                    if len(l) != 6:# and l[1:6] == l[6:]:
-                        l = l[:6]
+            if len( line) > 0:
+                if line[0].find('---') == -1:
+                    if line[0].find('<*>') == -1:
+                        details = ','.join( line)
+                    else:
+                        line[0] = line[0].replace('<*>', '')
 
-                    # remove full pathname
-                    if l[0] and l[0][0] != '.':
-                        path, fn = os.path.split(l[0])
-                        subdir = os.path.split( path)[1]
-                        l = [r'%s\%s' % (subdir, fn)] + l[1:]
+                        if len(line) != eFieldCount:# and l[1:6] == l[6:]:
+                            line = line[:eFieldCount]
 
-                    opv = [1] + l
-                    csvOut.writerow(opv)
-                else:
-                    print('Delete[%4d]: %s' % (lineNum, ','.join(l)))
-            else:
-                print('Delete[%4d]: Blank Line' % ( lineNum))
+                        # remove full pathname
+                        if line[0] and line[0][0] != '.':
+                            path, fn = os.path.split(line[0])
+                            subdir = os.path.split( path)[1]
+                            line = [r'%s\%s' % (subdir, fn)] + line[1:]
+
+                        opv = [1] + line + [details]
+                        # debug
+                        dbg = '@'.join(opv[1:])
+                        if dbg.find('<*>') != -1:
+                            pass
+                        csvOut.writerow(opv)
+                        details = ''
 
         fout.close()
         fin.close()
@@ -167,12 +175,19 @@ class PcLint( ToolManager):
 
         # open the PCLint DB
         sl3 = ViolationDb.ViolationDb( self.projRoot)
-        sl3._debug = True
+        sl3.DebugState( 1)
 
         # move to the DB
         lintLoader = LintLoader( finName, sl3)
         lintLoader.RemoveDuplicate()
         lintLoader.InsertDb( lintLoader.reducedData)
+
+        # print stats
+        print( 'Inserted %5d New' % sl3.insertNew)
+        print( 'Updated  %5d Records' % sl3.insertUpdate)
+        print( 'Select Errors: %d' % sl3.insertSelErr)
+        print( 'Insert Errors: %d' % sl3.insertInErr)
+        print( 'Update Errors: %d' % sl3.insertUpErr)
 
 
 #========================================================================================================================
@@ -199,7 +214,7 @@ else:
     -iC:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP\drivers
     -iC:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP\drivers\hwdef
     -iC:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP\system
-    -iC:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP\tes
+    -iC:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP\test
     """
 
 options = {}
