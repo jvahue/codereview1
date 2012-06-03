@@ -128,7 +128,7 @@ class ViolationDb( DB_SQLite):
             descriptionRe = re.compile(self.GetDescriptionRe( desc))
             # pre-filter data set for our description
             # having us do this (vs. the DB with like) speeds thing s up a lot
-            data = [i for i in data0 if descriptionRe.search(i)]
+            data = [i for i in data0 if descriptionRe.search(i.description)]
 
             if len(data) > 0:
                 primary = ()

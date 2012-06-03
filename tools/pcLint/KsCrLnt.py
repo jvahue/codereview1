@@ -69,11 +69,11 @@ class LintLoader:
             elif i not in self.duplicates:
                 self.duplicates.append(i)
 
-        fo = open(self.fn + '.rdc', 'w')
-        csvf = csv.writer( fo)
-        for i in self.reducedData:
-            csvf.writerow( i)
-        fo.close()
+        #fo = open(self.fn + '.rdc', 'w')
+        #csvf = csv.writer( fo)
+        #for i in self.reducedData:
+        #    csvf.writerow( i)
+        #fo.close()
 
     #-----------------------------------------------------------------------------------------------
     def InsertDb(self, data):

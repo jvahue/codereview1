@@ -215,7 +215,12 @@ class PcLint( ToolManager):
         print( 'Select Errors: %d' % sl3.insertSelErr)
         print( 'Insert Errors: %d' % sl3.insertInErr)
         print( 'Update Errors: %d' % sl3.insertUpErr)
-        print( 'Old Records: %d - %s' % (removed, updateTime))
+
+        # remove the old PcLint violations
+        s = "delete from violations where lastReport != ? and detectedBy = 'PcLint'"
+        sl3.Execute( s, (updateTime,))
+        sl3.Commit()
+        print( 'Removed %d Old Records - %s' % (removed, updateTime))
 
 #========================================================================================================================
 import socket
