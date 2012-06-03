@@ -69,6 +69,12 @@ class LintLoader:
             elif i not in self.duplicates:
                 self.duplicates.append(i)
 
+        fo = open(self.fn + '.rdc', 'w')
+        csvf = csv.writer( fo)
+        for i in self.reducedData:
+            csvf.writerow( i)
+        fo.close()
+
     #-----------------------------------------------------------------------------------------------
     def InsertDb(self, data):
         """ CSV => [1,filename,function,line,severity,violationId,errText,details]
@@ -76,7 +82,7 @@ class LintLoader:
         """
         updateTime = datetime.datetime.today()
 
-        print( 'Inserting %d rows' % (len(data)))
+        print( 'Processing %d rows' % (len(data)))
         counter = 0
         db = self.db
         for filename,func,line,severity,violationId,desc,details in data:
@@ -85,6 +91,13 @@ class LintLoader:
             if (counter % 100) == 0:
                 print( '%d\r' % counter),
         db.Commit()
+
+        s = """
+            select count(*) from violations where lastReport != ?
+            """
+        db.Execute( s, (updateTime,))
+        data = db.GetOne()
+        return data[0], updateTime
 
 #===================================================================================================
 if __name__ == '__main__':

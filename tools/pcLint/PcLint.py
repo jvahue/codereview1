@@ -133,6 +133,7 @@ class PcLint( ToolManager):
 
         lineNum = 0
         details = ''
+        cFileName = ''
         for line in csvIn:
             lineNum += 1
             if len( line) > 0:
@@ -140,6 +141,8 @@ class PcLint( ToolManager):
                     if line[0].find('<*>') == -1:
                         details = ','.join( line)
                     else:
+                        # the format puts a '<*>' on the front of each error report to distinguish
+                        # it from details
                         line[0] = line[0].replace('<*>', '')
 
                         if len(line) != eFieldCount:# and l[1:6] == l[6:]:
@@ -149,7 +152,15 @@ class PcLint( ToolManager):
                         if line[0] and line[0][0] != '.':
                             path, fn = os.path.split(line[0])
                             subdir = os.path.split( path)[1]
-                            line = [r'%s\%s' % (subdir, fn)] + line[1:]
+                            if subdir:
+                                aFilename = r'%s\%s' % (subdir, fn)
+                            else:
+                                aFilename = fn
+                            line = [aFilename] + line[1:]
+
+                        # replace the unknown file name with current file name
+                        if line[0] == eLntSrcFileName:
+                            line[0] = cFileName
 
                         opv = [1] + line + [details]
                         # debug
@@ -158,6 +169,22 @@ class PcLint( ToolManager):
                             pass
                         csvOut.writerow(opv)
                         details = ''
+                else:
+                    # capture the filename
+                    # line forms are
+                    # |--- Module:   <full path file name> (C)
+                    # |    --- Wrap-up for Module: <fullpath file name>
+                    line = line[0]
+                    wrapUp = line.find('Wrap') != -1 and '(W)' or '()'
+
+                    at = line.find( 'Module: ')
+                    if at != -1:
+                        line = line[at+len( 'Module: '):]
+                    parts = line.strip().split()
+                    line = parts[0]
+                    path, fn = os.path.split(line)
+                    subdir = os.path.split( path)[1]
+                    cFileName = r'%s\%s %s' % (subdir, fn, wrapUp)
 
         fout.close()
         fin.close()
@@ -180,7 +207,7 @@ class PcLint( ToolManager):
         # move to the DB
         lintLoader = LintLoader( finName, sl3)
         lintLoader.RemoveDuplicate()
-        lintLoader.InsertDb( lintLoader.reducedData)
+        removed, updateTime = lintLoader.InsertDb( lintLoader.reducedData)
 
         # print stats
         print( 'Inserted %5d New' % sl3.insertNew)
@@ -188,7 +215,7 @@ class PcLint( ToolManager):
         print( 'Select Errors: %d' % sl3.insertSelErr)
         print( 'Insert Errors: %d' % sl3.insertInErr)
         print( 'Update Errors: %d' % sl3.insertUpErr)
-
+        print( 'Old Records: %d - %s' % (removed, updateTime))
 
 #========================================================================================================================
 import socket
@@ -224,12 +251,12 @@ options['sizeOptions'] = """
 """
 
 misc = """
++macros  // make macros accept string 2*4096
 +fem // needed for things like __interrupt void TTMR_GPT0ISR
 -D__m68k
 
 +libdir(D:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\GhsInclude)
-+macros  // make macros accept string 2*4096
--wlib(1) // turn of lib warnings
+-wlib(1) // turn off lib warnings
 
 -e793
 -e830

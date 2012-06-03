@@ -102,7 +102,7 @@ class ViolationDb( DB_SQLite):
                 details = detail0
                 detail0 = details.replace('  ',' ')
 
-        if filename==r'drivers\arinc429.c' and function=='Arinc429DrvSetIMR1_2' and severity=='Info'and violationId =='845':
+        if filename==r'application\User.c' and function=='User_ExtractIndex' and severity=='Warning'and violationId =='613':
             pass
 
         # determine if this violation already exists in the DB
@@ -117,25 +117,46 @@ class ViolationDb( DB_SQLite):
             and details=?
             and lastReport != ?
             """
+
         d = ( filename,function,severity,violationId,detectedBy,details,updateTime)
         if self.Execute( s, d) != 1:
             self.insertSelErr += 1
-        data = Query(s, self, self.GetAll())
+        data0 = Query(s, self, self.GetAll())
 
         isInsert = True
-        primary = ()
-        if len(data) > 0:
-            # scan through the description and check for matches
-            #   convert line numbers to regex for comparison
+        if len(data0) > 0:
             descriptionRe = re.compile(self.GetDescriptionRe( desc))
-            for i in data:
-                m = descriptionRe.search(i.description)
-                if m:
-                    # give preference to a lineNumber match, then first in/first out
-                    if primary == () or int(line) == i.lineNumber:
-                        matchedItem = i
-                        primary = (filename,function,severity,violationId,i.description,i.details,i.lineNumber)
-                    isInsert = False
+            # pre-filter data set for our description
+            # having us do this (vs. the DB with like) speeds thing s up a lot
+            data = [i for i in data0 if descriptionRe.search(i)]
+
+            if len(data) > 0:
+                primary = ()
+                matchLineNumber = True
+                # check some conditions
+                # if multiple row with the same line number don't match on LineNumber
+                lineNumbers = {}
+                for i in data:
+                    lineNumbers[i.lineNumber] = lineNumbers.get( i.lineNumber, 0) + 1
+                    if lineNumbers[i.lineNumber] > 1:
+                        matchLineNumber = False
+                        break
+
+                # scan through the description and check for matches
+                #   convert line numbers to regex for comparison
+                for i in data:
+                    m = descriptionRe.search(i.description)
+                    # if we match everything ...
+                    if m and len(m.group(0)) == len(i.description):
+                        lineMatch = int(line) == i.lineNumber
+                        descMatch = desc == i.description
+                        # give preference to a lineNumber/desc match, then first in/first out
+                        if primary == () or (matchLineNumber and lineMatch) or (not matchLineNumber and descMatch):
+                            matchedItem = i
+                            primary = (filename,function,severity,violationId,i.description,i.details,i.lineNumber)
+                        isInsert = False
+        else:
+            pass
 
         if isInsert:
             d = (filename, function, severity, violationId, desc, details, line, detectedBy,updateTime,updateTime)
@@ -149,28 +170,9 @@ class ViolationDb( DB_SQLite):
             else:
                 self.insertNew += 1
         else:
-            # here we update the row with only new info or we get a primary key violation reported
-            updateItemNames = ['lastReport']
-            updateItems = [updateTime]
-
-            # check description, details and lineNumber
-            if desc != matchedItem.description:
-                updateItemNames.append( 'description')
-                updateItems.append( desc)
-            if details != matchedItem.details:
-                updateItemNames.append( 'details')
-                updateItems.append( details)
-            if int(line) != matchedItem.lineNumber:
-                updateItemNames.append( 'lineNumber')
-                updateItems.append( line)
-
-            # make the update str
-            updateStr = ['%s=?' % i for i in updateItemNames]
-            updateStr = ', '.join( updateStr)
-            updateItems = tuple(updateItems)
-
+            updateItems = (updateTime, desc, details, line)
             s = """
-                update Violations set %s where
+                update Violations set lastReport=?, description=?, details=?, lineNUmber=? where
                 filename=?
                 and function=?
                 and severity=?
@@ -178,30 +180,34 @@ class ViolationDb( DB_SQLite):
                 and description=?
                 and details=?
                 and lineNumber=?
-                """ % updateStr
+                """
             if self.Execute( s, updateItems + primary) != 1:
                 self.insertUpErr += 1
             else:
                 self.insertUpdate += 1
 
     #-----------------------------------------------------------------------------------------------
-    def GetDescriptionRe( self, desc):
+    def GetDescriptionRe( self, desc, sql=False):
         """ Turn all line number referneces into a regex search
         Ignoring return value of function 'foo(void)' (compare with line 163, file xyz.h)
         Storage class of symbol 'foo(void *)' assumed static (line 150)
+        desc: the string to modify
+        sql: create a SQL wildcard search
         """
         lineRe = re.compile(r'[Ll]ine[ \t]+([0-9]+)')
         m = lineRe.findall( desc)
 
-        # escape special regex chars in the description
-        # the '\' must be first so it only replaces itself when it in the original string
-        for c in r'\.^$*+?{}[]|()':
-            desc = desc.replace(c, r'\%s' % c)
+        if not sql:
+            # escape special regex chars in the description
+            # the '\' must be first so it only replaces itself when it in the original string
+            for c in r'\.^$*+?{}[]|()':
+                desc = desc.replace(c, r'\%s' % c)
 
         if m:
             # now put the number regex in
+            wild = '%' if sql else '[0-9]+'
             for i in m:
-                desc = desc.replace(i, '[0-9]+')
+                desc = desc.replace(i, wild)
 
         return desc
 

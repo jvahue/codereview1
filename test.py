@@ -85,8 +85,11 @@ def TestPcLint():
 
 
 def Test():
-    PcLint.TestCreate()
-    PcLint.TestRun()
-    #PcLint.Load()
+    sel = input( 'Run All=1, Load=0: ')
+    if sel == '1':
+        PcLint.TestCreate()
+        PcLint.TestRun()
+    else:
+        PcLint.Load()
 
 Test()
