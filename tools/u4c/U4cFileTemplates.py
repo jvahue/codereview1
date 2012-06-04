@@ -1,5 +1,5 @@
 """
-Code review Main
+Templates for the U4c files
 """
 #---------------------------------------------------------------------------------------------------
 # Python Modules
@@ -12,17 +12,29 @@ Code review Main
 #---------------------------------------------------------------------------------------------------
 # Knowlogic Modules
 #---------------------------------------------------------------------------------------------------
-from utils.DB.database import Query
-from utils.DB.sqlLite.database import DB_SQLite
-
-from tools.pcLint import PcLint
-from tools.u4c import u4c
 
 #---------------------------------------------------------------------------------------------------
 # Data
 #---------------------------------------------------------------------------------------------------
-projRoot = r'D:\Knowlogic\zzzCodereviewPROJ'
-srcCodeRoot = r'D:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP'
+eU4cBatTemplate = r"""
+@echo off
+::- Run the U4c Processing for a particular project
+::- und process This.txt MyDatabase.udb
+%s process %s %s
+"""
+
+eCmdTemplate = r"""
+# U4C command file
+# Specifies the DB to use and any setting
+%s
+
+# add the files tot he project
+add
+settings %s
+
+analyze # update database
+metrics # generate metrics
+"""
 
 #---------------------------------------------------------------------------------------------------
 # Functions
@@ -31,14 +43,3 @@ srcCodeRoot = r'D:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP'
 #---------------------------------------------------------------------------------------------------
 # Classes
 #---------------------------------------------------------------------------------------------------
-
-
-def Test():
-    sel = input( 'Run All=1, Load=0: ')
-    if sel == '1':
-        u4c.TestCreate()
-        u4c.TestRun()
-    else:
-        u4c.Load()
-
-Test()

@@ -1,0 +1,3 @@
+"""
+PC-Lint init
+"""
