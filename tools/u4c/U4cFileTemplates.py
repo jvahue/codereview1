@@ -16,24 +16,36 @@ Templates for the U4c files
 #---------------------------------------------------------------------------------------------------
 # Data
 #---------------------------------------------------------------------------------------------------
+# Params
+# 1. und command - full path to und command
+# 2. Name of command file to process
 eU4cBatTemplate = r"""
 @echo off
 ::- Run the U4c Processing for a particular project
-::- und process This.txt MyDatabase.udb
-%s process %s %s
+::- und process CmdFile.txt
+"%s" process "%s"
 """
 
+# Params
+# 1. DB Name
+# 2. Name of file holding Src Files to Add
+# 3. Settings command as a set of lines
 eCmdTemplate = r"""
 # U4C command file
-# Specifies the DB to use and any setting
+# Creates the DB to use and any settings
+create -db "%s" -languages c++
+
+# add the files to the project
+add @"%s"
+
+# creates the settings
 %s
 
-# add the files tot he project
-add
-settings %s
+# update database
+analyze
 
-analyze # update database
-metrics # generate metrics
+# generate metrics
+metrics
 """
 
 #---------------------------------------------------------------------------------------------------

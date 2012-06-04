@@ -37,7 +37,7 @@ def Test():
     sel = input( 'Run All=1, Load=0: ')
     if sel == '1':
         u4c.TestCreate()
-        u4c.TestRun()
+        #u4c.TestRun()
     else:
         u4c.Load()
 

@@ -33,7 +33,7 @@ eDefaultToolPath = r'C:\lint\lint-nt.exe'
 eToolRoot = r'tool\pclint'
 
 eBatchName = r'runLint.bat'
-eLntSrcFileName = r'srcFiles.lnt'
+eSrcFilesName = r'srcFiles.lnt'
 eResultFile = r'results\result.csv'
 
 #---------------------------------------------------------------------------------------------------
@@ -79,8 +79,8 @@ class PcLintSetup( ToolSetup):
     def CreateFile( self, name, content):
         """  creates the named file with the specified contents
         """
-        pcLintPath = os.path.join( self.projRoot, eToolRoot, name)
-        ToolSetup.CreateFile( self, pcLintPath, content)
+        fullPath = os.path.join( self.projToolRoot, name)
+        ToolSetup.CreateFile( self, fullPath, content)
 
     #-----------------------------------------------------------------------------------------------
     def FileCount( self):
@@ -159,7 +159,7 @@ class PcLint( ToolManager):
                             line = [aFilename] + line[1:]
 
                         # replace the unknown file name with current file name
-                        if line[0] == eLntSrcFileName:
+                        if line[0] == eSrcFilesName:
                             line[0] = cFileName
 
                         opv = [1] + line + [details]

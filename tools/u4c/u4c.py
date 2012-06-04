@@ -20,7 +20,7 @@ import time
 #---------------------------------------------------------------------------------------------------
 import ViolationDb
 
-from tools.pcLint import U4cFileTemplates
+from tools.u4c import U4cFileTemplates
 from tools.ToolMgr import ToolSetup, ToolManager
 
 #---------------------------------------------------------------------------------------------------
@@ -31,6 +31,7 @@ eToolRoot = r'tool\u4c'
 
 eBatchName = r'runU4c.bat'
 eU4cCmdFileName = r'u4cCmds.txt'
+eSrcFilesName = r'srcFiles.lnt'
 
 eResultFile = r'results\result.csv'
 
@@ -59,19 +60,44 @@ class U4cSetup( ToolSetup):
         if toolExe is None:
             toolExe = eDefaultToolPath
 
+        cmdFilePath = os.path.join( self.projToolRoot, eU4cCmdFileName)
+
+        options = self.ConvertOptions( options)
+
         # create the required files
-        self.CreateFile( eBatchName, batTmpl % (toolExe, pcLintRoot, eResultFile))
-        self.CreateFile( 'options.lnt', optTmpl.format_map(options))
-        self.CreateFile( 'srcFiles.lnt', '\n'.join(srcCodeFiles))
+        self.CreateFile( eBatchName, batTmpl % (toolExe, cmdFilePath))
+        cmdContents = optTmpl % (os.path.join( self.projToolRoot, 'db.udb'),
+                                 os.path.join( self.projToolRoot, eSrcFilesName),
+                                 '\n'.join(options))
+        self.CreateFile( eU4cCmdFileName, cmdContents)
+        self.CreateFile( eSrcFilesName, '\n'.join(srcCodeFiles))
 
         self.fileCount = len( srcCodeFiles)
+
+    #-----------------------------------------------------------------------------------------------
+    def ConvertOptions( self, options):
+        """ Turn a dictionary of option into a single list of und commands
+            option => [item1, item2]
+              becomes
+            settings -option item1
+            settings -optionAdd item2
+        """
+        optionList = []
+        for option in options:
+            optionData = options[option]
+            isFirst = True
+            for item in optionData:
+                add = '' if isFirst else 'Add'
+                isFirst = False
+                optionList.append('settings -%s %s' % ( option+add, item))
+        return optionList
 
     #-----------------------------------------------------------------------------------------------
     def CreateFile( self, name, content):
         """  creates the named file with the specified contents
         """
-        pcLintPath = os.path.join( self.projRoot, eToolRoot, name)
-        ToolSetup.CreateFile( self, pcLintPath, content)
+        fullPath = os.path.join( self.projToolRoot, name)
+        ToolSetup.CreateFile( self, fullPath, content)
 
     #-----------------------------------------------------------------------------------------------
     def FileCount( self):
@@ -139,50 +165,37 @@ if host == 'Jeff-Laptop':
     projRoot = r'D:\Knowlogic\zzzCodereviewPROJ'
     srcCodeRoot = r'D:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP'
     incStr = r"""
-    -iD:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\GhsInclude
+    D:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\GhsInclude
     """
 else:
     projRoot = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ'
     srcCodeRoot = r'C:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP'
     incStr = r"""
-    -iC:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\GhsInclude
+    C:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\GhsInclude
     """
-
-options = {}
-options['sizeOptions'] = """
--si4 -sp4
-
-"""
-
-misc = """
-+macros  // make macros accept string 2*4096
-+fem // needed for things like __interrupt void TTMR_GPT0ISR
--D__m68k
-
-+libdir(D:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\GhsInclude)
--wlib(1) // turn off lib warnings
-
--e793
--e830
--e831
-
-"""
 
 # these function simulate front end processing
 def TestCreate():
+    options = {}
+    # include directories
     includes = [i.strip() for i in incStr.split('\n') if i.strip() ]
-    options['includes'] = '\n'.join(includes)
+    options['C++Includes'] = includes
 
-    options['defines'] = misc
+    # macro definitions
+    options['C++Macros'] = []
+    options['C++Undefined'] = []
 
     # get the srcFiles only take .c for testing
     srcFiles = []
-    excludedFiles = ('ind_crt0.c','c_cover_ioPWES.c','Etm.c','TestPoints.c')
+    excludedFiles = ('ind_crt0.c', 'ind_startup.h', 'indsyscl.h',
+                     'c_cover_ioPWES.c',
+                     'Etm.h', 'Etm.c',
+                     'TestPoints.c')
     for dirPath, dirs, fileNames in os.walk( srcCodeRoot):
         for f in fileNames:
             ffn = os.path.join( dirPath, f)
-            if os.path.isfile(ffn) and os.path.splitext( f)[1] == '.c':
-                if f not in excludedFiles:
+            if os.path.isfile(ffn):
+                if f not in excludedFiles and os.path.splitext( f)[1] in ('.h', '.c'):
                     srcFiles.append( ffn)
 
     u4cs = U4cSetup( projRoot)
@@ -205,20 +218,3 @@ def TestRun():
     tool.CleanLint()
     tool.LoadDb()
 
-def Clean():
-    tool = PcLint( projRoot)
-    tool.Review()
-    tool.CleanLint()
-
-
-    print('\nall done\n')
-
-def Load():
-    tool = PcLint( projRoot)
-    tool.LoadDb()
-
-if __name__ == '__main__':
-    #TestCreate()
-    TestRun()
-    #Clean()
-    #Load()
