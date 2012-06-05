@@ -162,9 +162,9 @@ class DateTime( datetime.datetime):
             dt = datetime.datetime.__sub__(self, other)
             return DateTime(dt.year,dt.month,dt.day,dt.hour,dt.minute,dt.second,dt.microsecond)
         else:
-            print(other, type(other))
+            #print(other, type(other))
             td = datetime.datetime.__sub__(self, other)
-            print(td, type(td))
+            #print(td, type(td))
             return TimeDelta( td.days, td.seconds, td.microseconds)
 
     #------------------------------------------------------------------------------------------

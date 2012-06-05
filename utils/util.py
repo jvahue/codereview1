@@ -10,6 +10,7 @@
 import datetime
 import os
 import time
+import _thread
 from types import *
 
 from . import pprintjv
@@ -26,6 +27,7 @@ zeroSeconds = 18000.0
 timeFormat = "%a %b %d %H:%M:%S %Y"
 MMDDYYYY = "%m/%d/%Y"
 ISO_FMT = "%Y-%m-%d %H:%M:%S"
+
 
 #----------------------------------------------------------------------------------------------
 def IntSelect( aStr, theMin, theMax):
@@ -190,7 +192,7 @@ def GetDateTime(m):
 def Str2Date( date):
     """ Return a datetime object from a string input """
     if date and type(date) == str:
-        dt = DateTime.DateTime.today()
+        dt = DateTime.DateTime.utcnow()
         date = dt.Set(date).date()
     return date
 
@@ -264,7 +266,10 @@ class Output:
     """
     #------------------------------------------------------------------------------------------
     def __init__( self, delimiter, f = None, unset='-'):
-        """ Init the output object, specify the delimter and file to write to """
+        """ __init__( self, delimiter, f = None, unset='-')
+            Init the output object, specify the delimter, file to write to, and an unset
+            value str
+        """
         self.f = f
         self.delimeter = delimiter
         self.unset = unset
@@ -366,6 +371,10 @@ class ThreadSignal:
         self.active = True
 
     def Go( self):
+        self.active = True
+        _thread.start_new_thread( self.RunJob, ())
+
+    def RunJob( self):
         try:
             self.job()
         except:
@@ -373,7 +382,10 @@ class ThreadSignal:
             import traceback
             #xcptData = sys.exc_info()
             #t,v,tb = xcptData
-            traceback.print_exc( 20, file('xcpt_%d.dat' % id(self), 'w'))
+            f = open('xcpt_%d.dat' % id(self), 'w')
+            f.write( 'UTC: %s Local: %s\n' % ( datetime.datetime.utcnow(), datetime.datetime.now()))
+            traceback.print_exc( 20, f)
+            f.close()
             #print_exception( t,v,tb,file = f)
         self.active = False
 
@@ -388,7 +400,7 @@ class ShowObject:
         subItems = []
         iterables = []
         print('-' * 50)
-        print('Show %s' % str(self))
+        #print 'Show %s' % str(self)
         d = dir(self)
         d.sort()
         for i in d:
@@ -436,7 +448,24 @@ class Holder( ShowObject):
             if not isinstance( item, collections.Callable) and i[:2] != '__':
                 m.append( '%s=%s' % (i, str(item)))
 
-        return ','.join(m)
+        return '\n'.join(m)
+
+    #------------------------------------------------------------------------------------------
+    def __eq__( self, other):
+        """ Compare the contents of both objects """
+        status = True
+        # 1. Verify all fields are the same
+        if other and list(self.__dict__.keys()) == list(other.__dict__.keys()):
+            # 2. check all the values for each item
+            for i in list(self.__dict__.keys()):
+                sv = getattr( self, i)
+                ov = getattr( other, i)
+                if sv != ov:
+                    status = False
+                    break
+        else:
+            status = False
+        return status
 
     #------------------------------------------------------------------------------------------
     def Dup( self, other):
@@ -450,7 +479,7 @@ class Holder( ShowObject):
 #----------------------------------------------------------------------------------------------
 def dtx( s, dt):
     """ Convert a string date time rep into whatever dt is (i.e., date or datetime) """
-    ds = DateTime.DateTime.today()
+    ds = DateTime.DateTime.utcnow()
     ds = ds.Set(s)
     if type( dt) == datetime.date:
         return datetime.date( ds.year, ds.month, ds.day)
@@ -477,12 +506,9 @@ def TestChoice():
     print(SelectInt( aTup))
 
 if __name__ == '__main__':
-    import DBO
-    db = DBO.DBO()
-    print(Str2Date( '9/21/2007'))
-    print(Str2Date( db.md.GetExpiration( 10, 2007)))
-    print('Loaded ...')
-    print(TimeToString( time.localtime()))
+    h0 = Holder(a=1,b=2,c=[1,3])
+    h1 = Holder(a=1,b=2,c=[1,2])
+    e1 = h0 == h1
 
 
 """

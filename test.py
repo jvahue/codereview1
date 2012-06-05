@@ -4,6 +4,7 @@ Code review Main
 #---------------------------------------------------------------------------------------------------
 # Python Modules
 #---------------------------------------------------------------------------------------------------
+import time
 
 #---------------------------------------------------------------------------------------------------
 # Third Party Modules
@@ -32,12 +33,24 @@ srcCodeRoot = r'D:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP'
 # Classes
 #---------------------------------------------------------------------------------------------------
 
+projRoot = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ'
 
 def Test():
     sel = input( 'Run All=1, Load=0: ')
     if sel == '1':
-        u4c.TestCreate()
-        #u4c.TestRun()
+        pcl = PcLint.PcLint( projRoot)
+        u4co = u4c.U4c( projRoot)
+
+        pcl.Analyze()
+        u4co.Analyze()
+
+        pcl.AnalyzeStatus()
+        u4co.AnalyzeStatus()
+
+        while pcl.monitor.active or u4co.monitor.active:
+            time.sleep(0.5)
+            print( 'PcLint: %.1f U4C: %.1f' % (pcl.analysisPercentComplete,u4co.analysisPercentComplete))
+
     else:
         u4c.Load()
 

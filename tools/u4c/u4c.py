@@ -22,6 +22,7 @@ import ViolationDb
 
 from tools.u4c import U4cFileTemplates
 from tools.ToolMgr import ToolSetup, ToolManager
+from utils.DateTime import DateTime
 
 #---------------------------------------------------------------------------------------------------
 # Data
@@ -107,7 +108,7 @@ class U4cSetup( ToolSetup):
         self.fileCount = len( lines)
 
 #---------------------------------------------------------------------------------------------------
-class U4cLint( ToolManager):
+class U4c( ToolManager):
     def __init__(self, projRoot, toolExe = None):
         ToolManager.__init__(self, projRoot)
 
@@ -119,14 +120,38 @@ class U4cLint( ToolManager):
         self.projToolRoot = os.path.join( self.projRoot, eToolRoot)
 
     #-----------------------------------------------------------------------------------------------
-    def Review(self):
+    def Analyze(self):
         """ Run a Review based on this tools capability.  This is generally a two step process:
           1. Update the tool output
           2. Generate Reivew data
         """
         # Run the PC-Lint bat file
         self.jobCmd = '%s' % os.path.join( self.projToolRoot, eBatchName)
-        ToolManager.Review(self)
+        ToolManager.Analyze(self)
+
+    #-----------------------------------------------------------------------------------------------
+    def MonitorAnalysis(self):
+        """ thread that does the monitoring and completes the analysis
+        """
+        fileList = []
+        analyzing = False
+        fileCount = 0
+        while self.AnalyzeActive():
+            for line in self.job.stdout:
+                line = line.decode(encoding='windows-1252').strip()
+                if line == 'Analyze':
+                    analyzing = True
+                    fileCount = len( fileList)
+                elif line.find( 'File: ') != -1:
+                    line = line.replace('File: ', '').replace(' has been added.', '')
+                    fileList.append(line)
+                else:
+                    if line in fileList:
+                        fileList.remove( line)
+                        self.analysisPercentComplete = 50.0 - ((len(fileList)/float(fileCount)*100.0)/2.0)
+
+        # now run the review of the u4c DB which is the other half of this process
+
 
     #-----------------------------------------------------------------------------------------------
     def LoadDb( self):
@@ -202,19 +227,14 @@ def TestCreate():
     u4cs.CreateProject( srcFiles, options)
 
 def TestRun():
-    ps = U4cSetup( projRoot)
-    ps.FileCount()
-    tool = PcLint( projRoot)
-    tool.Review()
-    lastSize = 119
-    counter = 1
-    while tool.ReviewActive():
-        newSize = os.path.getsize( tool.stdout.name)
-        if (newSize - lastSize) > len('--- Module:   '):
-            lastSize = newSize
-            print( '%d of %d: %d' % (counter, ps.fileCount, newSize))
-            counter += 1
 
-    tool.CleanLint()
-    tool.LoadDb()
-
+    start = DateTime.today()
+    tool = U4c( projRoot)
+    tool.Analyze()
+    tool.AnalyzeStatus()
+    while tool.monitor.active:
+        time.sleep(0.5)
+        print( 'U4C Complete: %.1f' % tool.analysisPercentComplete)
+    end = DateTime.today()
+    delta = end - start
+    print('U4C Processing: %s' % delta)

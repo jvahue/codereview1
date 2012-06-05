@@ -9,6 +9,7 @@ Design Assumptions:
 # Python Modules
 #---------------------------------------------------------------------------------------------------
 import csv
+import datetime
 import os
 import sys
 import time
@@ -25,6 +26,7 @@ import ViolationDb
 from tools.pcLint import PcLintFileTemplates
 from tools.pcLint.KsCrLnt import LintLoader
 from tools.ToolMgr import ToolSetup, ToolManager
+from utils.DateTime import DateTime
 
 #---------------------------------------------------------------------------------------------------
 # Data
@@ -102,14 +104,39 @@ class PcLint( ToolManager):
         self.projToolRoot = os.path.join( self.projRoot, eToolRoot)
 
     #-----------------------------------------------------------------------------------------------
-    def Review(self):
+    def Analyze(self):
         """ Run a Review based on this tools capability.  This is generally a two step process:
           1. Update the tool output
           2. Generate Reivew data
         """
         # Run the PC-Lint bat file
         self.jobCmd = '%s' % os.path.join( self.projToolRoot, eBatchName)
-        ToolManager.Review(self)
+        ToolManager.Analyze(self)
+
+    #-----------------------------------------------------------------------------------------------
+    def MonitorAnalysis(self):
+        """ Monitor the Analysis and provide status about completion percentage
+        """
+        # How many files are we analyzing
+        ps = PcLintSetup( projRoot)
+        ps.FileCount()
+
+        # call this 50% of the task
+        fileCount = 0
+        self.analysisPercentComplete = 0
+        while self.AnalyzeActive():
+            for line in self.job.stdout:
+                line = line.decode(encoding='windows-1252')
+                if line.find( '--- Module:') != -1:
+                    fileCount += 1
+                    v = ((fileCount/float(ps.fileCount))*100.0) / 2.0
+                    self.analysisPercentComplete = v
+
+        # the other 50%
+        self.CleanLint()
+        self.analysisPercentComplete = 52
+        self.LoadDb()
+        self.analysisPercentComplete = 100
 
     #-----------------------------------------------------------------------------------------------
     def CleanLint( self):
@@ -121,7 +148,6 @@ class PcLint( ToolManager):
         eFieldCount = 6
         # open the source file
         finName = os.path.join( self.projToolRoot, eResultFile)
-        print( '\nCleanup %s\n' % finName)
         fin = open( finName, 'r', newline='')
         csvIn = csv.reader( fin)
 
@@ -207,20 +233,38 @@ class PcLint( ToolManager):
         # move to the DB
         lintLoader = LintLoader( finName, sl3)
         lintLoader.RemoveDuplicate()
-        removed, updateTime = lintLoader.InsertDb( lintLoader.reducedData)
+        self.analysisPercentComplete = 54
 
-        # print stats
-        print( 'Inserted %5d New' % sl3.insertNew)
-        print( 'Updated  %5d Records' % sl3.insertUpdate)
-        print( 'Select Errors: %d' % sl3.insertSelErr)
-        print( 'Insert Errors: %d' % sl3.insertInErr)
-        print( 'Update Errors: %d' % sl3.insertUpErr)
+        self.updateTime = datetime.datetime.today()
+
+        items = len(lintLoader.reducedData)
+        counter = 0
+        for filename,func,line,severity,violationId,desc,details in lintLoader.reducedData:
+            sl3.Insert( filename,func,severity,violationId,desc,details,line,'PcLint',self.updateTime)
+            counter += 1
+            pct = (float(counter)/items) * (100-54)
+            self.analysisPercentComplete = 54 + pct
+
+        s = """
+            select count(*) from violations where lastReport != ?
+            """
+        db.Execute( s, (self.updateTime,))
+        data = db.GetOne()
 
         # remove the old PcLint violations
         s = "delete from violations where lastReport != ? and detectedBy = 'PcLint'"
         sl3.Execute( s, (updateTime,))
+
+        # commit all the changes
         sl3.Commit()
-        print( 'Removed %d Old Records - %s' % (removed, updateTime))
+
+        # print stats
+        self.insertNew = sl3.insertNew
+        self.insertUpdate = sl3.insertUpdate
+        self.insertSelErr = sl3.insertSelErr
+        self.insertInErr = sl3.insertInErr
+        self.insertUpErr = sl3.insertUpErr
+        self.insertDeleted = data[0]
 
 #========================================================================================================================
 import socket
@@ -230,23 +274,23 @@ if host == 'Jeff-Laptop':
     projRoot = r'D:\Knowlogic\zzzCodereviewPROJ'
     srcCodeRoot = r'D:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP'
     incStr = r"""
-    -iD:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\GhsInclude
-    -iD:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP\application
-    -iD:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP\drivers
-    -iD:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP\drivers\hwdef
-    -iD:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP\system
-    -iD:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP\test
+    D:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\GhsInclude
+    D:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP\application
+    D:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP\drivers
+    D:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP\drivers\hwdef
+    D:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP\system
+    D:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP\test
     """
 else:
     projRoot = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ'
     srcCodeRoot = r'C:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP'
     incStr = r"""
-    -iC:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\GhsInclude
-    -iC:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP\application
-    -iC:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP\drivers
-    -iC:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP\drivers\hwdef
-    -iC:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP\system
-    -iC:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP\test
+    C:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\GhsInclude
+    C:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP\application
+    C:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP\drivers
+    C:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP\drivers\hwdef
+    C:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP\system
+    C:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP\test
     """
 
 options = {}
@@ -263,14 +307,15 @@ misc = """
 +libdir(D:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\GhsInclude)
 -wlib(1) // turn off lib warnings
 
--e793
+-e793 //
 -e830
 -e831
 
 """
 
 def TestCreate():
-    includes = [i.strip() for i in incStr.split('\n') if i.strip() ]
+    # prepend the -i command for PcLint
+    includes = ['-i%s' % i.strip() for i in incStr.split('\n') if i.strip() ]
     options['includes'] = '\n'.join(includes)
 
     options['defines'] = misc
@@ -289,36 +334,14 @@ def TestCreate():
     pcls.CreateProject( srcFiles, options)
 
 def TestRun():
-    ps = PcLintSetup( projRoot)
-    ps.FileCount()
+    start = DateTime.today()
     tool = PcLint( projRoot)
-    tool.Review()
-    lastSize = 119
-    counter = 1
-    while tool.ReviewActive():
-        newSize = os.path.getsize( tool.stdout.name)
-        if (newSize - lastSize) > len('--- Module:   '):
-            lastSize = newSize
-            print( '%d of %d: %d' % (counter, ps.fileCount, newSize))
-            counter += 1
+    tool.Analyze()
+    tool.AnalyzeStatus()
+    while tool.monitor.active:
+        time.sleep(0.5)
+        print( 'PcLint Complete: %.1f' % tool.analysisPercentComplete)
+    end = DateTime.today()
+    delta = end - start
+    print('PcLint Processing: %s' % delta)
 
-    tool.CleanLint()
-    tool.LoadDb()
-
-def Clean():
-    tool = PcLint( projRoot)
-    tool.Review()
-    tool.CleanLint()
-
-
-    print('\nall done\n')
-
-def Load():
-    tool = PcLint( projRoot)
-    tool.LoadDb()
-
-if __name__ == '__main__':
-    #TestCreate()
-    TestRun()
-    #Clean()
-    #Load()

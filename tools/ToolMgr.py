@@ -13,9 +13,10 @@ violation checks, review violations, etc.
 #---------------------------------------------------------------------------------------------------
 # Python Modules
 #---------------------------------------------------------------------------------------------------
+import io
 import os
 import subprocess
-import io
+import time
 
 #---------------------------------------------------------------------------------------------------
 # Third Party Modules
@@ -24,6 +25,7 @@ import io
 #---------------------------------------------------------------------------------------------------
 # Knowlogic Modules
 #---------------------------------------------------------------------------------------------------
+from utils.util import ThreadSignal
 
 #---------------------------------------------------------------------------------------------------
 # Data
@@ -67,30 +69,36 @@ class ToolManager:
         self.job = None
 
     #-----------------------------------------------------------------------------------------------
-    def Review(self):
+    def Analyze(self):
         """ Run a Review based on this tools capability.  This is generally a two step process:
           1. Update the tool output
           2. Generate Reivew data
         """
-        self.stdout = open (os.path.join( self.projToolRoot, 'stdout.dat'), 'w+')
+        self.analysisPercentComplete = 0
         self.job = subprocess.Popen( self.jobCmd, bufsize=-1, cwd=self.projToolRoot,
-                                     stderr=self.stdout)
+                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
     #-----------------------------------------------------------------------------------------------
-    def ReviewActive(self):
-        """ is a review actively running """
+    def AnalyzeActive(self):
+        """ is a review actively running
+        Note the sleep is to ensure if threads are getting active status they all give up control
+        """
+        time.sleep( 0.001)
         status = False
         if self.job is not None:
             if self.job.poll() is None:
                 status = True
-            else:
-                # collect all the final output and result code from the process
-                pass
-            self.stdout.close()
-        else:
-            self.job
 
         return status
+
+    #-----------------------------------------------------------------------------------------------
+    def AnalyzeStatus(self):
+        """ Run the sub-class analisys monitor in a thread
+        """
+        # Monitor the sub-process run this is 50% of this activity
+        self.monitor = ThreadSignal( self.MonitorAnalysis, self)
+        self.analysisPercentComplete = 0.0
+        self.monitor.Go()
 
     #-----------------------------------------------------------------------------------------------
     def PollReview(self):
@@ -100,10 +108,8 @@ class ToolManager:
         return out
 
     #-----------------------------------------------------------------------------------------------
-    def Analyze(self):
-        """ This allows a user to analyze the results.  Data is provided to the associated
-            ToolViewer to allow the user to see the results and perform any analysis needed.
-        """
+    def MonitorAnalysis(self):
+        """ subclasses define how to monitor their analysis process """
         raise NotImplemented
 
     #-----------------------------------------------------------------------------------------------
