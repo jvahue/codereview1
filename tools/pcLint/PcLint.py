@@ -248,12 +248,12 @@ class PcLint( ToolManager):
         s = """
             select count(*) from violations where lastReport != ?
             """
-        db.Execute( s, (self.updateTime,))
-        data = db.GetOne()
+        sl3.Execute( s, (self.updateTime,))
+        data = sl3.GetOne()
 
         # remove the old PcLint violations
         s = "delete from violations where lastReport != ? and detectedBy = 'PcLint'"
-        sl3.Execute( s, (updateTime,))
+        sl3.Execute( s, (self.updateTime,))
 
         # commit all the changes
         sl3.Commit()
@@ -307,9 +307,6 @@ misc = """
 +libdir(D:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\GhsInclude)
 -wlib(1) // turn off lib warnings
 
--e793 //
--e830
--e831
 
 """
 

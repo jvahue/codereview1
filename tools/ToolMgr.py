@@ -93,7 +93,7 @@ class ToolManager:
 
     #-----------------------------------------------------------------------------------------------
     def AnalyzeStatus(self):
-        """ Run the sub-class analisys monitor in a thread
+        """ Run the sub-class analysis monitor in a thread
         """
         # Monitor the sub-process run this is 50% of this activity
         self.monitor = ThreadSignal( self.MonitorAnalysis, self)
