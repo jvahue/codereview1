@@ -45,6 +45,10 @@ class ToolSetup:
         self.projRoot = projRoot
 
     #-----------------------------------------------------------------------------------------------
+    def CreateProject( self):
+        raise NotImplemented
+
+    #-----------------------------------------------------------------------------------------------
     def CreateFile( self, name, content):
         """  creates the named file with the specified contents
         """
@@ -56,6 +60,30 @@ class ToolSetup:
         f = open( name, 'w')
         f.write( content)
         f.close()
+
+    #-----------------------------------------------------------------------------------------------
+    def GetSrcCodeFile( self, srcRoots, extensions, excludedFiles):
+        """ Walk all srcCode roots and files with extension in extensions unless
+            the file is in the excludeFileList
+
+            All .h files seen have their src directory returned in includeDirs
+        """
+        srcFiles = []
+        includeDirs = []
+        for root in srcRoots:
+            for dirPath, dirs, fileNames in os.walk( root):
+                for f in fileNames:
+                    ffn = os.path.join( dirPath, f)
+                    ext = os.path.splitext( f)[1]
+
+                    if ext == '.h' and dirPath not in includeDirs:
+                        includeDirs.append( dirPath)
+
+                    if os.path.isfile(ffn) and ext in extensions:
+                        if f not in excludedFiles:
+                            srcFiles.append( ffn)
+
+        return includeDirs, srcFiles
 
 #---------------------------------------------------------------------------------------------------
 class ToolManager:

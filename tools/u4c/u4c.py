@@ -14,10 +14,12 @@ import time
 #---------------------------------------------------------------------------------------------------
 # Third Party Modules
 #---------------------------------------------------------------------------------------------------
+import understand
 
 #---------------------------------------------------------------------------------------------------
 # Knowlogic Modules
 #---------------------------------------------------------------------------------------------------
+import ProjFile
 import ViolationDb
 
 from tools.u4c import U4cFileTemplates
@@ -27,8 +29,8 @@ from utils.DateTime import DateTime
 #---------------------------------------------------------------------------------------------------
 # Data
 #---------------------------------------------------------------------------------------------------
-eDefaultToolPath = r'C:\Program Files\SciTools\bin\pc-win64\und.exe'
 eToolRoot = r'tool\u4c'
+eDbName = 'db.udb'
 
 eBatchName = r'runU4c.bat'
 eU4cCmdFileName = r'u4cCmds.txt'
@@ -44,30 +46,41 @@ eResultFile = r'results\result.csv'
 # Classes
 #---------------------------------------------------------------------------------------------------
 class U4cSetup( ToolSetup):
-    def __init__( self, projRoot):
+    def __init__( self, projFile):
         """ Handle all U4c setup
         """
-        ToolSetup.__init__( self, projRoot)
+        assert( isinstance( projFile, ProjFile.ProjectFile))
+        self.projFile = projFile
+        self.projRoot = projFile.paths['ProjectRoot']
+
+        ToolSetup.__init__( self, self.projRoot)
         self.projToolRoot = os.path.join( self.projRoot, eToolRoot)
-        self.fileCount = 0
 
     #-----------------------------------------------------------------------------------------------
-    def CreateProject( self, srcCodeFiles, options, toolExe=None):
+    def CreateProject( self):
         """ Create all of the files needed for this project
         """
         batTmpl = U4cFileTemplates.eU4cBatTemplate
         optTmpl = U4cFileTemplates.eCmdTemplate
 
-        if toolExe is None:
-            toolExe = eDefaultToolPath
+        toolExe = self.projFile.paths['U4c']
 
         cmdFilePath = os.path.join( self.projToolRoot, eU4cCmdFileName)
 
+        srcRoots = self.projFile.paths['SrcCodeRoot']
+        excludeFiles = self.projFile.exclude['Files_U4c']
+        srcIncludeDirs, srcCodeFiles = self.GetSrcCodeFile( srcRoots, ['.c', '.h'], excludeFiles)
+
+        # U4c Option definitions
+        options = {}
+        options['C++Includes'] = self.projFile.paths['IncludeDirs']
+        options['C++Macros'] = self.projFile.defines
+        options['C++Undefined'] = self.projFile.undefines
         options = self.ConvertOptions( options)
 
         # create the required files
         self.CreateFile( eBatchName, batTmpl % (toolExe, cmdFilePath))
-        cmdContents = optTmpl % (os.path.join( self.projToolRoot, 'db.udb'),
+        cmdContents = optTmpl % (os.path.join( self.projToolRoot, eDbName),
                                  os.path.join( self.projToolRoot, eSrcFilesName),
                                  '\n'.join(options))
         self.CreateFile( eU4cCmdFileName, cmdContents)
@@ -109,15 +122,31 @@ class U4cSetup( ToolSetup):
 
 #---------------------------------------------------------------------------------------------------
 class U4c( ToolManager):
-    def __init__(self, projRoot, toolExe = None):
-        ToolManager.__init__(self, projRoot)
+    def __init__(self, projFile):
+        assert( isinstance( projFile, ProjFile.ProjectFile))
+        self.projFile = projFile
+        self.projRoot = projFile.paths['ProjectRoot']
 
-        if toolExe is None:
-            self.toolExe = eDefaultToolPath
-        else:
-            self.toolExe = toolExe
+        ToolManager.__init__(self, self.projRoot)
 
         self.projToolRoot = os.path.join( self.projRoot, eToolRoot)
+
+        self.dbName = os.path.join( self.projToolRoot, eDbName)
+
+    #-----------------------------------------------------------------------------------------------
+    def IsReadyToAnalyze(self):
+        """ we are about to create the db and put stuff in it make sure it is not locked by some
+            with U4c GUI open
+        """
+        # TODO: if U4C fixes the db open we cna use that to findout if some one has the Db open
+        #       right now we will try to delete it, and hopefully get an exception
+        try:
+            os.remove( self.dbName)
+            status = True
+        except OSError:
+            status = False
+
+        return status
 
     #-----------------------------------------------------------------------------------------------
     def Analyze(self):

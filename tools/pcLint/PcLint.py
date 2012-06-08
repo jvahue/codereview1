@@ -21,6 +21,7 @@ import time
 #---------------------------------------------------------------------------------------------------
 # Knowlogic Modules
 #---------------------------------------------------------------------------------------------------
+import ProjFile
 import ViolationDb
 
 from tools.pcLint import PcLintFileTemplates
@@ -31,12 +32,25 @@ from utils.DateTime import DateTime
 #---------------------------------------------------------------------------------------------------
 # Data
 #---------------------------------------------------------------------------------------------------
-eDefaultToolPath = r'C:\lint\lint-nt.exe'
 eToolRoot = r'tool\pclint'
 
 eBatchName = r'runLint.bat'
 eSrcFilesName = r'srcFiles.lnt'
 eResultFile = r'results\result.csv'
+
+ePcLintStdOptions = r"""
+// Format Output
+-hr2
+-width(0,1)
+-"format=<*>%f,%i,%l,%t,%n,\q%m\q\n"
+-"format_specific=<*>%f,%i,%l,%t,%n,\q%m\q\n"
+
+// Other options
++macros   // (STD) make macros accept string 2*4096
+-wlib(1)  // (STD) turn off lib warnings
+-e830     // (STD) canonical reference info
+-e831     // (STD) canonical reference info
+"""
 
 #---------------------------------------------------------------------------------------------------
 # Functions
@@ -46,34 +60,62 @@ eResultFile = r'results\result.csv'
 # Classes
 #---------------------------------------------------------------------------------------------------
 class PcLintSetup( ToolSetup):
-    def __init__( self, projRoot):
+    def __init__( self, projFile):
         """ Handle all PcLint setup
         """
-        ToolSetup.__init__( self, projRoot)
+        assert( isinstance( projFile, ProjFile.ProjectFile))
+        self.projFile = projFile
+        self.projRoot = projFile.paths['ProjectRoot']
+
+        ToolSetup.__init__( self, self.projRoot)
         self.projToolRoot = os.path.join( self.projRoot, eToolRoot)
+
         self.fileCount = 0
 
     #-----------------------------------------------------------------------------------------------
-    def CreateProject( self, srcCodeFiles, options, toolExe=None):
+    def CreateProject( self):
         """ Create all of the files needed for this project
             1. runLint.bat - the main file to run PC-Lint
             2. srcFile.lnt - a listing of all the src files
             3. A format file for the lint output to csv files
         """
+        assert( isinstance( self.projFile, ProjFile.ProjectFile))
 
         batTmpl = PcLintFileTemplates.ePcLintBatTemplate
         optTmpl = PcLintFileTemplates.eOptionsTemplate
 
-        if toolExe is None:
-            toolExe = eDefaultToolPath
+        toolExe = self.projFile.paths['PcLint']
 
         # get the PcLint Root
         pcLintRoot = os.path.split( toolExe)[0]
 
+        srcRoots = self.projFile.paths['SrcCodeRoot']
+        excludeFiles = self.projFile.exclude['Files_PcLint']
+        srcIncludeDirs, srcCodeFiles = self.GetSrcCodeFile( srcRoots, ['.c'], excludeFiles)
+
+        # put all the PcLint Options together
+        userOptions = self.projFile.options['PcLint']
+        defines = '\n'.join(['-d%s' % i for i in self.projFile.defines])
+        undefines = '\n'.join(['-u%s' % i for i in self.projFile.undefines])
+        includeDirs = self.projFile.paths['IncludeDirs']
+
+        # STD PC Lint Options
+        options  = '%s\n' % (ePcLintStdOptions)
+
+        # Specify all the include dirs
+        options += '%s\n' % '\n'.join( ['-i%s' % i for i in srcIncludeDirs+includeDirs])
+
+        # specify the user defined options
+        options += '\n// User Options\n%s\n' % ( userOptions)
+        options += '\n// User Defines\n%s\n' % ( defines)
+        options += '\n// User Undefines\n%s\n' % ( undefines)
+        # tag all the extra IndludeDirs not in the SrcCode Root tree as libdirs
+        options += '\n// Library Dirs\n%s\n' % '\n'.join( ['+libdir(%s)' % i for i in includeDirs])
+
         # create the required files
         self.CreateFile( eBatchName, batTmpl % (toolExe, pcLintRoot, eResultFile))
-        self.CreateFile( 'options.lnt', optTmpl.format_map(options))
         self.CreateFile( 'srcFiles.lnt', '\n'.join(srcCodeFiles))
+        self.CreateFile( 'options.lnt', options)
 
         self.fileCount = len( srcCodeFiles)
 
@@ -85,6 +127,27 @@ class PcLintSetup( ToolSetup):
         ToolSetup.CreateFile( self, fullPath, content)
 
     #-----------------------------------------------------------------------------------------------
+    def TestCreate(self,):
+        # prepend the -i command for PcLint
+        includes = ['-i%s' % i.strip() for i in incStr.split('\n') if i.strip() ]
+        options['includes'] = '\n'.join(includes)
+
+        options['defines'] = misc
+
+        # get the srcFiles only take .c for testing
+        srcFiles = []
+        excludedFiles = ('ind_crt0.c','c_cover_ioPWES.c','Etm.c','TestPoints.c')
+        for dirPath, dirs, fileNames in os.walk( srcCodeRoot):
+            for f in fileNames:
+                ffn = os.path.join( dirPath, f)
+                if os.path.isfile(ffn) and os.path.splitext( f)[1] == '.c' and f.lower().find('table') == -1:
+                    if f not in excludedFiles:
+                        srcFiles.append( ffn)
+
+        pcls = PcLintSetup( projRoot)
+        pcls.CreateProject( srcFiles, options)
+
+    #-----------------------------------------------------------------------------------------------
     def FileCount( self):
         f = open( os.path.join( self.projToolRoot, 'srcFiles.lnt'), 'r')
         lines = f.readlines()
@@ -93,14 +156,12 @@ class PcLintSetup( ToolSetup):
 
 #---------------------------------------------------------------------------------------------------
 class PcLint( ToolManager):
-    def __init__(self, projRoot, toolExe = None):
-        ToolManager.__init__(self, projRoot)
+    def __init__(self, projFile):
+        assert( isinstance( projFile, ProjFile.ProjectFile))
+        self.projFile = projFile
+        self.projRoot = projFile.paths['ProjectRoot']
 
-        if toolExe is None:
-            self.toolExe = eDefaultToolPath
-        else:
-            self.toolExe = toolExe
-
+        ToolManager.__init__(self, self.projRoot)
         self.projToolRoot = os.path.join( self.projRoot, eToolRoot)
 
     #-----------------------------------------------------------------------------------------------
@@ -118,7 +179,7 @@ class PcLint( ToolManager):
         """ Monitor the Analysis and provide status about completion percentage
         """
         # How many files are we analyzing
-        ps = PcLintSetup( projRoot)
+        ps = PcLintSetup( self.projFile)
         ps.FileCount()
 
         # call this 50% of the task
@@ -227,11 +288,11 @@ class PcLint( ToolManager):
         finName = os.path.join( self.projToolRoot, eResultFile)
 
         # open the PCLint DB
-        sl3 = ViolationDb.ViolationDb( self.projRoot)
-        sl3.DebugState( 1)
+        self.vDb = ViolationDb.ViolationDb( self.projRoot)
+        self.vDb.DebugState( 1)
 
         # move to the DB
-        lintLoader = LintLoader( finName, sl3)
+        lintLoader = LintLoader( finName, self.vDb)
         lintLoader.RemoveDuplicate()
         self.analysisPercentComplete = 54
 
@@ -240,7 +301,7 @@ class PcLint( ToolManager):
         items = len(lintLoader.reducedData)
         counter = 0
         for filename,func,line,severity,violationId,desc,details in lintLoader.reducedData:
-            sl3.Insert( filename,func,severity,violationId,desc,details,line,'PcLint',self.updateTime)
+            self.vDb.Insert( filename,func,severity,violationId,desc,details,line,'PcLint',self.updateTime)
             counter += 1
             pct = (float(counter)/items) * (100-54)
             self.analysisPercentComplete = 54 + pct
@@ -248,22 +309,22 @@ class PcLint( ToolManager):
         s = """
             select count(*) from violations where lastReport != ?
             """
-        sl3.Execute( s, (self.updateTime,))
-        data = sl3.GetOne()
+        self.vDb.Execute( s, (self.updateTime,))
+        data = self.vDb.GetOne()
 
         # remove the old PcLint violations
         s = "delete from violations where lastReport != ? and detectedBy = 'PcLint'"
-        sl3.Execute( s, (self.updateTime,))
+        self.vDb.Execute( s, (self.updateTime,))
 
         # commit all the changes
-        sl3.Commit()
+        self.vDb.Commit()
 
         # print stats
-        self.insertNew = sl3.insertNew
-        self.insertUpdate = sl3.insertUpdate
-        self.insertSelErr = sl3.insertSelErr
-        self.insertInErr = sl3.insertInErr
-        self.insertUpErr = sl3.insertUpErr
+        self.insertNew = self.vDb.insertNew
+        self.insertUpdate = self.vDb.insertUpdate
+        self.insertSelErr = self.vDb.insertSelErr
+        self.insertInErr = self.vDb.insertInErr
+        self.insertUpErr = self.vDb.insertUpErr
         self.insertDeleted = data[0]
 
 #========================================================================================================================

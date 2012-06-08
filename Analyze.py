@@ -13,6 +13,8 @@ import time
 #---------------------------------------------------------------------------------------------------
 # Knowlogic Modules
 #---------------------------------------------------------------------------------------------------
+import ProjFile
+
 from utils.DB.database import Query
 from utils.DB.sqlLite.database import DB_SQLite
 
@@ -22,8 +24,7 @@ from tools.u4c import u4c
 #---------------------------------------------------------------------------------------------------
 # Data
 #---------------------------------------------------------------------------------------------------
-projRoot = r'D:\Knowlogic\zzzCodereviewPROJ'
-srcCodeRoot = r'D:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP'
+projFile = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ\G41.crp'
 
 #---------------------------------------------------------------------------------------------------
 # Functions
@@ -32,25 +33,37 @@ srcCodeRoot = r'D:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP'
 #---------------------------------------------------------------------------------------------------
 # Classes
 #---------------------------------------------------------------------------------------------------
+def Analyze( projFile, verbose = True):
+    pf = ProjFile.ProjectFile( projFile)
 
-projRoot = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ'
+    pcs = PcLint.PcLintSetup( pf)
+    pcs.CreateProject()
 
-def Test():
-    pcl = PcLint.PcLint( projRoot)
-    u4co = u4c.U4c( projRoot)
+    u4s = u4c.U4cSetup( pf)
+    u4s.CreateProject()
 
-    pcl.Analyze()
-    u4co.Analyze()
+    pcl = PcLint.PcLint( pf)
+    u4co = u4c.U4c( pf)
 
-    pcl.AnalyzeStatus()
-    u4co.AnalyzeStatus()
+    status = True
+    if u4co.IsReadyToAnalyze():
+        pcl.Analyze()
+        u4co.Analyze()
 
-    while pcl.monitor.active or u4co.monitor.active:
-        time.sleep(0.5)
-        print( 'PcLint: %.1f U4C: %.1f' % (pcl.analysisPercentComplete,u4co.analysisPercentComplete))
+        pcl.AnalyzeStatus()
+        u4co.AnalyzeStatus()
 
-    for i in ('insertNew','insertUpdate','insertSelErr','insertInErr','insertUpErr','insertDeleted','updateTime',):
-        print('%s: %s' % (i, str(getattr(pcl, i))))
+        while pcl.monitor.active or u4co.monitor.active:
+            time.sleep(0.5)
+            if verbose: print( 'PcLint: %.1f U4C: %.1f' % (pcl.analysisPercentComplete,u4co.analysisPercentComplete))
 
+        for i in ('insertNew','insertUpdate','insertSelErr','insertInErr','insertUpErr','insertDeleted','updateTime',):
+            if verbose: print('%s: %s' % (i, str(getattr(pcl, i))))
+    else:
+        if verbose: print('U4C DB is currently open')
+        status = False
 
-Test()
+    return status
+
+if __name__ == '__main__':
+    Analyze(projFile)

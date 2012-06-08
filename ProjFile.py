@@ -9,9 +9,11 @@ in order get the project specific values for these any item requested.
 
 The following is a list of project configuraiton items currently support :
 
-[ProjectRoot] - the root directory for the project - this file resides there
-[SrcCodeRoot] - source code rott directory
-[IncludeDirs] - any directories that exist outside the SrcCodeRoot
+[Path_ProjectRoot] - the root directory for the project - this file resides there
+[Path_SrcCodeRoot] - source code rott directory
+[Path_IncludeDirs] - any directories that exist outside the SrcCodeRoot
+[Path_PcLint] - Path to the PcLint executable
+[Path_U4c] - path to U4c executable "und"
 [Defines] - any defines there are two forms
     item
     item=value
@@ -60,18 +62,12 @@ import os
 #---------------------------------------------------------------------------------------------------
 # Data
 #---------------------------------------------------------------------------------------------------
+ePcLintPath = r'C:\lint\lint-nt.exe'
+eU4cPath = r'C:\Program Files\SciTools\bin\pc-win64\und.exe'
 
 #---------------------------------------------------------------------------------------------------
 # Functions
 #---------------------------------------------------------------------------------------------------
-def spam():
-    """
-    Function description:
-    parameters
-    returns
-    notes
-    """
-    pass
 
 #---------------------------------------------------------------------------------------------------
 # Classes
@@ -86,8 +82,8 @@ class ProjectFile:
         """
         self.Reset(ffn)
 
-        if not os.path.isdir(self.projRoot):
-            os.makedirs( self.projRoot)
+        if not os.path.isdir(self.paths['ProjectRoot']):
+            os.makedirs( self.paths['ProjectRoot'])
 
         if not os.path.isfile( ffn):
             self.CreateProjectFile( ffn)
@@ -99,22 +95,29 @@ class ProjectFile:
         """ Init/declare all the variable for this class
         """
         self.projFileName = ffn
-        self.projRoot = os.path.split(ffn)[0]
         self.projName = os.path.splitext(os.path.split(ffn)[1])[0]
 
-        self.srcCodeRoot = [] # a list of roots
-        self.includeDirs = [] # a list of include dirs
+        self.paths = OrderedDict()
+        self.paths['ProjectRoot'] = os.path.split(ffn)[0]
+        self.paths['SrcCodeRoot'] = [] # a list of roots
+        self.paths['IncludeDirs'] = [] # a list of include dirs
+        self.paths['PcLint'] = ePcLintPath  # path to PcLint executable
+        self.paths['U4c'] = eU4cPath        # path to U4c executable
+
         self.defines = []     # a list of defines
         self.undefines = []
+
         self.exclude = OrderedDict()
         self.exclude['Files_PcLint'] = []
         self.exclude['Files_U4c'] = []
         self.exclude['Functions'] = []
         self.exclude['Keywords'] = []
+
         self.formats = OrderedDict()
         self.formats['File_h'] = ''
         self.formats['File_c'] = ''
         self.formats['FunctionHeader'] = ''
+
         self.metrics = OrderedDict()
         self.metrics['complexityMcCabe'] = 10
         self.metrics['complexityNesting'] = 5
@@ -122,14 +125,17 @@ class ProjectFile:
         self.metrics['lengthFunction'] = 200
         self.metrics['lengthLine'] = 95
         self.metrics['functionReturns'] = 1
+
         self.naming = OrderedDict()
         self.naming['function'] = r'[A-Za-z0-9_]{1,32}'
         self.naming['variable'] = r'[A-Za-z0-9_]{1,32}'
         self.naming['enum'] = r'[A-Za-z0-9_]{1,32}'
         self.naming['constants'] = r'[A-Za-z0-9_]{1,32}'
         self.naming['defines'] = r'[A-Za-z0-9_]{1,32}'
+
         self.options = OrderedDict()
         self.options['PcLint'] = ''
+
         self.restricted = OrderedDict()
         self.restricted['Functions'] = []
 
@@ -140,7 +146,7 @@ class ProjectFile:
         """ Create an default project file
         """
         self.modified = True
-        self.Close()
+        self.Save()
 
     #-----------------------------------------------------------------------------------------------
     def Open( self):
@@ -150,8 +156,8 @@ class ProjectFile:
         self.projectFileData = self.projectFile.readlines()
         self.projectFile.close()
 
-        self.ReadRoots()
-        self.ReadIncDefs()
+        self.ReadPaths()
+        self.ReadDefs()
         self.ReadExcludes()
         self.ReadFormats()
         self.ReadMetrics()
@@ -160,14 +166,16 @@ class ProjectFile:
         self.ReadRestricted()
 
     #-----------------------------------------------------------------------------------------------
-    def ReadRoots( self):
+    def ReadPaths( self):
         """ Write the project and src code root info to the file """
-        self.projRoot = self.GetLine( 'ProjectRoot')
-        self.srcCodeRoot = self.GetList( 'SrcCodeRoot')
+        self.paths['ProjectRoot'] = self.GetLine( 'Path_ProjectRoot')
+        self.paths['SrcCodeRoot'] = self.GetList( 'Path_SrcCodeRoot')
+        self.paths['IncludeDirs'] = self.GetList( 'Path_IncludeDirs')
+        self.paths['PcLint'] = self.GetLine( 'Path_PcLint')
+        self.paths['U4c'] = self.GetLine( 'Path_U4c')
 
     #-----------------------------------------------------------------------------------------------
-    def ReadIncDefs( self):
-        self.includeDirs = self.GetList( 'IncludeDirs')
+    def ReadDefs( self):
         self.defines = self.GetList( 'Defines')
         self.undefines = self.GetList( 'Undefines')
 
@@ -232,8 +240,8 @@ class ProjectFile:
                 ffn = self.projFileName
             self.projectFile = open( ffn, 'w')
 
-            self.WriteRoots()
-            self.WriteIncDefs()
+            self.WritePaths()
+            self.WriteDefs()
             self.WriteExcludes()
             self.WriteFormats()
             self.WriteMetrics()
@@ -244,14 +252,16 @@ class ProjectFile:
             self.projectFile.close()
 
     #-----------------------------------------------------------------------------------------------
-    def WriteRoots( self):
+    def WritePaths( self):
         """ Write the project and src code root info to the file """
-        self.PutStr( 'ProjectRoot', self.projRoot)
-        self.PutList( 'SrcCodeRoot', self.srcCodeRoot)
+        self.PutLine( 'Path_ProjectRoot', self.paths['ProjectRoot'])
+        self.PutList( 'Path_SrcCodeRoot', self.paths['SrcCodeRoot'])
+        self.PutList( 'Path_IncludeDirs', self.paths['IncludeDirs'])
+        self.PutLine( 'Path_PcLint', self.paths['PcLint'])
+        self.PutLine( 'Path_U4c', self.paths['U4c'])
 
     #-----------------------------------------------------------------------------------------------
-    def WriteIncDefs( self):
-        self.PutList( 'IncludeDirs', self.includeDirs)
+    def WriteDefs( self):
         self.PutList( 'Defines', self.defines)
         self.PutList( 'Undefines', self.undefines)
 
@@ -350,7 +360,7 @@ class ProjectFile:
         self.projectFile.write( '\n[%s]\n' % header)
 
     #-----------------------------------------------------------------------------------------------
-    def PutStr( self, header, line):
+    def PutLine( self, header, line):
         """ Save a list of objects
         """
         self.PutHdr( header)
@@ -374,10 +384,13 @@ class ProjectFile:
             if type(itemValue) == list:
                 self.PutList( itemHdr, itemValue)
             else:
-                self.PutStr( itemHdr, itemValue)
+                self.PutLine( itemHdr, itemValue)
 
 
-pf = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ\G4.crp'
-pf1 = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ\G41.crp'
-pf0 = ProjectFile(pf)
-pf0.Save( pf1)
+if __name__ == '__main__':
+    pf = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ\G4.crp'
+    pf1 = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ\G41.crp'
+    pf2 = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ\G42.crp'
+    pf0 = ProjectFile(pf)
+    pf0.modified = True
+    pf0.Save(pf1)
