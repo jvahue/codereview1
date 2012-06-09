@@ -61,30 +61,6 @@ class ToolSetup:
         f.write( content)
         f.close()
 
-    #-----------------------------------------------------------------------------------------------
-    def GetSrcCodeFile( self, srcRoots, extensions, excludedFiles):
-        """ Walk all srcCode roots and files with extension in extensions unless
-            the file is in the excludeFileList
-
-            All .h files seen have their src directory returned in includeDirs
-        """
-        srcFiles = []
-        includeDirs = []
-        for root in srcRoots:
-            for dirPath, dirs, fileNames in os.walk( root):
-                for f in fileNames:
-                    ffn = os.path.join( dirPath, f)
-                    ext = os.path.splitext( f)[1]
-
-                    if ext == '.h' and dirPath not in includeDirs:
-                        includeDirs.append( dirPath)
-
-                    if os.path.isfile(ffn) and ext in extensions:
-                        if f not in excludedFiles:
-                            srcFiles.append( ffn)
-
-        return includeDirs, srcFiles
-
 #---------------------------------------------------------------------------------------------------
 class ToolManager:
     """
@@ -109,10 +85,10 @@ class ToolManager:
     #-----------------------------------------------------------------------------------------------
     def AnalyzeActive(self):
         """ is a review actively running
-        Note the sleep is to ensure if threads are getting active status they all give up control
+        Note the sleep is to ensure if threads are getting active status they give up control
         """
-        time.sleep( 0.001)
         status = False
+        time.sleep( 0.001)
         if self.job is not None:
             if self.job.poll() is None:
                 status = True
@@ -125,7 +101,9 @@ class ToolManager:
         """
         # Monitor the sub-process run this is 50% of this activity
         self.monitor = ThreadSignal( self.MonitorAnalysis, self)
+        self.analysisStep = ''
         self.analysisPercentComplete = 0.0
+        self.analysisMsg = 'Starting'
         self.monitor.Go()
 
     #-----------------------------------------------------------------------------------------------
@@ -146,6 +124,12 @@ class ToolManager:
         """
         raise NotImplemented
 
+    #-----------------------------------------------------------------------------------------------
+    def AnalysisStatusMsg(self, v):
+        """ Provide a message that can be displayed by the FE when the analysis is running
+        """
+        self.analysisPercentComplete = v
+        self.analysisMsg = '%s: %.1f' % (self.analysisStep, v)
 
 
 

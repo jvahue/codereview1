@@ -102,6 +102,7 @@ class ViolationDb( DB_SQLite):
                 details = detail0
                 detail0 = details.replace('  ',' ')
 
+        # debug hook
         if filename==r'application\User.c' and function=='User_ExtractIndex' and severity=='Warning'and violationId =='613':
             pass
 

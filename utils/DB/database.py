@@ -72,6 +72,7 @@ class DB:
     def Close( self):
         try:
             self.conn.close()
+            self.conn = None
             return 1
         except:
             if self.debug > eDbDebugOff:
@@ -252,7 +253,10 @@ class Query:
     def Reset( self, query, data):
         self.index = 0
         self.dataSet = data
-        self.length = len( self.dataSet)
+        if data is not None:
+            self.length = len( self.dataSet)
+        else:
+            self.length = 0
 
         if self.length > 0:
             self.data = self.dataSet[0]

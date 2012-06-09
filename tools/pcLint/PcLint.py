@@ -90,8 +90,9 @@ class PcLintSetup( ToolSetup):
         pcLintRoot = os.path.split( toolExe)[0]
 
         srcRoots = self.projFile.paths['SrcCodeRoot']
+        excludeDirs = self.projFile.exclude['Dirs']
         excludeFiles = self.projFile.exclude['Files_PcLint']
-        srcIncludeDirs, srcCodeFiles = self.GetSrcCodeFile( srcRoots, ['.c'], excludeFiles)
+        srcIncludeDirs, srcCodeFiles = self.projFile.GetSrcCodeFiles( srcRoots, ['.c'], excludeDirs, excludeFiles)
 
         # put all the PcLint Options together
         userOptions = self.projFile.options['PcLint']
@@ -185,19 +186,27 @@ class PcLint( ToolManager):
         # call this 50% of the task
         fileCount = 0
         self.analysisPercentComplete = 0
+        self.analysisStep = 'Analyzing Files'
         while self.AnalyzeActive():
             for line in self.job.stdout:
                 line = line.decode(encoding='windows-1252')
                 if line.find( '--- Module:') != -1:
                     fileCount += 1
                     v = ((fileCount/float(ps.fileCount))*100.0) / 2.0
-                    self.analysisPercentComplete = v
+                    self.AnalysisStatusMsg( v)
 
         # the other 50%
+        self.analysisStep = 'Format PcLint Output'
         self.CleanLint()
-        self.analysisPercentComplete = 52
+
+        self.analysisStep = 'Acquire DB Lock'
+        self.AnalysisStatusMsg( 52)
+        self.projFile.dbLock.acquire()
+
+        self.analysisStep = 'Load DB'
         self.LoadDb()
-        self.analysisPercentComplete = 100
+        self.AnalysisStatusMsg( 100)
+        self.projFile.dbLock.release()
 
     #-----------------------------------------------------------------------------------------------
     def CleanLint( self):
@@ -287,7 +296,7 @@ class PcLint( ToolManager):
         # open the source file
         finName = os.path.join( self.projToolRoot, eResultFile)
 
-        # open the PCLint DB
+        # open the Violation DB
         self.vDb = ViolationDb.ViolationDb( self.projRoot)
         self.vDb.DebugState( 1)
 
@@ -304,10 +313,13 @@ class PcLint( ToolManager):
             self.vDb.Insert( filename,func,severity,violationId,desc,details,line,'PcLint',self.updateTime)
             counter += 1
             pct = (float(counter)/items) * (100-54)
-            self.analysisPercentComplete = 54 + pct
+            self.AnalysisStatusMsg( 54 + pct)
 
         s = """
-            select count(*) from violations where lastReport != ?
+            select count(*)
+            from violations
+            where lastReport != ?
+            and detectedBy = 'PcLint'
             """
         self.vDb.Execute( s, (self.updateTime,))
         data = self.vDb.GetOne()
@@ -327,79 +339,6 @@ class PcLint( ToolManager):
         self.insertUpErr = self.vDb.insertUpErr
         self.insertDeleted = data[0]
 
-#========================================================================================================================
-import socket
-host = socket.gethostname()
-
-if host == 'Jeff-Laptop':
-    projRoot = r'D:\Knowlogic\zzzCodereviewPROJ'
-    srcCodeRoot = r'D:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP'
-    incStr = r"""
-    D:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\GhsInclude
-    D:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP\application
-    D:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP\drivers
-    D:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP\drivers\hwdef
-    D:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP\system
-    D:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP\test
-    """
-else:
-    projRoot = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ'
-    srcCodeRoot = r'C:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP'
-    incStr = r"""
-    C:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\GhsInclude
-    C:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP\application
-    C:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP\drivers
-    C:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP\drivers\hwdef
-    C:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP\system
-    C:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP\test
-    """
-
-options = {}
-options['sizeOptions'] = """
--si4 -sp4
-
-"""
-
-misc = """
-+macros  // make macros accept string 2*4096
-+fem // needed for things like __interrupt void TTMR_GPT0ISR
--D__m68k
-
-+libdir(D:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\GhsInclude)
--wlib(1) // turn off lib warnings
-
-
-"""
-
-def TestCreate():
-    # prepend the -i command for PcLint
-    includes = ['-i%s' % i.strip() for i in incStr.split('\n') if i.strip() ]
-    options['includes'] = '\n'.join(includes)
-
-    options['defines'] = misc
-
-    # get the srcFiles only take .c for testing
-    srcFiles = []
-    excludedFiles = ('ind_crt0.c','c_cover_ioPWES.c','Etm.c','TestPoints.c')
-    for dirPath, dirs, fileNames in os.walk( srcCodeRoot):
-        for f in fileNames:
-            ffn = os.path.join( dirPath, f)
-            if os.path.isfile(ffn) and os.path.splitext( f)[1] == '.c' and f.lower().find('table') == -1:
-                if f not in excludedFiles:
-                    srcFiles.append( ffn)
-
-    pcls = PcLintSetup( projRoot)
-    pcls.CreateProject( srcFiles, options)
-
-def TestRun():
-    start = DateTime.today()
-    tool = PcLint( projRoot)
-    tool.Analyze()
-    tool.AnalyzeStatus()
-    while tool.monitor.active:
-        time.sleep(0.5)
-        print( 'PcLint Complete: %.1f' % tool.analysisPercentComplete)
-    end = DateTime.today()
-    delta = end - start
-    print('PcLint Processing: %s' % delta)
+        # and close the DB we are done
+        self.vDb.Close()
 

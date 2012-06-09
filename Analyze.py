@@ -4,6 +4,7 @@ Code review Main
 #---------------------------------------------------------------------------------------------------
 # Python Modules
 #---------------------------------------------------------------------------------------------------
+import datetime
 import time
 
 #---------------------------------------------------------------------------------------------------
@@ -24,7 +25,7 @@ from tools.u4c import u4c
 #---------------------------------------------------------------------------------------------------
 # Data
 #---------------------------------------------------------------------------------------------------
-projFile = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ\G41.crp'
+projFile = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ\G4.crp'
 
 #---------------------------------------------------------------------------------------------------
 # Functions
@@ -34,6 +35,7 @@ projFile = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ\G41.crp'
 # Classes
 #---------------------------------------------------------------------------------------------------
 def Analyze( projFile, verbose = True):
+    start = datetime.datetime.today()
     pf = ProjFile.ProjectFile( projFile)
 
     pcs = PcLint.PcLintSetup( pf)
@@ -55,10 +57,13 @@ def Analyze( projFile, verbose = True):
 
         while pcl.monitor.active or u4co.monitor.active:
             time.sleep(0.5)
-            if verbose: print( 'PcLint: %.1f U4C: %.1f' % (pcl.analysisPercentComplete,u4co.analysisPercentComplete))
+            if verbose: print( 'PcLint: %s U4C: %s' % (pcl.analysisMsg,u4co.analysisMsg))
 
         for i in ('insertNew','insertUpdate','insertSelErr','insertInErr','insertUpErr','insertDeleted','updateTime',):
             if verbose: print('%s: %s' % (i, str(getattr(pcl, i))))
+
+        end = datetime.datetime.today()
+        print('Analysis Completed in %s' % (end - start))
     else:
         if verbose: print('U4C DB is currently open')
         status = False

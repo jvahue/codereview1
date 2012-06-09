@@ -49,6 +49,7 @@ The following is a list of project configuraiton items currently support :
 from collections import OrderedDict
 
 import inspect
+import threading
 import os
 
 #---------------------------------------------------------------------------------------------------
@@ -64,6 +65,38 @@ import os
 #---------------------------------------------------------------------------------------------------
 ePcLintPath = r'C:\lint\lint-nt.exe'
 eU4cPath = r'C:\Program Files\SciTools\bin\pc-win64\und.exe'
+
+ePathProject = 'ProjectRoot'
+ePathSrcRoot = 'SrcCodeRoot'
+ePathInclude = 'IncludeDirs'
+ePathPcLint  = 'PcLint'
+ePathU4c     = 'U4c'
+
+eExcludeDirs = 'Dirs'
+eExcludePcLint = 'Files_PcLint'
+eExcludeU4c    = 'Files_U4c'
+eExcludeFunc   = 'Functions'
+eExcludeKeywords = 'Keywords'
+
+eFmtFile_h = 'File_h'
+eFmtFile_c = 'File_c'
+eFmtFunction = 'FunctionHeader'
+
+eMetricMcCabe = 'complexityMcCabe'
+eMetricNesting = 'complexityNesting'
+eMetricFile = 'lengthFile'
+eMetricLine = 'lengthLine'
+eMetricFunc = 'lengthFunction'
+eMetricReturns = 'functionReturns'
+
+eNameFunc = 'function'
+eNameVar  = 'variable'
+eNameEnum = 'enum'
+eNameConst = 'constants'
+eNameDef = 'defines'
+
+eOptPcLint = 'PcLint'
+eRestrictedFunc = 'Function'
 
 #---------------------------------------------------------------------------------------------------
 # Functions
@@ -86,9 +119,12 @@ class ProjectFile:
             os.makedirs( self.paths['ProjectRoot'])
 
         if not os.path.isfile( ffn):
-            self.CreateProjectFile( ffn)
+            self.modified = True
+            self.Save()
         else:
             self.Open()
+
+        self.dbLock = threading.Lock()
 
     #-----------------------------------------------------------------------------------------------
     def Reset(self, ffn):
@@ -108,6 +144,7 @@ class ProjectFile:
         self.undefines = []
 
         self.exclude = OrderedDict()
+        self.exclude['Dirs'] = []
         self.exclude['Files_PcLint'] = []
         self.exclude['Files_U4c'] = []
         self.exclude['Functions'] = []
@@ -142,12 +179,32 @@ class ProjectFile:
         self.modified = False
 
     #-----------------------------------------------------------------------------------------------
-    def CreateProjectFile(self, ffn):
-        """ Create an default project file
-        """
-        self.modified = True
-        self.Save()
+    def GetSrcCodeFiles( self, srcRoots, extensions=['.h','.c'], excludeDirs=[], excludedFiles=[]):
+        """ Walk all srcCode roots and files with extension in extensions unless
+            the file is in the excludeFileList
 
+            All .h files seen have their src directory returned in includeDirs
+        """
+        srcFiles = []
+        includeDirs = []
+        for root in srcRoots:
+            for dirPath, dirs, fileNames in os.walk( root):
+                if dirPath not in excludeDirs:
+                    for f in fileNames:
+                        ffn = os.path.join( dirPath, f)
+                        ext = os.path.splitext( f)[1]
+
+                        if ext == '.h' and dirPath not in includeDirs:
+                            includeDirs.append( dirPath)
+
+                        if os.path.isfile(ffn) and ext in extensions:
+                            if f not in excludedFiles:
+                                srcFiles.append( ffn)
+
+        return includeDirs, srcFiles
+
+    #-----------------------------------------------------------------------------------------------
+    # Open / Read Operations
     #-----------------------------------------------------------------------------------------------
     def Open( self):
         """ Read in the contents of a project file
@@ -333,6 +390,8 @@ class ProjectFile:
                     data.append( line)
                     at += 1
                 else:
+                    # remove the last line as it is the prefix to the [ini] header
+                    data = data[:-1]
                     break
             data = '\n'.join(data)
 
@@ -389,7 +448,7 @@ class ProjectFile:
 
 if __name__ == '__main__':
     pf = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ\G4.crp'
-    pf1 = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ\G41.crp'
+    pf1 = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ\G41a.crp'
     pf2 = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ\G42.crp'
     pf0 = ProjectFile(pf)
     pf0.modified = True

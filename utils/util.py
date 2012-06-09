@@ -383,6 +383,9 @@ class ThreadSignal:
             #xcptData = sys.exc_info()
             #t,v,tb = xcptData
             f = open('xcpt_%d.dat' % id(self), 'w')
+            cName = '' if self.classRef is None else self.classRef.__class__.__name__
+            fName = self.job.__name__
+            f.write( 'Class: %s Func: %s\n' % ( cName, fName))
             f.write( 'UTC: %s Local: %s\n' % ( datetime.datetime.utcnow(), datetime.datetime.now()))
             traceback.print_exc( 20, f)
             f.close()
