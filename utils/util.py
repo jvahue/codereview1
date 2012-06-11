@@ -361,7 +361,8 @@ class Output:
 
 #----------------------------------------------------------------------------------------------
 class ThreadSignal:
-    """ Wrap a job and signal when it is done """
+    """ Wrap a job and signal when it is done
+    """
     def __init__( self, job=None, aClass = None):
         self.classRef = aClass
         if job:

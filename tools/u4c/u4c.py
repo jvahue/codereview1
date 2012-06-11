@@ -125,7 +125,7 @@ class U4cSetup( ToolSetup):
 
 #---------------------------------------------------------------------------------------------------
 class U4c( ToolManager):
-    def __init__(self, projFile):
+    def __init__(self, projFile, verbose=False):
         assert( isinstance( projFile, PF.ProjectFile))
         self.projFile = projFile
         self.projRoot = projFile.paths[PF.ePathProject]
@@ -136,12 +136,14 @@ class U4c( ToolManager):
 
         self.dbName = os.path.join( self.projToolRoot, eDbName)
 
+        self.verbose = verbose
+
     #-----------------------------------------------------------------------------------------------
     def IsReadyToAnalyze(self):
         """ we are about to create the db and put stuff in it. Make sure it is not locked by some
             with U4c GUI open
         """
-        # TODO: if U4C fixes the db open we cna use that to findout if some one has the Db open
+        # TODO: if U4C fixes the db open we can use that to find out if some one has the Db open
         #       right now we will try to delete it, and hopefully get an exception
         try:
             if os.path.isfile( self.dbName):
@@ -153,88 +155,89 @@ class U4c( ToolManager):
         return status
 
     #-----------------------------------------------------------------------------------------------
-    def Analyze(self):
-        """ Run a Review based on this tools capability.  This is generally a two step process:
-          1. Update the tool output
-          2. Generate Reivew data
+    def RunToolAsProcess(self):
+        """ This function runs a thrid party tool as a process to update any data generated
+            by the third party tool.
+
+            This function should be run as a thread by the caller becuase this will allow
+            the caller to report on the status of the process as it runs. (i.e., % complete)
         """
         # Run the PC-Lint bat file
         self.jobCmd = '%s' % os.path.join( self.projToolRoot, eBatchName)
-        ToolManager.Analyze(self)
+        ToolManager.RunToolAsProcess(self)
+
+        fileCount = 0
+        fileList = []
+        analyzing = False
+        self.SetStatusMsg( msg = 'Parsing Source Files')
+        while self.AnalyzeActive():
+            for line in self.job.stdout:
+                line = line.decode(encoding='windows-1252').strip()
+                if line == 'Analyze':
+                    analyzing = True
+                    fileCount = len( fileList)
+                elif line.find( 'File: ') != -1:
+                    line = line.replace('File: ', '').replace(' has been added.', '')
+                    fileList.append(line)
+                else:
+                    if line in fileList:
+                        fileList.remove( line)
+                        v = 100 - (len(fileList)/float(fileCount)*100.0)
+                        self.SetStatusMsg( v)
 
     #-----------------------------------------------------------------------------------------------
-    def MonitorAnalysis(self):
-        """ thread that does the monitoring and completes the analysis
-        """
-        try:
-            fileList = []
-            analyzing = False
-            fileCount = 0
-            self.analysisStep = 'Analyzing Files'
-            while self.AnalyzeActive():
-                for line in self.job.stdout:
-                    line = line.decode(encoding='windows-1252').strip()
-                    if line == 'Analyze':
-                        analyzing = True
-                        fileCount = len( fileList)
-                    elif line.find( 'File: ') != -1:
-                        line = line.replace('File: ', '').replace(' has been added.', '')
-                        fileList.append(line)
-                    else:
-                        if line in fileList:
-                            fileList.remove( line)
-                            v = 100 - (len(fileList)/float(fileCount)*100.0)
-                            self.AnalysisStatusMsg( v)
+    def LoadViolations(self):
+        """ This function is responsible for loading the violations into the violation DB
 
-            # now run the review of the u4c DB which is the other half of this process
-            # get the file list to check
-            srcRoots = self.projFile.paths[PF.ePathSrcRoot]
-            excludeDirs = self.projFile.exclude[PF.eExcludeDirs]
-            excludeFiles = self.projFile.exclude[PF.eExcludeU4c]
-            x, self.srcFiles = self.projFile.GetSrcCodeFiles(srcRoots, ['.h','.c'],
-                                                             excludeDirs, excludeFiles)
+            This function should be run as a thread by the caller because this will allow
+            the caller to report on the status of the DB Load as it runs. (i.e., % complete)
+        """
+        # now run the review of the u4c DB which is the other half of this process
+        # get the file list to check
+        srcRoots = self.projFile.paths[PF.ePathSrcRoot]
+        excludeDirs = self.projFile.exclude[PF.eExcludeDirs]
+        excludeFiles = self.projFile.exclude[PF.eExcludeU4c]
+        x, self.srcFiles = self.projFile.GetSrcCodeFiles(srcRoots, ['.h','.c'],
+                                                         excludeDirs, excludeFiles)
+        try:
+            self.updateTime = datetime.datetime.today()
 
             # open the Violation DB
             self.vDb = ViolationDb.ViolationDb( self.projRoot)
             self.vDb.DebugState( 1)
 
-            self.updateTime = datetime.datetime.today()
+            self.SetStatusMsg( msg = 'Open U4C DB')
             self.udb = udb.U4cDb( self.dbName)
-            # 12.5 % Each
-            self.analysisStep = 'Acquire DB Lock'
-            self.AnalysisStatusMsg( 0)
+
+            self.SetStatusMsg( msg = 'Acquire DB Lock')
             self.projFile.dbLock.acquire()
 
-            self.analysisStep = 'Metric'
-            self.AnalysisStatusMsg( 0)
             self.MetricChecks()
             #self.FormatChecks()
             #self.NamingChecks()
             #self.LanguageRestriction()
+
+            # we have to close the DB in the thread it was opened in
             self.vDb.Close()
 
-            self.AnalysisStatusMsg( 100)
+            self.SetStatusMsg( 100)
             self.projFile.dbLock.release()
         except:
             self.vDb.Close()
             raise
 
     #-----------------------------------------------------------------------------------------------
-    def MetricChecks( self):
-        self.LenghtChecks()
-
-    #-----------------------------------------------------------------------------------------------
-    def LenghtChecks(self):
-        """ This function verifies all of the length limits are met on a file by fial basis.
+    def MetricChecks(self):
+        """ This function verifies all of the length limits are met on a file by fail basis.
         """
+        self.SetStatusMsg( msg = 'Metric Checks')
         fileLimit = self.projFile.metrics[PF.eMetricFile]
-        funcLimit = self.projFile.metrics[PF.eMetricFunc]
 
         counter = 0
         totalFiles = len(self.srcFiles)
         for i in self.srcFiles:
             counter += 1
-            self.AnalysisStatusMsg( (counter/float(totalFiles)*100))
+            self.SetStatusMsg( (counter/float(totalFiles)*100))
 
             # compute the relative path from a srcRoot
             for sr in self.projFile.paths[PF.ePathSrcRoot]:
@@ -243,11 +246,8 @@ class U4c( ToolManager):
             rpfn = fn
             fn = os.path.split(rpfn)[1]
 
-            # Get file information
-            if os.path.splitext( fn) == '.c':
-                funcInfo = self.udb.GetFuncInfo( fn)
-            else:
-                funcInfo = {}
+            # Get file/function information
+            funcInfo = self.udb.GetFileFunctionInfo( fn)
             func = 'N/A'
 
             f = open(i, 'r')
@@ -267,8 +267,59 @@ class U4c( ToolManager):
                                 details, line, 'U4C', self.updateTime)
                 self.vDb.Commit()
 
-            # check the lenght of each line
+            # check the function metrics
+            self.CheckFunctionMetrics( rpfn, funcInfo)
+
+            # check the length of each line
             self.CheckLineLength( rpfn, funcInfo, lines)
+
+    #-----------------------------------------------------------------------------------------------
+    def CheckFunctionMetrics(self, rpfn, funcInfo):
+        """ Check all the function metrics
+        """
+        funcLimit = self.projFile.metrics[PF.eMetricFunc]
+        mccabeLimit = self.projFile.metrics[PF.eMetricMcCabe]
+        nestingLimit = self.projFile.metrics[PF.eMetricNesting]
+        returnLimit = self.projFile.metrics[PF.eMetricReturns]
+
+        severity = 'Error'
+        for func in funcInfo:
+            info = funcInfo[func]
+            u4cLine = info['start']
+
+            # this is the total count of lines in the function including comments
+            lines = info['metrics']['CountLine']
+            if lines > funcLimit:
+                violationId = 'Metric-Func'
+                desc = 'Function Length exceeded in %s' % (func)
+                details = 'Total Line Count %d exceeds %d' % (lines, funcLimit)
+                self.vDb.Insert( rpfn, func, severity, violationId, desc,
+                    details, u4cLine, 'U4C', self.updateTime)
+
+            mccabe = info['metrics']['Cyclomatic']
+            if mccabe > mccabeLimit:
+                violationId = 'Metric-Cyclomatic'
+                desc = 'Function Cyclomatic Complexity exceeded in %s' % (func)
+                details = 'Cyclomatic Complexity %d exceeds %d' % (mccabe, mccabeLimit)
+                self.vDb.Insert( rpfn, func, severity, violationId, desc,
+                    details, u4cLine, 'U4C', self.updateTime)
+
+            nesting = info['metrics']['MaxNesting']
+            if nesting > nestingLimit:
+                violationId = 'Metric-Nesting'
+                desc = 'Function Nesting exceeded in %s' % (func)
+                details = 'Nesting Levels %d exceeds %d' % (nesting, nestingLimit)
+                self.vDb.Insert( rpfn, func, severity, violationId, desc,
+                    details, u4cLine, 'U4C', self.updateTime)
+
+            returns = info['returns']
+            if returns > returnLimit:
+                violationId = 'Metric-Returns'
+                desc = 'Function Return Points exceeded in %s' % (func)
+                details = 'Return Points %d exceeds %d' % (returns, returnLimit)
+                self.vDb.Insert( rpfn, func, severity, violationId, desc,
+                    details, u4cLine, 'U4C', self.updateTime)
+
 
 
     #-----------------------------------------------------------------------------------------------
@@ -277,91 +328,45 @@ class U4c( ToolManager):
         fileSize = len(lines)
         fn = os.path.split(rpfn)[1]
         lineLimit = self.projFile.metrics[PF.eMetricLine]
-        func = 'N/A'
+
+        # get the filename and start/end line numbers
+        data = {}
+        for i in funcInfo:
+            start = funcInfo[i]['start']
+            end = funcInfo[i]['end']
+            data[(start,end)] = i
 
         for lineNumber in range(0,fileSize):
             txt = lines[lineNumber].rstrip()
             lineLen = len(txt)
+            u4cLine = lineNumber + 1 # U4C refs start at line 1
+
+            func = 'N/A'
+            for ds,de in data:
+                if u4cLine >= ds and u4cLine <= de:
+                    func = data[(ds,de)]
+
             if lineLen > lineLimit:
                 severity = 'Error'
                 violationId = 'Metric-Line'
                 desc = 'Line Length in %s line %d' % (fn, lineNumber)
                 details = '%3d: %s' % (lineLen, txt.strip())
                 self.vDb.Insert( rpfn, func, severity, violationId, desc,
-                                 details, lineNumber, 'U4C', self.updateTime)
+                                 details, u4cLine, 'U4C', self.updateTime)
         self.vDb.Commit()
 
     #-----------------------------------------------------------------------------------------------
     def FormatChecks(self):
-        pass
+        self.SetStatusMsg( msg = 'Format Checks')
 
     #-----------------------------------------------------------------------------------------------
     def NamingChecks(self):
-        pass
+        self.SetStatusMsg( msg = 'Naming Checks')
 
     #-----------------------------------------------------------------------------------------------
     def LanguageRestriction(self):
         # excluded functions
         # restricted functions
-        pass
+        self.SetStatusMsg( msg = 'Language Restrictions')
 
 
-#========================================================================================================================
-import socket
-host = socket.gethostname()
-
-if host == 'Jeff-Laptop':
-    projRoot = r'D:\Knowlogic\zzzCodereviewPROJ'
-    srcCodeRoot = r'D:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP'
-    incStr = r"""
-    D:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\GhsInclude
-    """
-else:
-    projRoot = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ'
-    srcCodeRoot = r'C:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\G4_CP'
-    incStr = r"""
-    C:\Knowlogic\clients\PWC\proj\FAST\dev\appl\G4E\GhsInclude
-    """
-
-# these function simulate front end processing
-def TestCreate():
-    options = {}
-    # include directories
-    includes = [i.strip() for i in incStr.split('\n') if i.strip() ]
-    options['C++Includes'] = includes
-
-    # macro definitions
-    options['C++Macros'] = []
-    options['C++Undefined'] = []
-
-    # get the srcFiles only take .c for testing
-    srcFiles = []
-    excludedFiles = ('ind_crt0.c', 'ind_startup.h', 'indsyscl.h',
-                     'c_cover_ioPWES.c',
-                     'Etm.h', 'Etm.c',
-                     'TestPoints.c')
-    for dirPath, dirs, fileNames in os.walk( srcCodeRoot):
-        for f in fileNames:
-            ffn = os.path.join( dirPath, f)
-            if os.path.isfile(ffn):
-                if f not in excludedFiles and os.path.splitext( f)[1] in ('.h', '.c'):
-                    srcFiles.append( ffn)
-
-    u4cs = U4cSetup( projRoot)
-    u4cs.CreateProject( srcFiles, options)
-
-
-def TestRun():
-    start = DateTime.today()
-    tool = U4c( projRoot)
-    tool.Analyze()
-    tool.AnalyzeStatus()
-    while tool.monitor.active:
-        time.sleep(0.5)
-        print( 'U4C Complete: %.1f' % tool.analysisPercentComplete)
-    end = DateTime.today()
-    delta = end - start
-    print('U4C Processing: %s' % delta)
-
-if __name__ == '__main__':
-    TestRun()

@@ -166,46 +166,49 @@ class PcLint( ToolManager):
         self.projToolRoot = os.path.join( self.projRoot, eToolRoot)
 
     #-----------------------------------------------------------------------------------------------
-    def Analyze(self):
-        """ Run a Review based on this tools capability.  This is generally a two step process:
-          1. Update the tool output
-          2. Generate Reivew data
-        """
-        # Run the PC-Lint bat file
-        self.jobCmd = '%s' % os.path.join( self.projToolRoot, eBatchName)
-        ToolManager.Analyze(self)
+    def RunToolAsProcess(self):
+        """ This function runs a thrid party tool as a process to update any data generated
+            by the third party tool.
 
-    #-----------------------------------------------------------------------------------------------
-    def MonitorAnalysis(self):
-        """ Monitor the Analysis and provide status about completion percentage
+            This function should be run as a thread by the caller because this will allow
+            the caller to report on the status of the process as it runs. (i.e., % complete)
         """
         # How many files are we analyzing
         ps = PcLintSetup( self.projFile)
         ps.FileCount()
 
+        # Run the PC-Lint bat file
+        self.jobCmd = '%s' % os.path.join( self.projToolRoot, eBatchName)
+        ToolManager.RunToolAsProcess(self)
+
         # call this 50% of the task
         fileCount = 0
-        self.analysisPercentComplete = 0
-        self.analysisStep = 'Analyzing Files'
+        self.SetStatusMsg( msg = 'Analyzing Files')
         while self.AnalyzeActive():
             for line in self.job.stdout:
                 line = line.decode(encoding='windows-1252')
                 if line.find( '--- Module:') != -1:
                     fileCount += 1
-                    v = ((fileCount/float(ps.fileCount))*100.0) / 2.0
-                    self.AnalysisStatusMsg( v)
+                    v = ((fileCount/float(ps.fileCount))*100.0)
+                    self.SetStatusMsg( v)
 
-        # the other 50%
-        self.analysisStep = 'Format PcLint Output'
+    #-----------------------------------------------------------------------------------------------
+    def LoadViolations(self):
+        """ This function is responsible for loading the violations into the violation DB
+
+            This function should be run as a thread by the caller because this will allow
+            the caller to report on the status of the DB Load as it runs. (i.e., % complete)
+        """
+        self.updateTime = datetime.datetime.today()
+
         self.CleanLint()
 
-        self.analysisStep = 'Acquire DB Lock'
-        self.AnalysisStatusMsg( 52)
+        self.SetStatusMsg( msg = 'Wait for DB Access')
         self.projFile.dbLock.acquire()
 
-        self.analysisStep = 'Load DB'
         self.LoadDb()
-        self.AnalysisStatusMsg( 100)
+
+        self.SetStatusMsg( 100)
         self.projFile.dbLock.release()
 
     #-----------------------------------------------------------------------------------------------
@@ -215,9 +218,18 @@ class PcLint( ToolManager):
             repeat open items
             repeats closed items
         """
-        eFieldCount = 6
-        # open the source file
+        self.SetStatusMsg( msg = 'Format PC-Lint Output')
+
         finName = os.path.join( self.projToolRoot, eResultFile)
+        eFieldCount = 6
+
+        # see how many lines we need to process
+        fin = open( finName, 'r', newline='')
+        lines = fin.readlines()
+        totalLines = len(lines)
+        fin.close()
+
+        # open the source file
         fin = open( finName, 'r', newline='')
         csvIn = csv.reader( fin)
 
@@ -232,6 +244,9 @@ class PcLint( ToolManager):
         cFileName = ''
         for line in csvIn:
             lineNum += 1
+            pct = (float(lineNum)/totalLines) * 100.0
+            self.SetStatusMsg( pct)
+            time.sleep(0.001)
             if len( line) > 0:
                 if line[0].find('---') == -1:
                     if line[0].find('<*>') == -1:
@@ -293,6 +308,8 @@ class PcLint( ToolManager):
     def LoadDb( self):
         """ We should now have a clean PcLint output to load into the DB
         """
+        self.SetStatusMsg( msg = 'Load DB')
+
         # open the source file
         finName = os.path.join( self.projToolRoot, eResultFile)
 
@@ -303,17 +320,15 @@ class PcLint( ToolManager):
         # move to the DB
         lintLoader = LintLoader( finName, self.vDb)
         lintLoader.RemoveDuplicate()
-        self.analysisPercentComplete = 54
-
-        self.updateTime = datetime.datetime.today()
+        self.percentComplete = 54
 
         items = len(lintLoader.reducedData)
         counter = 0
         for filename,func,line,severity,violationId,desc,details in lintLoader.reducedData:
             self.vDb.Insert( filename,func,severity,violationId,desc,details,line,'PcLint',self.updateTime)
             counter += 1
-            pct = (float(counter)/items) * (100-54)
-            self.AnalysisStatusMsg( 54 + pct)
+            pct = (float(counter)/items) * 99.0
+            self.SetStatusMsg( pct)
 
         s = """
             select count(*)
@@ -323,13 +338,16 @@ class PcLint( ToolManager):
             """
         self.vDb.Execute( s, (self.updateTime,))
         data = self.vDb.GetOne()
+        self.SetStatusMsg( 99.25)
 
         # remove the old PcLint violations
         s = "delete from violations where lastReport != ? and detectedBy = 'PcLint'"
         self.vDb.Execute( s, (self.updateTime,))
+        self.SetStatusMsg( 99.5)
 
         # commit all the changes
         self.vDb.Commit()
+        self.SetStatusMsg( 99.75)
 
         # print stats
         self.insertNew = self.vDb.insertNew

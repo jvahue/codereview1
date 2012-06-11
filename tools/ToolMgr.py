@@ -71,14 +71,14 @@ class ToolManager:
         self.projRoot = projRoot
         self.jobCmd = ''
         self.job = None
+        self.SetStatusMsg( msg = 'Starting')
 
     #-----------------------------------------------------------------------------------------------
-    def Analyze(self):
+    def RunToolAsProcess(self):
         """ Run a Review based on this tools capability.  This is generally a two step process:
           1. Update the tool output
           2. Generate Reivew data
         """
-        self.analysisPercentComplete = 0
         self.job = subprocess.Popen( self.jobCmd, bufsize=-1, cwd=self.projToolRoot,
                                      stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
@@ -94,17 +94,6 @@ class ToolManager:
                 status = True
 
         return status
-
-    #-----------------------------------------------------------------------------------------------
-    def AnalyzeStatus(self):
-        """ Run the sub-class analysis monitor in a thread
-        """
-        # Monitor the sub-process run this is 50% of this activity
-        self.monitor = ThreadSignal( self.MonitorAnalysis, self)
-        self.analysisStep = ''
-        self.analysisPercentComplete = 0.0
-        self.analysisMsg = 'Starting'
-        self.monitor.Go()
 
     #-----------------------------------------------------------------------------------------------
     def PollReview(self):
@@ -125,11 +114,16 @@ class ToolManager:
         raise NotImplemented
 
     #-----------------------------------------------------------------------------------------------
-    def AnalysisStatusMsg(self, v):
+    def SetStatusMsg(self, v=0, msg=''):
         """ Provide a message that can be displayed by the FE when the analysis is running
         """
-        self.analysisPercentComplete = v
-        self.analysisMsg = '%s: %.1f' % (self.analysisStep, v)
+        time.sleep( 0.001)
+        if msg:
+            self.analysisStep = msg
+
+        self.percentComplete = v
+
+        self.statusMsg = '%s: %.1f' % (self.analysisStep, v)
 
 
 

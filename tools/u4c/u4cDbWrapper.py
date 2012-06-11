@@ -5,6 +5,8 @@ This class wraps the Understand DB to make life easier for our analysis
 #---------------------------------------------------------------------------------------------------
 # Python Modules
 #---------------------------------------------------------------------------------------------------
+from collections import OrderedDict
+import re
 
 #---------------------------------------------------------------------------------------------------
 # Third Party Modules
@@ -35,7 +37,7 @@ class U4cDb:
         try:
             # open the named DB
             self.db = understand.open( name)
-
+            self.status = 'DB Open'
             self.isOpen = True
         except understand.DBAlreadyOpen:
             self.status = 'DB Already Open'
@@ -57,57 +59,70 @@ class U4cDb:
             self.isOpen = False
 
     #-----------------------------------------------------------------------------------------------
-    def GetFuncInfo(self):
+    def GetFileFunctionInfo(self, filename):
+        """ return a list of functions in the file
+        """
+        functions = []
+        fileEnt = self.db.lookup(re.compile(filename), 'File')
+
+        if len(fileEnt) > 1:
+            # find the exact match
+            fileEnt = [i for i in fileEnt if i.name() == filename]
+
+        functions = fileEnt[0].ents( 'Define', 'Function')
+
+        lxr = fileEnt[0].lexer()
+        returnsAt = self.GetReturnsInFile( lxr)
+
+        funcInfo = {}
+        for f in functions:
+            funcInfo[f.name()] = self.GetFuncInfo( f, returnsAt)
+
+        return funcInfo
+
+    #-----------------------------------------------------------------------------------------------
+    def GetReturnsInFile(self, lxr):
+        """ return a list of line numbers where a return statement is performed
+        """
+        returnsAt = []
+        for l in lxr:
+            if l.text() == 'return':
+                returnsAt.append( l.line_begin())
+
+        return returnsAt
+
+    #-----------------------------------------------------------------------------------------------
+    def GetFuncInfo(self, function, returnsAt):
         """ This function returns the following data about all of the functions within a file
+            Function Header
+            Content
+            StartLine, EndLine
+            Metrics
         """
-        pass
+        info = OrderedDict()
 
-    #-----------------------------------------------------------------------------------------------
-    def GetFuncHeaders( self):
-        """
-        """
-        funcs = self.db.ents('function')
-        funcHeader = collections.OrderedDict()
-        others = collections.OrderedDict()
+        info['header'] = function.comments('before', True)
+        info['content'] = function.contents()
 
-        sf = funcs[:]
-        sf.sort(key=lambda x:x.name())
+        metrics = function.metric( function.metrics())
 
-        for func in sf:
-            comment = g4.GetFuncHeader(func)
-            if comment is not None:
-                funcHeader[func.name()] = comment
-                print( '-'*100)
-                print( func.name())
-                print( '-'*100)
-                print( comment)
-            else :
-                others[func.name()] = comment
+        # find the start, end line of the functions
+        defRefs = function.refs()
+        defRef = [i for i in defRefs if i.kindname() == 'Define']
+        if len(defRef) == 1:
+            info['start'] = defRef[0].line()
+        else:
+            lines = [i.line() for i in defRef]
+            lines.sort()
+            info['start'] = lines[0]
+        info['end'] = info['start'] + (metrics['CountLine'] - 1)
 
-        print( '-'*100)
-        for i in others:
-            print( '%4s: %s' % (others[i], i))
+        info['metrics'] = metrics
 
-        return funcHeader, others
+        info['returns'] = 0
+        for l in returnsAt:
+            if l >= info['start'] and l <= info['end']:
+                info['returns'] += 1
 
-    #-----------------------------------------------------------------------------------------------
-    def GetFile( fn):
-        """
-        """
-        files = db.ents('files')
-        for i in files:
-            if i.name().lower() == fn.lower(): # configurable based on host os
-                return i
-        return None
-
-    #-----------------------------------------------------------------------------------------------
-    def GetFileLexemes( fn):
-        """
-        """
-        lexItems = []
-        fo = GetFile( fn)
-        if fo:
-            fol = fo.lexer()
-            lexItems = [i for i in fol]
-        return lexItems
+        return info
 

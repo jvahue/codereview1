@@ -16,6 +16,8 @@ import time
 #---------------------------------------------------------------------------------------------------
 import ProjFile
 
+from utils.util import ThreadSignal
+
 from utils.DB.database import Query
 from utils.DB.sqlLite.database import DB_SQLite
 
@@ -34,8 +36,10 @@ projFile = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ\G4.crp'
 #---------------------------------------------------------------------------------------------------
 # Classes
 #---------------------------------------------------------------------------------------------------
-def Analyze( projFile, verbose = True):
+def Analyze( projFile, fullAnalysis = True, verbose = True):
+    status = True
     start = datetime.datetime.today()
+
     pf = ProjFile.ProjectFile( projFile)
 
     pcs = PcLint.PcLintSetup( pf)
@@ -47,28 +51,37 @@ def Analyze( projFile, verbose = True):
     pcl = PcLint.PcLint( pf)
     u4co = u4c.U4c( pf)
 
-    status = True
-    if u4co.IsReadyToAnalyze():
-        pcl.Analyze()
-        u4co.Analyze()
+    if fullAnalysis:
+        if u4co.IsReadyToAnalyze():
+            u4cThread = ThreadSignal( u4co.RunToolAsProcess, u4co)
+            pclThread = ThreadSignal( pcl.RunToolAsProcess, pcl)
 
-        pcl.AnalyzeStatus()
-        u4co.AnalyzeStatus()
+            u4cThread.Go()
+            pclThread.Go()
+            while u4cThread.active or pclThread.active:
+                time.sleep(0.5)
+                if verbose: print('PCL: %s - U4C: %s' % (pcl.statusMsg, u4co.statusMsg))
+        else:
+            if verbose: print('U4C DB is currently open')
+            status = False
 
-        while pcl.monitor.active or u4co.monitor.active:
+    if status:
+        u4cThread = ThreadSignal( u4co.LoadViolations, u4co)
+        pclThread = ThreadSignal( pcl.LoadViolations, pcl)
+
+        u4cThread.Go()
+        pclThread.Go()
+        while u4cThread.active or pclThread.active:
             time.sleep(0.5)
-            if verbose: print( 'PcLint: %s U4C: %s' % (pcl.analysisMsg,u4co.analysisMsg))
+            if verbose: print('PCL: %s - U4C: %s' % (pcl.statusMsg, u4co.statusMsg))
 
         for i in ('insertNew','insertUpdate','insertSelErr','insertInErr','insertUpErr','insertDeleted','updateTime',):
             if verbose: print('%s: %s' % (i, str(getattr(pcl, i))))
 
         end = datetime.datetime.today()
         print('Analysis Completed in %s' % (end - start))
-    else:
-        if verbose: print('U4C DB is currently open')
-        status = False
 
     return status
 
 if __name__ == '__main__':
-    Analyze(projFile)
+    Analyze(projFile)#, False)
