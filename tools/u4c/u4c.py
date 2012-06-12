@@ -9,6 +9,7 @@ Design Assumptions:
 import csv
 import datetime
 import os
+import re
 import sys
 import time
 
@@ -189,6 +190,7 @@ class U4c( ToolManager):
                         self.SetStatusMsg( v)
 
         self.LoadViolations()
+        self.SetStatusMsg( 100, msg = 'U4C Processing Complete')
 
     #-----------------------------------------------------------------------------------------------
     def LoadViolations(self):
@@ -218,9 +220,9 @@ class U4c( ToolManager):
             self.SetStatusMsg( msg = 'Acquire DB Lock')
             self.projFile.dbLock.acquire()
 
-            #self.MetricChecks()
-            #self.FormatChecks()
-            #self.NamingChecks()
+            self.MetricChecks()
+            self.FormatChecks()
+            self.NamingChecks()
             self.LanguageRestriction()
 
             # we have to close the DB in the thread it was opened in
@@ -322,7 +324,7 @@ class U4c( ToolManager):
                 self.vDb.Insert( rpfn, func, severity, violationId, desc,
                     details, u4cLine, 'U4C', self.updateTime)
 
-
+        self.vDb.Commit()
 
     #-----------------------------------------------------------------------------------------------
     def CheckLineLength(self, rpfn, funcInfo, lines):
@@ -355,6 +357,7 @@ class U4c( ToolManager):
                 details = '%3d: %s' % (lineLen, txt.strip())
                 self.vDb.Insert( rpfn, func, severity, violationId, desc,
                                  details, u4cLine, 'U4C', self.updateTime)
+
         self.vDb.Commit()
 
     #-----------------------------------------------------------------------------------------------
@@ -363,7 +366,54 @@ class U4c( ToolManager):
 
     #-----------------------------------------------------------------------------------------------
     def NamingChecks(self):
+        x = 0
         self.SetStatusMsg( msg = 'Naming Checks')
+
+        varRe = re.compile( self.projFile.naming[PF.eNameVar])
+        funcRe = re.compile( self.projFile.naming[PF.eNameFunc])
+        defRe = re.compile( self.projFile.naming[PF.eNameDef])
+        enumRe = re.compile( self.projFile.naming[PF.eNameEnum])
+
+        # Check all the vairable names
+        varItems = self.udb.db.lookup( re.compile(r'.*'), 'Object')
+        totalItems = len(varItems)
+        self.SetStatusMsg(msg = 'Check Var Naming')
+        counter = 0
+        for item in varItems:
+            counter += 1
+            pct = (float(counter)/totalItems) * 100
+            self.SetStatusMsg( pct)
+
+            match = varRe.match( item.name())
+            if not match:
+                severity = 'Error'
+                violationId = 'Naming-Var'
+                parent = item.parent()
+                func = 'N/A'
+                if parent:
+                    if parent.kindname().find( 'Function') != -1:
+                        func = parent.name()
+                else:
+                    x += 1
+                defFile, defLine = self.udb.RefAt( item)
+                if defFile == '':
+                    # undefined item
+                    violationId = 'Undefined Item'
+                    defFile, defLine = self.udb.RefAt( item, 'Declare')
+                    if defFile != '':
+                        fpfn = defFile.longname()
+                        rpfn, fn = self.projFile.RelativePathName(fpfn)
+                        desc = 'Undefined Item: %s declared at line %d' % (item.name(),
+                                                                           defLine)
+                        details = self.ReadLineN( fpfn, defLine)
+                else:
+                    fpfn = defFile.longname()
+                    rpfn, fn = self.projFile.RelativePathName(fpfn)
+                    desc = 'Variable naming error: %s defined at line %d' % (item.name(),
+                                                                            defLine)
+                    details = self.ReadLineN( fpfn, defLine)
+                    self.vDb.Insert( rpfn, func, severity, violationId, desc,
+                                     details, defLine, 'U4C', self.updateTime)
 
     #-----------------------------------------------------------------------------------------------
     def LanguageRestriction(self):
@@ -372,38 +422,40 @@ class U4c( ToolManager):
         self.SetStatusMsg( msg = 'Language Restrictions')
 
         print ('Thread A', os.getpid())
+
         xFuncs = self.projFile.exclude[PF.eExcludeFunc]
         xKeyword  = self.projFile.exclude[PF.eExcludeKeywords]
         rFunc = self.projFile.restricted[PF.eRestrictedFunc]
-        totalItems = len(xFuncs + xKeyword + rFunc)
-        counter = 1
 
-        # identify references to excluded functions
+        totalItems = len(xFuncs + xKeyword + rFunc) + 1
+        counter = 0
+
+        # excluded functions
         for item in xFuncs:
-            print(item)
             counter += 1
             pct = (float(counter)/totalItems) * 100.0
-
             self.SetStatusMsg( pct)
-            itemRefs = self.udb.LookupItem( item, 'Function')
-            self.ReportExcluded( item, itemRefs, 'Error', 'Excluded-Func', 'Excluded function %s at line %d')
+            itemRefs = self.udb.GetItemRefs( item, 'Function')
+            self.ReportExcluded( item, itemRefs, 'Error', 'Excluded-Func',
+                                 'Excluded function %s at line %d')
 
-        # excluded key words
+        # excluded keywords
         for item in xKeyword:
             counter += 1
             pct = (float(counter)/totalItems) * 100.0
-
             self.SetStatusMsg( pct)
-            itemRefs = self.udb.LookupItem( item)
-            self.ReportExcluded( item, itemRefs, 'Error', 'Excluded-Keyword', 'Excluded keyword %s at line %d')
+            itemRefs = self.udb.GetItemRefs( item)
+            self.ReportExcluded( item, itemRefs, 'Error', 'Excluded-Keyword',
+                                 'Excluded keyword %s at line %d')
 
         # restricted functions
         for item in rFunc:
             counter += 1
             pct = (float(counter)/totalItems) * 100.0
             self.SetStatusMsg( pct)
-            itemRefs = self.udb.LookupItem( item, 'Function')
-            self.ReportExcluded( item, itemRefs, 'Warning', 'Restricted-Func', 'Restricted function %s at line %d')
+            itemRefs = self.udb.GetItemRefs( item, 'Function')
+            self.ReportExcluded( item, itemRefs, 'Warning', 'Restricted-Func',
+                                 'Restricted function %s at line %d')
 
     #-----------------------------------------------------------------------------------------------
     def ReportExcluded( self, item, itemRefs, severity, violationId, descFmt):
@@ -411,15 +463,17 @@ class U4c( ToolManager):
             functions
         """
         for ref in itemRefs:
-            print( item, ref.file(), ref.line())
             u4cLine = ref.line()
-            refFunc, info = self.udb.InFunction( ref.file().longname(), u4cLine)
-            fpfn = info.get('fullPath', '')
+            fpfn = ref.file().longname()
+            refFunc, info = self.udb.InFunction( fpfn, u4cLine)
             rpfn, title = self.projFile.RelativePathName( fpfn)
             desc = descFmt % (item, u4cLine)
             details = self.ReadLineN( fpfn, u4cLine).strip()
             self.vDb.Insert( rpfn, refFunc, severity, violationId, desc,
                              details, u4cLine, 'U4C', self.updateTime)
+
+        if itemRefs:
+            self.vDb.Commit()
 
     #-----------------------------------------------------------------------------------------------
     def ReadLineN( self, filename, lineNumber):

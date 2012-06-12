@@ -63,7 +63,7 @@ class U4cDb:
         self.fileFuncInfo = {}
 
     #-----------------------------------------------------------------------------------------------
-    def LookupItem(self, itemName, kindIs = None):
+    def GetItemRefs(self, itemName, kindIs = None):
         """ Search the udb for an object named itemname
             return all references to it
         """
@@ -134,18 +134,13 @@ class U4cDb:
         metrics = function.metric( function.metrics())
 
         # find the start, end line of the functions
-        defRefs = function.refs()
-        defRef = [i for i in defRefs if i.kindname() == 'Define']
-        if len(defRef) == 1:
-            info['start'] = defRef[0].line()
-        else:
-            lines = [i.line() for i in defRef]
-            lines.sort()
-            info['start'] = lines[0]
+        defFile, defLine = self.RefAt( function)
+        info['start'] = defLine
         info['end'] = info['start'] + (metrics['CountLine'] - 1)
 
         info['metrics'] = metrics
 
+        # count how many returns there are in the functions
         info['returns'] = 0
         for l in returnsAt:
             if l >= info['start'] and l <= info['end']:
@@ -188,12 +183,38 @@ class U4cDb:
 
         return theFunc, info
 
+    #-----------------------------------------------------------------------------------------------
+    def RefAt(self, item, refType = 'Define'):
+        """ find out where an item (ent) is declared
+            returns:
+              file: file where declared
+              line: the line number of the declaration
+        """
+        defRefs = item.refs()
+        defRef = [i for i in defRefs if i.kindname() == refType]
+
+        if defRef == []:
+            defFile = ''
+            defLine = ''
+        elif len(defRef) == 1:
+            defFile = defRef[0].file()
+            defLine = defRef[0].line()
+        else:
+            # find the first line in the define
+            defLine = 1e6
+            for i in defRef:
+                if i.line() < defLine:
+                    defFile = i.file()
+                    defLine = i.line()
+
+        return defFile, defLine
 
 #===================================================================================================
 if __name__ == '__main__':
     dbName = r'D:\Knowlogic\Tools\CR-Projs\zzzCodereviewPROJ\tool\u4c\db.udb'
     db = U4cDb(dbName)
-    a,b = db.InFunction( '', 47)
-    itemRefs = db.LookupItem( 'va_list')
-    for ref in itemRefs:
-        print( ref.kindname(), ref.file(), ref.line(), ref.scope(), ref.ent().name())
+
+
+
+
+

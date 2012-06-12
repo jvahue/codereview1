@@ -60,7 +60,7 @@ def Analyze( projFile, fullAnalysis = True, verbose = True):
             pclThread = ThreadSignal( pcl.RunToolAsProcess, pcl)
 
             u4cThread.Go()
-            #pclThread.Go()
+            pclThread.Go()
             while u4cThread.active or pclThread.active:
                 time.sleep(1)
                 if verbose: print('B: %s - A: %s' % (pcl.statusMsg, u4co.statusMsg))

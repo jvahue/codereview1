@@ -99,6 +99,11 @@ class PcLintSetup( ToolSetup):
         undefines = '\n'.join(['-u%s' % i for i in self.projFile.undefines])
         includeDirs = self.projFile.paths['IncludeDirs']
 
+        # if any srcIncludeDirs are in the includeDirs remove them
+        for i in includeDirs:
+            if i in srcIncludeDirs:
+                srcIncludeDirs.remove(i)
+
         # STD PC Lint Options
         options  = '%s\n' % (ePcLintStdOptions)
 
