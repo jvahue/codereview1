@@ -6,7 +6,9 @@ This class wraps the Understand DB to make life easier for our analysis
 # Python Modules
 #---------------------------------------------------------------------------------------------------
 from collections import OrderedDict
+
 import re
+import os
 
 #---------------------------------------------------------------------------------------------------
 # Third Party Modules
@@ -58,31 +60,56 @@ class U4cDb:
             self.status = 'DB API License Error'
             self.isOpen = False
 
+        self.fileFuncInfo = {}
+
+    #-----------------------------------------------------------------------------------------------
+    def LookupItem(self, itemName, kindIs = None):
+        """ Search the udb for an object named itemname
+            return all references to it
+        """
+        if kindIs:
+            item = self.db.lookup( re.compile(itemName), kindIs)
+        else:
+            item = self.db.lookup( re.compile(itemName))
+
+        if len(item) > 1:
+            item = [i for i in item if i.longname() == itemName]
+
+        itemRefs = []
+        if item and item[0].longname() == itemName:
+            itemRefs = item[0].refs()
+
+        return itemRefs
+
     #-----------------------------------------------------------------------------------------------
     def GetFileFunctionInfo(self, filename):
-        """ return a list of functions in the file
+        """ return the function info for all function in a file
         """
-        functions = []
-        fileEnt = self.db.lookup(re.compile(filename), 'File')
-
-        if len(fileEnt) > 1:
-            # find the exact match
-            fileEnt = [i for i in fileEnt if i.name() == filename]
-
-        functions = fileEnt[0].ents( 'Define', 'Function')
-
-        lxr = fileEnt[0].lexer()
-        returnsAt = self.GetReturnsInFile( lxr)
-
         funcInfo = {}
-        for f in functions:
-            funcInfo[f.name()] = self.GetFuncInfo( f, returnsAt)
+
+        if filename not in self.fileFuncInfo:
+            fileEnt = self.GetFileEnt( filename)
+
+            if fileEnt is not None:
+                functions = fileEnt.ents( 'Define', 'Function')
+
+                lxr = fileEnt.lexer()
+                returnsAt = self.GetReturnsInFile( lxr)
+
+                for f in functions:
+                    funcInfo[f.name()] = self.GetFuncInfo( f, returnsAt)
+                    funcInfo[f.name()]['fullPath'] = self.GetFileEnt( filename).longname()
+
+                self.fileFuncInfo[filename] = funcInfo
+        else:
+            funcInfo = self.fileFuncInfo[filename]
 
         return funcInfo
 
     #-----------------------------------------------------------------------------------------------
     def GetReturnsInFile(self, lxr):
-        """ return a list of line numbers where a return statement is performed
+        """ return a list of line numbers where a return statement is performed in a function
+        - the lxr is the function of interest
         """
         returnsAt = []
         for l in lxr:
@@ -126,3 +153,47 @@ class U4cDb:
 
         return info
 
+    #-----------------------------------------------------------------------------------------------
+    def GetFileEnt(self, filename):
+        """ return the full path file name
+        """
+        title = os.path.split(filename)[1]
+
+        fileEnt = self.db.lookup(re.compile(title, re.I), 'File')
+
+        if len(fileEnt) > 1:
+            # find the exact match
+            fileEnt = [i for i in fileEnt if i.name() == title]
+
+        return fileEnt[0] if fileEnt else None
+
+    #-----------------------------------------------------------------------------------------------
+    def InFunction(self, filename, line):
+        """ This funtion returns the function that contains a line number in a filename
+        """
+        if filename not in self.fileFuncInfo:
+            funcInfo = self.GetFileFunctionInfo( filename)
+            if funcInfo:
+                self.fileFuncInfo[filename] = funcInfo
+        else:
+            funcInfo = self.fileFuncInfo[filename]
+
+        theFunc = 'N/A'
+        info = {}
+        for func in funcInfo:
+            info = funcInfo[func]
+            if info['start'] <= line <= info['end']:
+                theFunc = func
+                break
+
+        return theFunc, info
+
+
+#===================================================================================================
+if __name__ == '__main__':
+    dbName = r'D:\Knowlogic\Tools\CR-Projs\zzzCodereviewPROJ\tool\u4c\db.udb'
+    db = U4cDb(dbName)
+    a,b = db.InFunction( '', 47)
+    itemRefs = db.LookupItem( 'va_list')
+    for ref in itemRefs:
+        print( ref.kindname(), ref.file(), ref.line(), ref.scope(), ref.ent().name())

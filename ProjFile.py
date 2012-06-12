@@ -96,7 +96,7 @@ eNameConst = 'constants'
 eNameDef = 'defines'
 
 eOptPcLint = 'PcLint'
-eRestrictedFunc = 'Function'
+eRestrictedFunc = 'Functions'
 
 #---------------------------------------------------------------------------------------------------
 # Functions
@@ -134,47 +134,47 @@ class ProjectFile:
         self.projName = os.path.splitext(os.path.split(ffn)[1])[0]
 
         self.paths = OrderedDict()
-        self.paths['ProjectRoot'] = os.path.split(ffn)[0]
-        self.paths['SrcCodeRoot'] = [] # a list of roots
-        self.paths['IncludeDirs'] = [] # a list of include dirs
-        self.paths['PcLint'] = ePcLintPath  # path to PcLint executable
-        self.paths['U4c'] = eU4cPath        # path to U4c executable
+        self.paths[ePathProject] = os.path.split(ffn)[0]
+        self.paths[ePathSrcRoot] = [] # a list of roots
+        self.paths[ePathInclude] = [] # a list of include dirs
+        self.paths[ePathPcLint] = ePcLintPath  # path to PcLint executable
+        self.paths[ePathU4c] = eU4cPath        # path to U4c executable
 
         self.defines = []     # a list of defines
         self.undefines = []
 
         self.exclude = OrderedDict()
-        self.exclude['Dirs'] = []
-        self.exclude['Files_PcLint'] = []
-        self.exclude['Files_U4c'] = []
-        self.exclude['Functions'] = []
-        self.exclude['Keywords'] = []
+        self.exclude[eExcludeDirs] = []
+        self.exclude[eExcludePcLint] = []
+        self.exclude[eExcludeU4c] = []
+        self.exclude[eExcludeFunc] = []
+        self.exclude[eExcludeKeywords] = []
 
         self.formats = OrderedDict()
-        self.formats['File_h'] = ''
-        self.formats['File_c'] = ''
-        self.formats['FunctionHeader'] = ''
+        self.formats[eFmtFile_h] = ''
+        self.formats[eFmtFile_c] = ''
+        self.formats[eFmtFunction] = ''
 
         self.metrics = OrderedDict()
-        self.metrics['complexityMcCabe'] = 10
-        self.metrics['complexityNesting'] = 5
-        self.metrics['lengthFile'] = 3000
-        self.metrics['lengthFunction'] = 200
-        self.metrics['lengthLine'] = 95
-        self.metrics['functionReturns'] = 1
+        self.metrics[eMetricMcCabe] = 10
+        self.metrics[eMetricNesting] = 5
+        self.metrics[eMetricFile] = 3000
+        self.metrics[eMetricFunc] = 200
+        self.metrics[eMetricLine] = 95
+        self.metrics[eMetricReturns] = 1
 
         self.naming = OrderedDict()
-        self.naming['function'] = r'[A-Za-z0-9_]{1,32}'
-        self.naming['variable'] = r'[A-Za-z0-9_]{1,32}'
-        self.naming['enum'] = r'[A-Za-z0-9_]{1,32}'
-        self.naming['constants'] = r'[A-Za-z0-9_]{1,32}'
-        self.naming['defines'] = r'[A-Za-z0-9_]{1,32}'
+        self.naming[eNameFunc] = r'[A-Za-z0-9_]{1,32}'
+        self.naming[eNameVar] = r'[A-Za-z0-9_]{1,32}'
+        self.naming[eNameEnum] = r'[A-Za-z0-9_]{1,32}'
+        self.naming[eNameConst] = r'[A-Za-z0-9_]{1,32}'
+        self.naming[eNameDef] = r'[A-Za-z0-9_]{1,32}'
 
         self.options = OrderedDict()
-        self.options['PcLint'] = ''
+        self.options[eOptPcLint] = ''
 
         self.restricted = OrderedDict()
-        self.restricted['Functions'] = []
+        self.restricted[eRestrictedFunc] = []
 
         self.modified = False
 
@@ -445,11 +445,44 @@ class ProjectFile:
             else:
                 self.PutLine( itemHdr, itemValue)
 
+    #-----------------------------------------------------------------------------------------------
+    def FullPathName( self, rpfn):
+        """ Convert a relative path file name into a full path filename """
+        fullPathNames = []
+        srcRoots = self.paths[ePathSrcRoot]
+        for i in srcRoots:
+            fpfn = os.path.join( i, rpfn)
+            if os.path.isfile( fpfn):
+                fullPathNames.append( fpfn)
+
+        return fullPathNames
+
+    #-----------------------------------------------------------------------------------------------
+    def RelativePathName( self, fpfn):
+        """ Convert a full path name to a relative path file name
+            return the relative path name a and the the title
+        """
+        relPathNames = []
+        srcRoots = self.paths[ePathSrcRoot]
+
+        # compute the relative path from a srcRoot
+        for sr in srcRoots:
+            fn = fpfn.replace(sr, '')
+            if fn != fpfn:
+                if fn[0] in ('/', '\\'):
+                    fn = fn[1:]
+                    break
+        rpfn = fn
+        fn = os.path.split(rpfn)[1]
+        return rpfn, fn
+
 
 if __name__ == '__main__':
-    pf = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ\G4.crp'
-    pf1 = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ\G41a.crp'
-    pf2 = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ\G42.crp'
+    pf = r'D:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ\G4.crp'
+    pf1 = r'D:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ\G41a.crp'
+    pf2 = r'D:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ\G42.crp'
     pf0 = ProjectFile(pf)
+    r,f = pf0.RelativePathName(r'D:\Knowlogic\clients\PWC\FAST_Testing\dev\G4E\G4_CP\application\FASTStateMgr.c')
+    r,f = pf0.RelativePathName('')
     pf0.modified = True
     pf0.Save(pf1)

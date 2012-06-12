@@ -34,6 +34,13 @@ class DB_SQLite( database.DB):
         database.DB.__init__( self)
 
     #------------------------------------------------------------------------------------------
+    def Close( self):
+        if self.conn:
+            self.conn.commit()
+
+        database.DB.Close( self)
+
+    #------------------------------------------------------------------------------------------
     def Connect( self, connectionString):
         """ Create a Sqlite3 connection.  The connection string is just the path to the DB
         """

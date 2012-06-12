@@ -369,7 +369,7 @@ class ThreadSignal:
             self.job = job
         else:
             self.job = self.NoJob
-        self.active = True
+        self.active = False
 
     def Go( self):
         self.active = True

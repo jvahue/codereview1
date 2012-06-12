@@ -80,7 +80,8 @@ class ToolManager:
           2. Generate Reivew data
         """
         self.job = subprocess.Popen( self.jobCmd, bufsize=-1, cwd=self.projToolRoot,
-                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                                     stderr=subprocess.STDOUT,
+                                     stdout=subprocess.PIPE)
 
     #-----------------------------------------------------------------------------------------------
     def AnalyzeActive(self):
@@ -117,9 +118,14 @@ class ToolManager:
     def SetStatusMsg(self, v=0, msg=''):
         """ Provide a message that can be displayed by the FE when the analysis is running
         """
-        time.sleep( 0.001)
         if msg:
             self.analysisStep = msg
+            self.sleeper = 0
+
+        self.sleeper += 1
+        if self.sleeper == 500:
+            time.sleep( 0.001)
+            self.sleeper = 0
 
         self.percentComplete = v
 

@@ -12,7 +12,6 @@ import csv
 import datetime
 import os
 import sys
-import time
 
 #---------------------------------------------------------------------------------------------------
 # Third Party Modules
@@ -192,6 +191,8 @@ class PcLint( ToolManager):
                     v = ((fileCount/float(ps.fileCount))*100.0)
                     self.SetStatusMsg( v)
 
+        self.LoadViolations()
+
     #-----------------------------------------------------------------------------------------------
     def LoadViolations(self):
         """ This function is responsible for loading the violations into the violation DB
@@ -218,6 +219,7 @@ class PcLint( ToolManager):
             repeat open items
             repeats closed items
         """
+        print ('Thread B', os.getpid())
         self.SetStatusMsg( msg = 'Format PC-Lint Output')
 
         finName = os.path.join( self.projToolRoot, eResultFile)
@@ -229,80 +231,81 @@ class PcLint( ToolManager):
         totalLines = len(lines)
         fin.close()
 
-        # open the source file
-        fin = open( finName, 'r', newline='')
-        csvIn = csv.reader( fin)
+        # only do this for newly generated data
+        if lines[0].strip().find('Cnt') != 0:
+            # open the source file
+            fin = open( finName, 'r', newline='')
+            csvIn = csv.reader( fin)
 
-        foutName = os.path.splitext( finName)[0] + '_1.csv'
-        fout = open( foutName, 'w',newline='')
-        csvOut = csv.writer(fout)
+            foutName = os.path.splitext( finName)[0] + '_1.csv'
+            fout = open( foutName, 'w',newline='')
+            csvOut = csv.writer(fout)
 
-        csvOut.writerow(['Cnt','Filename','Function','Line','Type','ErrNo','Description','Details'])
+            csvOut.writerow(['Cnt','Filename','Function','Line','Type','ErrNo','Description','Details'])
 
-        lineNum = 0
-        details = ''
-        cFileName = ''
-        for line in csvIn:
-            lineNum += 1
-            pct = (float(lineNum)/totalLines) * 100.0
-            self.SetStatusMsg( pct)
-            time.sleep(0.001)
-            if len( line) > 0:
-                if line[0].find('---') == -1:
-                    if line[0].find('<*>') == -1:
-                        details = ','.join( line)
+            lineNum = 0
+            details = ''
+            cFileName = ''
+            for line in csvIn:
+                lineNum += 1
+                #pct = (float(lineNum)/totalLines) * 100.0
+                #self.SetStatusMsg( pct)
+                if len( line) > 0:
+                    if line[0].find('---') == -1:
+                        if line[0].find('<*>') == -1:
+                            details = ','.join( line)
+                        else:
+                            # the format puts a '<*>' on the front of each error report to distinguish
+                            # it from details
+                            line[0] = line[0].replace('<*>', '')
+
+                            if len(line) != eFieldCount:# and l[1:6] == l[6:]:
+                                line = line[:eFieldCount]
+
+                            # remove full pathname
+                            if line[0] and line[0][0] != '.':
+                                path, fn = os.path.split(line[0])
+                                subdir = os.path.split( path)[1]
+                                if subdir:
+                                    aFilename = r'%s\%s' % (subdir, fn)
+                                else:
+                                    aFilename = fn
+                                line = [aFilename] + line[1:]
+
+                            # replace the unknown file name with current file name
+                            if line[0] == eSrcFilesName:
+                                line[0] = cFileName
+
+                            opv = [1] + line + [details]
+                            # debug
+                            dbg = '@'.join(opv[1:])
+                            if dbg.find('<*>') != -1:
+                                pass
+                            csvOut.writerow(opv)
+                            details = ''
                     else:
-                        # the format puts a '<*>' on the front of each error report to distinguish
-                        # it from details
-                        line[0] = line[0].replace('<*>', '')
+                        # capture the filename
+                        # line forms are
+                        # |--- Module:   <full path file name> (C)
+                        # |    --- Wrap-up for Module: <fullpath file name>
+                        line = line[0]
+                        wrapUp = line.find('Wrap') != -1 and '(W)' or '()'
 
-                        if len(line) != eFieldCount:# and l[1:6] == l[6:]:
-                            line = line[:eFieldCount]
+                        at = line.find( 'Module: ')
+                        if at != -1:
+                            line = line[at+len( 'Module: '):]
+                        parts = line.strip().split()
+                        line = parts[0]
+                        path, fn = os.path.split(line)
+                        subdir = os.path.split( path)[1]
+                        cFileName = r'%s\%s %s' % (subdir, fn, wrapUp)
 
-                        # remove full pathname
-                        if line[0] and line[0][0] != '.':
-                            path, fn = os.path.split(line[0])
-                            subdir = os.path.split( path)[1]
-                            if subdir:
-                                aFilename = r'%s\%s' % (subdir, fn)
-                            else:
-                                aFilename = fn
-                            line = [aFilename] + line[1:]
+            fout.close()
+            fin.close()
 
-                        # replace the unknown file name with current file name
-                        if line[0] == eSrcFilesName:
-                            line[0] = cFileName
-
-                        opv = [1] + line + [details]
-                        # debug
-                        dbg = '@'.join(opv[1:])
-                        if dbg.find('<*>') != -1:
-                            pass
-                        csvOut.writerow(opv)
-                        details = ''
-                else:
-                    # capture the filename
-                    # line forms are
-                    # |--- Module:   <full path file name> (C)
-                    # |    --- Wrap-up for Module: <fullpath file name>
-                    line = line[0]
-                    wrapUp = line.find('Wrap') != -1 and '(W)' or '()'
-
-                    at = line.find( 'Module: ')
-                    if at != -1:
-                        line = line[at+len( 'Module: '):]
-                    parts = line.strip().split()
-                    line = parts[0]
-                    path, fn = os.path.split(line)
-                    subdir = os.path.split( path)[1]
-                    cFileName = r'%s\%s %s' % (subdir, fn, wrapUp)
-
-        fout.close()
-        fin.close()
-
-        # rename
-        os.remove( finName)
-        os.rename( foutName, finName)
+            # rename
+            os.remove( finName)
+            os.rename( foutName, finName)
 
     #-----------------------------------------------------------------------------------------------
     def LoadDb( self):

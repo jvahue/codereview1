@@ -138,6 +138,9 @@ class U4c( ToolManager):
 
         self.verbose = verbose
 
+        # this holds all the file/function info data
+        self.fileFuncInfo = {}
+
     #-----------------------------------------------------------------------------------------------
     def IsReadyToAnalyze(self):
         """ we are about to create the db and put stuff in it. Make sure it is not locked by some
@@ -185,6 +188,8 @@ class U4c( ToolManager):
                         v = 100 - (len(fileList)/float(fileCount)*100.0)
                         self.SetStatusMsg( v)
 
+        self.LoadViolations()
+
     #-----------------------------------------------------------------------------------------------
     def LoadViolations(self):
         """ This function is responsible for loading the violations into the violation DB
@@ -194,6 +199,7 @@ class U4c( ToolManager):
         """
         # now run the review of the u4c DB which is the other half of this process
         # get the file list to check
+        self.SetStatusMsg( msg = 'Open U4C DB')
         srcRoots = self.projFile.paths[PF.ePathSrcRoot]
         excludeDirs = self.projFile.exclude[PF.eExcludeDirs]
         excludeFiles = self.projFile.exclude[PF.eExcludeU4c]
@@ -212,10 +218,10 @@ class U4c( ToolManager):
             self.SetStatusMsg( msg = 'Acquire DB Lock')
             self.projFile.dbLock.acquire()
 
-            self.MetricChecks()
+            #self.MetricChecks()
             #self.FormatChecks()
             #self.NamingChecks()
-            #self.LanguageRestriction()
+            self.LanguageRestriction()
 
             # we have to close the DB in the thread it was opened in
             self.vDb.Close()
@@ -240,11 +246,7 @@ class U4c( ToolManager):
             self.SetStatusMsg( (counter/float(totalFiles)*100))
 
             # compute the relative path from a srcRoot
-            for sr in self.projFile.paths[PF.ePathSrcRoot]:
-                fn = i.replace(sr, '')
-                if fn[0] == r'\\': fn = fn[1:]
-            rpfn = fn
-            fn = os.path.split(rpfn)[1]
+            rpfn, fn = self.projFile.RelativePathName( i)
 
             # Get file/function information
             funcInfo = self.udb.GetFileFunctionInfo( fn)
@@ -368,5 +370,68 @@ class U4c( ToolManager):
         # excluded functions
         # restricted functions
         self.SetStatusMsg( msg = 'Language Restrictions')
+
+        print ('Thread A', os.getpid())
+        xFuncs = self.projFile.exclude[PF.eExcludeFunc]
+        xKeyword  = self.projFile.exclude[PF.eExcludeKeywords]
+        rFunc = self.projFile.restricted[PF.eRestrictedFunc]
+        totalItems = len(xFuncs + xKeyword + rFunc)
+        counter = 1
+
+        # identify references to excluded functions
+        for item in xFuncs:
+            print(item)
+            counter += 1
+            pct = (float(counter)/totalItems) * 100.0
+
+            self.SetStatusMsg( pct)
+            itemRefs = self.udb.LookupItem( item, 'Function')
+            self.ReportExcluded( item, itemRefs, 'Error', 'Excluded-Func', 'Excluded function %s at line %d')
+
+        # excluded key words
+        for item in xKeyword:
+            counter += 1
+            pct = (float(counter)/totalItems) * 100.0
+
+            self.SetStatusMsg( pct)
+            itemRefs = self.udb.LookupItem( item)
+            self.ReportExcluded( item, itemRefs, 'Error', 'Excluded-Keyword', 'Excluded keyword %s at line %d')
+
+        # restricted functions
+        for item in rFunc:
+            counter += 1
+            pct = (float(counter)/totalItems) * 100.0
+            self.SetStatusMsg( pct)
+            itemRefs = self.udb.LookupItem( item, 'Function')
+            self.ReportExcluded( item, itemRefs, 'Warning', 'Restricted-Func', 'Restricted function %s at line %d')
+
+    #-----------------------------------------------------------------------------------------------
+    def ReportExcluded( self, item, itemRefs, severity, violationId, descFmt):
+        """ This is a common reporintg function for excluded functions/keywords and restricited
+            functions
+        """
+        for ref in itemRefs:
+            print( item, ref.file(), ref.line())
+            u4cLine = ref.line()
+            refFunc, info = self.udb.InFunction( ref.file().longname(), u4cLine)
+            fpfn = info.get('fullPath', '')
+            rpfn, title = self.projFile.RelativePathName( fpfn)
+            desc = descFmt % (item, u4cLine)
+            details = self.ReadLineN( fpfn, u4cLine).strip()
+            self.vDb.Insert( rpfn, refFunc, severity, violationId, desc,
+                             details, u4cLine, 'U4C', self.updateTime)
+
+    #-----------------------------------------------------------------------------------------------
+    def ReadLineN( self, filename, lineNumber):
+        """ return the text of 'lineNumber' in file 'filename'
+        """
+        fullPathName = self.projFile.FullPathName( filename)
+        # TODO: handle non-unique filenames in different srcRoots
+        f = open( fullPathName[0], 'r')
+        lines = f.readlines()
+        f.close()
+        txt = lines[lineNumber - 1]
+        return txt
+
 
 

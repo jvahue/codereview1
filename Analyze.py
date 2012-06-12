@@ -5,6 +5,8 @@ Code review Main
 # Python Modules
 #---------------------------------------------------------------------------------------------------
 import datetime
+import os
+import socket
 import time
 
 #---------------------------------------------------------------------------------------------------
@@ -27,7 +29,7 @@ from tools.u4c import u4c
 #---------------------------------------------------------------------------------------------------
 # Data
 #---------------------------------------------------------------------------------------------------
-projFile = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ\G4.crp'
+projFile = r'D:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ\G4.crp'
 
 #---------------------------------------------------------------------------------------------------
 # Functions
@@ -49,6 +51,7 @@ def Analyze( projFile, fullAnalysis = True, verbose = True):
     u4s.CreateProject()
 
     pcl = PcLint.PcLint( pf)
+    print ('Analyze', os.getpid())
     u4co = u4c.U4c( pf)
 
     if fullAnalysis:
@@ -57,29 +60,28 @@ def Analyze( projFile, fullAnalysis = True, verbose = True):
             pclThread = ThreadSignal( pcl.RunToolAsProcess, pcl)
 
             u4cThread.Go()
-            pclThread.Go()
+            #pclThread.Go()
             while u4cThread.active or pclThread.active:
-                time.sleep(0.5)
-                if verbose: print('PCL: %s - U4C: %s' % (pcl.statusMsg, u4co.statusMsg))
+                time.sleep(1)
+                if verbose: print('B: %s - A: %s' % (pcl.statusMsg, u4co.statusMsg))
         else:
             if verbose: print('U4C DB is currently open')
             status = False
-
-    if status:
+    else:
         u4cThread = ThreadSignal( u4co.LoadViolations, u4co)
         pclThread = ThreadSignal( pcl.LoadViolations, pcl)
 
         u4cThread.Go()
         pclThread.Go()
         while u4cThread.active or pclThread.active:
-            time.sleep(0.5)
+            time.sleep(1)
             if verbose: print('PCL: %s - U4C: %s' % (pcl.statusMsg, u4co.statusMsg))
 
-        for i in ('insertNew','insertUpdate','insertSelErr','insertInErr','insertUpErr','insertDeleted','updateTime',):
-            if verbose: print('%s: %s' % (i, str(getattr(pcl, i))))
+    for i in ('insertNew','insertUpdate','insertSelErr','insertInErr','insertUpErr','insertDeleted','updateTime',):
+        if verbose: print('%s: %s' % (i, str(getattr(pcl, i, -1))))
 
-        end = datetime.datetime.today()
-        print('Analysis Completed in %s' % (end - start))
+    end = datetime.datetime.today()
+    print('Analysis Completed in %s' % (end - start))
 
     return status
 
