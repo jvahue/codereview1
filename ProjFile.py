@@ -273,7 +273,15 @@ class ProjectFile:
                 at += 1
                 parts = line.strip().split('=')
                 if len(parts) == 2:
-                    self.naming[parts[0].strip()] = parts[-1]
+                    info = parts[-1]
+                    szFmt = info.split(':')
+                    if len(szFmt) == 1:
+                        sz = 32
+                        fmt = szFmt[0]
+                    else:
+                        sz = int(szFmt[0])
+                        fmt = szFmt[1]
+                    self.naming[parts[0].strip()] = (sz, fmt)
                 else:
                     break
 
@@ -476,7 +484,18 @@ class ProjectFile:
         fn = os.path.split(rpfn)[1]
         return rpfn, fn
 
+    #-----------------------------------------------------------------------------------------------
+    def IsLibraryFile( self, fpfn):
+        """ Return true if this file is held in a include path.  These files are considered library
+            files and so we have no control over them, don't report errors
+        """
+        isLibrary = False
+        for i in self.paths[ePathInclude]:
+            if fpfn.find(i) != -1:
+                isLibrary = True
+        return isLibrary
 
+#===================================================================================================
 if __name__ == '__main__':
     pf = r'D:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ\G4.crp'
     pf1 = r'D:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ\G41a.crp'

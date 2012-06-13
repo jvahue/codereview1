@@ -6,12 +6,10 @@ Design Assumptions:
 #---------------------------------------------------------------------------------------------------
 # Python Modules
 #---------------------------------------------------------------------------------------------------
-import csv
+from collections import OrderedDict
 import datetime
 import os
 import re
-import sys
-import time
 
 #---------------------------------------------------------------------------------------------------
 # Third Party Modules
@@ -76,8 +74,8 @@ class U4cSetup( ToolSetup):
         incDirs, srcFiles = self.projFile.GetSrcCodeFiles( srcRoots, ['.c','.h'], excludeDirs, excludeFiles)
 
         # U4c Option definitions
-        options = {}
-        options['C++Includes'] = self.projFile.paths['IncludeDirs']
+        options = OrderedDict()
+        options['C++Includes'] = incDirs + self.projFile.paths['IncludeDirs']
         options['C++Macros'] = self.projFile.defines
         options['C++Undefined'] = self.projFile.undefines
         options = self.ConvertOptions( options)
@@ -101,6 +99,7 @@ class U4cSetup( ToolSetup):
             settings -optionAdd item2
         """
         optionList = []
+
         for option in options:
             optionData = options[option]
             isFirst = True
@@ -108,6 +107,8 @@ class U4cSetup( ToolSetup):
                 add = '' if isFirst else 'Add'
                 isFirst = False
                 optionList.append('settings -%s %s' % ( option+add, item))
+            optionList.append('')
+
         return optionList
 
     #-----------------------------------------------------------------------------------------------
@@ -205,8 +206,12 @@ class U4c( ToolManager):
         srcRoots = self.projFile.paths[PF.ePathSrcRoot]
         excludeDirs = self.projFile.exclude[PF.eExcludeDirs]
         excludeFiles = self.projFile.exclude[PF.eExcludeU4c]
-        x, self.srcFiles = self.projFile.GetSrcCodeFiles(srcRoots, ['.h','.c'],
-                                                         excludeDirs, excludeFiles)
+        x, srcFiles = self.projFile.GetSrcCodeFiles(srcRoots, ['.h','.c'],
+                                                    excludeDirs, excludeFiles)
+
+        # exclude all files that reside in libraryr directories
+        self.srcFiles = [i for i in srcFiles if not self.projFile.IsLibraryFile(i)]
+
         try:
             self.updateTime = datetime.datetime.today()
 
@@ -241,11 +246,11 @@ class U4c( ToolManager):
         self.SetStatusMsg( msg = 'Metric Checks')
         fileLimit = self.projFile.metrics[PF.eMetricFile]
 
-        counter = 0
+        pctCtr = 0
         totalFiles = len(self.srcFiles)
         for i in self.srcFiles:
-            counter += 1
-            self.SetStatusMsg( (counter/float(totalFiles)*100))
+            pctCtr += 1
+            self.SetStatusMsg( (pctCtr/float(totalFiles)*100))
 
             # compute the relative path from a srcRoot
             rpfn, fn = self.projFile.RelativePathName( i)
@@ -369,57 +374,120 @@ class U4c( ToolManager):
         x = 0
         self.SetStatusMsg( msg = 'Naming Checks')
 
-        varRe = re.compile( self.projFile.naming[PF.eNameVar])
-        funcRe = re.compile( self.projFile.naming[PF.eNameFunc])
-        defRe = re.compile( self.projFile.naming[PF.eNameDef])
-        enumRe = re.compile( self.projFile.naming[PF.eNameEnum])
+        size, fmt = self.projFile.naming[PF.eNameVar]
+        varRe = re.compile( fmt)
+        theItems = self.udb.db.lookup( re.compile(r'.*'), 'Object')
+        self.NamingChecker( varRe, size, theItems, 'Var', 'Variable', self.GetFuncVarName)
+
+        size, fmt = self.projFile.naming[PF.eNameFunc]
+        funcRe  = re.compile( fmt)
+        theItems = self.udb.db.lookup( re.compile(r'.*'), 'Function')
+        self.NamingChecker( funcRe, size, theItems, 'Func', 'Function', self.GetFuncFuncName)
+
+        size, fmt = self.projFile.naming[PF.eNameDef]
+        macRe  = re.compile( fmt)
+        theItems = self.udb.db.lookup( re.compile(r'.*'), 'Macro')
+        self.NamingChecker( macRe, size, theItems, 'Def', 'Define', self.GetFuncVarName)
+
+        size, fmt = self.projFile.naming[PF.eNameEnum]
+        enumRe  = re.compile( fmt)
+        theItems = self.udb.db.lookup( re.compile(r'.*'), 'Enumerator')
+        self.NamingChecker( enumRe, size, theItems, 'Enum', 'Enum', self.GetFuncVarName)
+
+    #-----------------------------------------------------------------------------------------------
+    def NamingChecker( self, theRe, maxLength, theItems, name, longname, getFunc):
+        """ Verify all variable names - global, local, static global/local """
 
         # Check all the vairable names
-        varItems = self.udb.db.lookup( re.compile(r'.*'), 'Object')
-        totalItems = len(varItems)
-        self.SetStatusMsg(msg = 'Check Var Naming')
-        counter = 0
-        for item in varItems:
-            counter += 1
-            pct = (float(counter)/totalItems) * 100
+        totalItems = len(theItems)
+
+        good = 0
+        bad = 0
+        badNr = 0
+        libItem = 0
+        pctCtr = 0
+
+        self.SetStatusMsg(msg = 'Check %s Naming %d' % (longname, totalItems))
+        for item in theItems:
+            pctCtr += 1
+            pct = (float(pctCtr)/totalItems) * 100
             self.SetStatusMsg( pct)
 
-            match = varRe.match( item.name())
-            if not match:
-                severity = 'Error'
-                violationId = 'Naming-Var'
-                parent = item.parent()
-                func = 'N/A'
-                if parent:
-                    if parent.kindname().find( 'Function') != -1:
-                        func = parent.name()
-                else:
-                    x += 1
+            parent = item.parent()
+            # don't report library file problems
+            if parent and not self.projFile.IsLibraryFile( parent.longname()):
+                # find out where the variable is defined and declared
                 defFile, defLine = self.udb.RefAt( item)
-                if defFile == '':
-                    # undefined item
-                    violationId = 'Undefined Item'
-                    defFile, defLine = self.udb.RefAt( item, 'Declare')
+                decFile, decLine = self.udb.RefAt( item, 'Declare')
+
+                # log a declared but not defined variable
+                if defFile == '' and decFile != '':
+                    violationId = 'Undefined-%s' % (name)
+                    defFile = decFile
+                    defLine = decLine
+                    fpfn = decFile.longname()
+                    rpfn, fn = self.projFile.RelativePathName(fpfn)
+                    desc = '%s not defined: %s declared at line %d' % (longname,
+                                                                       item.name(),
+                                                                       decLine)
+                    details = self.ReadLineN( fpfn, decLine)
+                    # TODO: remove is U4C responds why they don't see the definition
+                    if details.strip().find('EXPORT') != 0:
+                        self.vDb.Insert( rpfn, 'N/A', 'Error', violationId, desc,
+                                         details, decLine, 'U4C', self.updateTime)
+
+                match = theRe.match( item.name())
+                iLen = len(item.name())
+                tooBig = iLen > maxLength
+                if not match or tooBig:
+                    bad += 1
+                    severity = 'Error'
+                    violationId = 'Naming-%s' % name
+                    func = getFunc( item)
+
                     if defFile != '':
                         fpfn = defFile.longname()
                         rpfn, fn = self.projFile.RelativePathName(fpfn)
-                        desc = 'Undefined Item: %s declared at line %d' % (item.name(),
+                        dispName = '%s%s' % (item.name(), '(Len:%d)' % iLen if tooBig else '')
+                        desc = '%s naming error: %s defined at line %d' % (longname,
+                                                                           dispName,
                                                                            defLine)
                         details = self.ReadLineN( fpfn, defLine)
+                        self.vDb.Insert( rpfn, func, severity, violationId, desc,
+                                         details, defLine, 'U4C', self.updateTime)
+                    else:
+                        badNr += 1
+                        print('CheckBadNr %s - %s' % (name, item.name()))
                 else:
-                    fpfn = defFile.longname()
-                    rpfn, fn = self.projFile.RelativePathName(fpfn)
-                    desc = 'Variable naming error: %s defined at line %d' % (item.name(),
-                                                                            defLine)
-                    details = self.ReadLineN( fpfn, defLine)
-                    self.vDb.Insert( rpfn, func, severity, violationId, desc,
-                                     details, defLine, 'U4C', self.updateTime)
+                    good += 1
+            else:
+                libItem += 1
+                print('CheckLib %s - %s' % (name, item.name()))
+
+        print('%s Good/Bad(BadNr)/libItem: %d/%d(%d)/%d' % (name,good,bad,badNr,libItem))
+
+        self.vDb.Commit()
+
+    #-----------------------------------------------------------------------------------------------
+    def GetFuncVarName(self, item):
+        func = 'N/A'
+        parent = item.parent()
+        if parent and parent.kindname().find( 'Function') != -1:
+            func = parent.name()
+
+        return func
+    #-----------------------------------------------------------------------------------------------
+    def GetFuncFuncName(self, item):
+        func = item.name()
+        return func
 
     #-----------------------------------------------------------------------------------------------
     def LanguageRestriction(self):
         # excluded functions
         # restricted functions
         self.SetStatusMsg( msg = 'Language Restrictions')
+
+        specialProcessing = {'register': self.HandleRegister, }
 
         print ('Thread A', os.getpid())
 
@@ -428,12 +496,12 @@ class U4c( ToolManager):
         rFunc = self.projFile.restricted[PF.eRestrictedFunc]
 
         totalItems = len(xFuncs + xKeyword + rFunc) + 1
-        counter = 0
+        pctCtr = 0
 
         # excluded functions
         for item in xFuncs:
-            counter += 1
-            pct = (float(counter)/totalItems) * 100.0
+            pctCtr += 1
+            pct = (float(pctCtr)/totalItems) * 100.0
             self.SetStatusMsg( pct)
             itemRefs = self.udb.GetItemRefs( item, 'Function')
             self.ReportExcluded( item, itemRefs, 'Error', 'Excluded-Func',
@@ -441,21 +509,28 @@ class U4c( ToolManager):
 
         # excluded keywords
         for item in xKeyword:
-            counter += 1
-            pct = (float(counter)/totalItems) * 100.0
+            pctCtr += 1
+            pct = (float(pctCtr)/totalItems) * 100.0
             self.SetStatusMsg( pct)
-            itemRefs = self.udb.GetItemRefs( item)
+            if item in specialProcessing:
+                itemRefs = specialProcessing[item]()
+            else:
+                itemRefs = self.udb.GetItemRefs( item)
             self.ReportExcluded( item, itemRefs, 'Error', 'Excluded-Keyword',
                                  'Excluded keyword %s at line %d')
 
         # restricted functions
         for item in rFunc:
-            counter += 1
-            pct = (float(counter)/totalItems) * 100.0
+            pctCtr += 1
+            pct = (float(pctCtr)/totalItems) * 100.0
             self.SetStatusMsg( pct)
             itemRefs = self.udb.GetItemRefs( item, 'Function')
             self.ReportExcluded( item, itemRefs, 'Warning', 'Restricted-Func',
                                  'Restricted function %s at line %d')
+
+    #-----------------------------------------------------------------------------------------------
+    def HandleRegister( self):
+        return []
 
     #-----------------------------------------------------------------------------------------------
     def ReportExcluded( self, item, itemRefs, severity, violationId, descFmt):
