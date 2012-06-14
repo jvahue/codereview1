@@ -265,6 +265,7 @@ class ProjectFile:
 
     #-----------------------------------------------------------------------------------------------
     def ReadNaming( self):
+        # TODO: assert on format error
         at = self.GetHdr( 'Naming')
         if at != -1:
             at += 1

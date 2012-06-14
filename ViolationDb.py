@@ -26,6 +26,9 @@ from utils.DB.sqlLite.database import DB_SQLite
 eDbRoot = r'db'
 eDbName = r'KsCrDb.db'
 
+eNotReported = 'Not Reported'
+eAutoWho = 'Auto'
+
 #---------------------------------------------------------------------------------------------------
 # Functions
 #---------------------------------------------------------------------------------------------------
@@ -42,7 +45,11 @@ class ViolationDb( DB_SQLite):
         self.dbPath = os.path.join( projRoot, eDbRoot)
         self.dbName = os.path.join( self.dbPath, eDbName)
         if not os.path.isdir( self.dbPath):
-            os.makedirs( self.dbPath)
+            try:
+                os.makedirs( self.dbPath)
+            except OSError:
+                # some one running in parallel must have beat us to it
+                pass
 
         # does the DB already exist
         dbExists = os.path.isfile( self.dbName)
@@ -212,3 +219,43 @@ class ViolationDb( DB_SQLite):
 
         return desc
 
+    #-----------------------------------------------------------------------------------------------
+    def MarkNotReported( self, detectedBy, updateTime):
+        """ mark all items not reported this run and return the count of those """
+        # count how many will be marked
+        s = """
+            select count(*)
+            from violations
+            where lastReport != ?
+            and detectedBy = '%s'
+            and status != '%s'
+            and who != '%s'
+            """ % (detectedBy, eNotReported, eAutoWho)
+        self.Execute( s, (updateTime,))
+        data = self.GetOne()
+
+        # mark them as not being reported anymore
+        s = """ update violations set
+                status=?, who=?, lastReport=?, reviewDate=?
+                where lastReport != ?
+                and detectedBy = '%s'
+                and reviewDate is Null
+            """ % (detectedBy)
+        params = (eNotReported, eAutoWho, updateTime, updateTime, updateTime)
+        self.Execute( s, params)
+
+        return data[0]
+
+    #-----------------------------------------------------------------------------------------------
+    def Unanalyzed(self, detectedBy):
+        """ report the current number of unanalyzed violations reported by detectedBy """
+
+        s = """
+        select count(*) from violations
+        where detectedBy = ?
+        and reviewDate is NULL
+        """
+        self.Execute( s, (detectedBy,))
+        data = self.GetOne()
+
+        return data[0]

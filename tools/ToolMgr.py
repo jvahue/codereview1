@@ -25,6 +25,9 @@ import time
 #---------------------------------------------------------------------------------------------------
 # Knowlogic Modules
 #---------------------------------------------------------------------------------------------------
+import ProjFile as PF
+import ViolationDb as VDB
+
 from utils.util import ThreadSignal
 
 #---------------------------------------------------------------------------------------------------
@@ -67,11 +70,27 @@ class ToolManager:
     I/F defintion for all tool managers
     """
     #-----------------------------------------------------------------------------------------------
-    def __init__(self, projRoot):
-        self.projRoot = projRoot
+    def __init__(self, projFile, toolName):
+        """ Initialize the base class """
+        assert(isinstance( projFile, PF.ProjectFile))
+
+        self.projFile = projFile
+        self.toolName = toolName
+
+        self.SetStatusMsg( msg = 'Starting')
+
         self.jobCmd = ''
         self.job = None
-        self.SetStatusMsg( msg = 'Starting')
+
+        self.vDb = None
+
+        self.insertNew = 0
+        self.insertUpdate = 0
+        self.insertSelErr = 0
+        self.insertInErr = 0
+        self.insertUpErr = 0
+        self.insertDeleted = 0
+        self.unanalyzed = 0
 
     #-----------------------------------------------------------------------------------------------
     def RunToolAsProcess(self):
@@ -97,14 +116,29 @@ class ToolManager:
         return status
 
     #-----------------------------------------------------------------------------------------------
-    def PollReview(self):
-        """ return the output of the job while it runs
+    def LoadViolations(self):
+        """ Load the DB with violations
         """
-        out = self.job.stdout.read()
-        return out
+        # create a connections to the Violation DB
+        self.vDb = VDB.ViolationDb( self.projFile.paths[PF.ePathProject])
+        self.vDb.DebugState( 1)
+
+        try:
+            # the actual work of loading the DB
+            self.SpecializedLoad()
+        except:
+            self.vDb.Close()
+            raise
+
+        self.GetUpdateStats()
+
+        # we have to close the DB in the thread it was opened in
+        self.vDb.Close()
+
+        self.SetStatusMsg( 100, msg = '%s Load Complete' % self.toolName)
 
     #-----------------------------------------------------------------------------------------------
-    def MonitorAnalysis(self):
+    def SpecializedLoad(self):
         """ subclasses define how to monitor their analysis process """
         raise NotImplemented
 
@@ -131,6 +165,31 @@ class ToolManager:
 
         self.statusMsg = '%s: %.1f' % (self.analysisStep, v)
 
+    #-----------------------------------------------------------------------------------------------
+    def GetUpdateStats(self):
+        """ Collect the stats from this run """
+        # how many old not reported ones are there
+        self.insertNew = self.vDb.insertNew
+        self.insertUpdate = self.vDb.insertUpdate
+        self.insertSelErr = self.vDb.insertSelErr
+        self.insertInErr = self.vDb.insertInErr
+        self.insertUpErr = self.vDb.insertUpErr
+
+    #-----------------------------------------------------------------------------------------------
+    def ShowRunStats(self):
+        """ Display what happened during the last run """
+        statNames = ('insertNew',
+                     'insertUpdate',
+                     'insertSelErr',
+                     'insertInErr',
+                     'insertUpErr',
+                     'insertDeleted',
+                     'unanalyzed',
+                     'updateTime',)
+
+        print('\n%s Stats' % self.toolName)
+        for i in statNames:
+            print('%s: %s' % (i, str(getattr(self, i, -1))))
 
 
 

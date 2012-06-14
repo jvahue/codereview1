@@ -29,7 +29,7 @@ from tools.u4c import u4c
 #---------------------------------------------------------------------------------------------------
 # Data
 #---------------------------------------------------------------------------------------------------
-projFile = r'D:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ\G4.crp'
+projFile = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ\G4.crp'
 
 #---------------------------------------------------------------------------------------------------
 # Functions
@@ -63,7 +63,7 @@ def Analyze( projFile, fullAnalysis = True, verbose = True):
             pclThread.Go()
             while u4cThread.active or pclThread.active:
                 time.sleep(1)
-                if verbose: print('B: %s - A: %s' % (pcl.statusMsg, u4co.statusMsg))
+                if verbose: print('PcLint: %s - U4C: %s' % (pcl.statusMsg, u4co.statusMsg))
         else:
             if verbose: print('U4C DB is currently open')
             status = False
@@ -75,10 +75,11 @@ def Analyze( projFile, fullAnalysis = True, verbose = True):
         pclThread.Go()
         while u4cThread.active or pclThread.active:
             time.sleep(1)
-            if verbose: print('PCL: %s - U4C: %s' % (pcl.statusMsg, u4co.statusMsg))
+            if verbose: print('PcLint: %s - U4C: %s' % (pcl.statusMsg, u4co.statusMsg))
 
-    for i in ('insertNew','insertUpdate','insertSelErr','insertInErr','insertUpErr','insertDeleted','updateTime',):
-        if verbose: print('%s: %s' % (i, str(getattr(pcl, i, -1))))
+    if verbose:
+        pcl.ShowRunStats()
+        u4co.ShowRunStats()
 
     end = datetime.datetime.today()
     print('Analysis Completed in %s' % (end - start))

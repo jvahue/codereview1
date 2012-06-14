@@ -20,8 +20,8 @@ import sys
 #---------------------------------------------------------------------------------------------------
 # Knowlogic Modules
 #---------------------------------------------------------------------------------------------------
-import ProjFile
-import ViolationDb
+import ProjFile as PF
+import ViolationDb as VDB
 
 from tools.pcLint import PcLintFileTemplates
 from tools.pcLint.KsCrLnt import LintLoader
@@ -31,6 +31,8 @@ from utils.DateTime import DateTime
 #---------------------------------------------------------------------------------------------------
 # Data
 #---------------------------------------------------------------------------------------------------
+eDbDetectId = 'PcLint'
+
 eToolRoot = r'tool\pclint'
 
 eBatchName = r'runLint.bat'
@@ -62,7 +64,7 @@ class PcLintSetup( ToolSetup):
     def __init__( self, projFile):
         """ Handle all PcLint setup
         """
-        assert( isinstance( projFile, ProjFile.ProjectFile))
+        assert( isinstance( projFile, PF.ProjectFile))
         self.projFile = projFile
         self.projRoot = projFile.paths['ProjectRoot']
 
@@ -78,7 +80,7 @@ class PcLintSetup( ToolSetup):
             2. srcFile.lnt - a listing of all the src files
             3. A format file for the lint output to csv files
         """
-        assert( isinstance( self.projFile, ProjFile.ProjectFile))
+        assert( isinstance( self.projFile, PF.ProjectFile))
 
         batTmpl = PcLintFileTemplates.ePcLintBatTemplate
         optTmpl = PcLintFileTemplates.eOptionsTemplate
@@ -162,11 +164,11 @@ class PcLintSetup( ToolSetup):
 #---------------------------------------------------------------------------------------------------
 class PcLint( ToolManager):
     def __init__(self, projFile):
-        assert( isinstance( projFile, ProjFile.ProjectFile))
+        assert( isinstance( projFile, PF.ProjectFile))
         self.projFile = projFile
         self.projRoot = projFile.paths['ProjectRoot']
 
-        ToolManager.__init__(self, self.projRoot)
+        ToolManager.__init__(self, projFile, eDbDetectId)
         self.projToolRoot = os.path.join( self.projRoot, eToolRoot)
 
     #-----------------------------------------------------------------------------------------------
@@ -177,6 +179,7 @@ class PcLint( ToolManager):
             This function should be run as a thread by the caller because this will allow
             the caller to report on the status of the process as it runs. (i.e., % complete)
         """
+        print ('Thread %s' % eDbDetectId, os.getpid())
         # How many files are we analyzing
         ps = PcLintSetup( self.projFile)
         ps.FileCount()
@@ -185,7 +188,7 @@ class PcLint( ToolManager):
         self.jobCmd = '%s' % os.path.join( self.projToolRoot, eBatchName)
         ToolManager.RunToolAsProcess(self)
 
-        # call this 50% of the task
+        # monitor PcLint processing
         fileCount = 0
         self.SetStatusMsg( msg = 'Analyzing Files')
         while self.AnalyzeActive():
@@ -199,23 +202,15 @@ class PcLint( ToolManager):
         self.LoadViolations()
 
     #-----------------------------------------------------------------------------------------------
-    def LoadViolations(self):
+    def SpecializedLoad(self):
         """ This function is responsible for loading the violations into the violation DB
 
             This function should be run as a thread by the caller because this will allow
             the caller to report on the status of the DB Load as it runs. (i.e., % complete)
         """
         self.updateTime = datetime.datetime.today()
-
         self.CleanLint()
-
-        self.SetStatusMsg( msg = 'Wait for DB Access')
-        self.projFile.dbLock.acquire()
-
         self.LoadDb()
-
-        self.SetStatusMsg( 100)
-        self.projFile.dbLock.release()
 
     #-----------------------------------------------------------------------------------------------
     def CleanLint( self):
@@ -224,7 +219,6 @@ class PcLint( ToolManager):
             repeat open items
             repeats closed items
         """
-        print ('Thread B', os.getpid())
         self.SetStatusMsg( msg = 'Format PC-Lint Output')
 
         finName = os.path.join( self.projToolRoot, eResultFile)
@@ -316,55 +310,31 @@ class PcLint( ToolManager):
     def LoadDb( self):
         """ We should now have a clean PcLint output to load into the DB
         """
-        self.SetStatusMsg( msg = 'Load DB')
-
         # open the source file
         finName = os.path.join( self.projToolRoot, eResultFile)
-
-        # open the Violation DB
-        self.vDb = ViolationDb.ViolationDb( self.projRoot)
-        self.vDb.DebugState( 1)
 
         # move to the DB
         lintLoader = LintLoader( finName, self.vDb)
         lintLoader.RemoveDuplicate()
-        self.percentComplete = 54
 
         items = len(lintLoader.reducedData)
-        counter = 0
-        for filename,func,line,severity,violationId,desc,details in lintLoader.reducedData:
-            self.vDb.Insert( filename,func,severity,violationId,desc,details,line,'PcLint',self.updateTime)
-            counter += 1
-            pct = (float(counter)/items) * 99.0
-            self.SetStatusMsg( pct)
+        try:
+            self.SetStatusMsg( msg = 'Acquire DB Lock')
+            self.projFile.dbLock.acquire()
 
-        s = """
-            select count(*)
-            from violations
-            where lastReport != ?
-            and detectedBy = 'PcLint'
-            """
-        self.vDb.Execute( s, (self.updateTime,))
-        data = self.vDb.GetOne()
-        self.SetStatusMsg( 99.25)
+            self.SetStatusMsg( msg = 'Load %s Violations' % eDbDetectId)
 
-        # remove the old PcLint violations
-        s = "delete from violations where lastReport != ? and detectedBy = 'PcLint'"
-        self.vDb.Execute( s, (self.updateTime,))
-        self.SetStatusMsg( 99.5)
+            pctCtr = 0
+            for filename,func,line,severity,violationId,desc,details in lintLoader.reducedData:
+                self.vDb.Insert( filename, func, severity, violationId,
+                                 desc, details, line, eDbDetectId, self.updateTime)
+                pctCtr += 1
+                pct = (float(pctCtr)/items) * 99.0
+                self.SetStatusMsg( pct)
 
-        # commit all the changes
-        self.vDb.Commit()
-        self.SetStatusMsg( 99.75)
+            self.insertDeleted = self.vDb.MarkNotReported( self.toolName, self.updateTime)
+            self.unanalyzed = self.vDb.Unanalyzed( self.toolName)
+            self.projFile.dbLock.release()
 
-        # print stats
-        self.insertNew = self.vDb.insertNew
-        self.insertUpdate = self.vDb.insertUpdate
-        self.insertSelErr = self.vDb.insertSelErr
-        self.insertInErr = self.vDb.insertInErr
-        self.insertUpErr = self.vDb.insertUpErr
-        self.insertDeleted = data[0]
-
-        # and close the DB we are done
-        self.vDb.Close()
-
+        except:
+            self.projFile.dbLock.release()

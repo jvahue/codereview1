@@ -20,7 +20,7 @@ import understand
 # Knowlogic Modules
 #---------------------------------------------------------------------------------------------------
 import ProjFile as PF
-import ViolationDb
+import ViolationDb as VDB
 
 from tools.u4c import u4cDbWrapper as udb
 from tools.u4c import U4cFileTemplates
@@ -30,6 +30,8 @@ from utils.DateTime import DateTime
 #---------------------------------------------------------------------------------------------------
 # Data
 #---------------------------------------------------------------------------------------------------
+eDbDetectId = 'U4C'
+
 eToolRoot = r'tool\u4c'
 eDbName = 'db.udb'
 
@@ -129,10 +131,11 @@ class U4cSetup( ToolSetup):
 class U4c( ToolManager):
     def __init__(self, projFile, verbose=False):
         assert( isinstance( projFile, PF.ProjectFile))
+
         self.projFile = projFile
         self.projRoot = projFile.paths[PF.ePathProject]
 
-        ToolManager.__init__(self, self.projRoot)
+        ToolManager.__init__(self, projFile, eDbDetectId)
 
         self.projToolRoot = os.path.join( self.projRoot, eToolRoot)
 
@@ -167,6 +170,8 @@ class U4c( ToolManager):
             This function should be run as a thread by the caller becuase this will allow
             the caller to report on the status of the process as it runs. (i.e., % complete)
         """
+        print ('Thread %s' % eDbDetectId, os.getpid())
+
         # Run the PC-Lint bat file
         self.jobCmd = '%s' % os.path.join( self.projToolRoot, eBatchName)
         ToolManager.RunToolAsProcess(self)
@@ -191,10 +196,10 @@ class U4c( ToolManager):
                         self.SetStatusMsg( v)
 
         self.LoadViolations()
-        self.SetStatusMsg( 100, msg = 'U4C Processing Complete')
+        self.SetStatusMsg( 100, msg = '%s Processing Complete' % eDbDetectId)
 
     #-----------------------------------------------------------------------------------------------
-    def LoadViolations(self):
+    def SpecializedLoad(self):
         """ This function is responsible for loading the violations into the violation DB
 
             This function should be run as a thread by the caller because this will allow
@@ -202,7 +207,7 @@ class U4c( ToolManager):
         """
         # now run the review of the u4c DB which is the other half of this process
         # get the file list to check
-        self.SetStatusMsg( msg = 'Open U4C DB')
+        self.SetStatusMsg( msg = 'Open %s DB' % eDbDetectId)
         srcRoots = self.projFile.paths[PF.ePathSrcRoot]
         excludeDirs = self.projFile.exclude[PF.eExcludeDirs]
         excludeFiles = self.projFile.exclude[PF.eExcludeU4c]
@@ -212,17 +217,13 @@ class U4c( ToolManager):
         # exclude all files that reside in libraryr directories
         self.srcFiles = [i for i in srcFiles if not self.projFile.IsLibraryFile(i)]
 
+        self.updateTime = datetime.datetime.today()
+
+        self.SetStatusMsg( msg = 'Open %s DB' % eDbDetectId)
+        self.udb = udb.U4cDb( self.dbName)
+
+        self.SetStatusMsg( msg = 'Acquire DB Lock')
         try:
-            self.updateTime = datetime.datetime.today()
-
-            # open the Violation DB
-            self.vDb = ViolationDb.ViolationDb( self.projRoot)
-            self.vDb.DebugState( 1)
-
-            self.SetStatusMsg( msg = 'Open U4C DB')
-            self.udb = udb.U4cDb( self.dbName)
-
-            self.SetStatusMsg( msg = 'Acquire DB Lock')
             self.projFile.dbLock.acquire()
 
             self.MetricChecks()
@@ -230,13 +231,12 @@ class U4c( ToolManager):
             self.NamingChecks()
             self.LanguageRestriction()
 
-            # we have to close the DB in the thread it was opened in
-            self.vDb.Close()
+            self.insertDeleted = self.vDb.MarkNotReported( self.toolName, self.updateTime)
+            self.unanalyzed = self.vDb.Unanalyzed( self.toolName)
 
-            self.SetStatusMsg( 100)
             self.projFile.dbLock.release()
         except:
-            self.vDb.Close()
+            self.projFile.dbLock.release()
             raise
 
     #-----------------------------------------------------------------------------------------------
@@ -273,7 +273,7 @@ class U4c( ToolManager):
                 details = 'Total line count (%d) exceeds project maximum (%d)' % (fileSize,
                                                                                   fileLimit)
                 self.vDb.Insert(rpfn, func, severity, violationId, desc,
-                                details, line, 'U4C', self.updateTime)
+                                details, line, eDbDetectId, self.updateTime)
                 self.vDb.Commit()
 
             # check the function metrics
@@ -303,7 +303,7 @@ class U4c( ToolManager):
                 desc = 'Function Length exceeded in %s' % (func)
                 details = 'Total Line Count %d exceeds %d' % (lines, funcLimit)
                 self.vDb.Insert( rpfn, func, severity, violationId, desc,
-                    details, u4cLine, 'U4C', self.updateTime)
+                    details, u4cLine, eDbDetectId, self.updateTime)
 
             mccabe = info['metrics']['Cyclomatic']
             if mccabe > mccabeLimit:
@@ -311,7 +311,7 @@ class U4c( ToolManager):
                 desc = 'Function Cyclomatic Complexity exceeded in %s' % (func)
                 details = 'Cyclomatic Complexity %d exceeds %d' % (mccabe, mccabeLimit)
                 self.vDb.Insert( rpfn, func, severity, violationId, desc,
-                    details, u4cLine, 'U4C', self.updateTime)
+                    details, u4cLine, eDbDetectId, self.updateTime)
 
             nesting = info['metrics']['MaxNesting']
             if nesting > nestingLimit:
@@ -319,7 +319,7 @@ class U4c( ToolManager):
                 desc = 'Function Nesting exceeded in %s' % (func)
                 details = 'Nesting Levels %d exceeds %d' % (nesting, nestingLimit)
                 self.vDb.Insert( rpfn, func, severity, violationId, desc,
-                    details, u4cLine, 'U4C', self.updateTime)
+                    details, u4cLine, eDbDetectId, self.updateTime)
 
             returns = info['returns']
             if returns > returnLimit:
@@ -327,7 +327,7 @@ class U4c( ToolManager):
                 desc = 'Function Return Points exceeded in %s' % (func)
                 details = 'Return Points %d exceeds %d' % (returns, returnLimit)
                 self.vDb.Insert( rpfn, func, severity, violationId, desc,
-                    details, u4cLine, 'U4C', self.updateTime)
+                    details, u4cLine, eDbDetectId, self.updateTime)
 
         self.vDb.Commit()
 
@@ -361,7 +361,7 @@ class U4c( ToolManager):
                 desc = 'Line Length in %s line %d' % (fn, lineNumber)
                 details = '%3d: %s' % (lineLen, txt.strip())
                 self.vDb.Insert( rpfn, func, severity, violationId, desc,
-                                 details, u4cLine, 'U4C', self.updateTime)
+                                 details, u4cLine, eDbDetectId, self.updateTime)
 
         self.vDb.Commit()
 
@@ -434,7 +434,7 @@ class U4c( ToolManager):
                     # TODO: remove is U4C responds why they don't see the definition
                     if details.strip().find('EXPORT') != 0:
                         self.vDb.Insert( rpfn, 'N/A', 'Error', violationId, desc,
-                                         details, decLine, 'U4C', self.updateTime)
+                                         details, decLine, eDbDetectId, self.updateTime)
 
                 match = theRe.match( item.name())
                 iLen = len(item.name())
@@ -454,7 +454,7 @@ class U4c( ToolManager):
                                                                            defLine)
                         details = self.ReadLineN( fpfn, defLine)
                         self.vDb.Insert( rpfn, func, severity, violationId, desc,
-                                         details, defLine, 'U4C', self.updateTime)
+                                         details, defLine, eDbDetectId, self.updateTime)
                     else:
                         badNr += 1
                         print('CheckBadNr %s - %s' % (name, item.name()))
@@ -545,7 +545,7 @@ class U4c( ToolManager):
             desc = descFmt % (item, u4cLine)
             details = self.ReadLineN( fpfn, u4cLine).strip()
             self.vDb.Insert( rpfn, refFunc, severity, violationId, desc,
-                             details, u4cLine, 'U4C', self.updateTime)
+                             details, u4cLine, eDbDetectId, self.updateTime)
 
         if itemRefs:
             self.vDb.Commit()
