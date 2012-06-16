@@ -334,7 +334,8 @@ class PcLint( ToolManager):
 
             self.insertDeleted = self.vDb.MarkNotReported( self.toolName, self.updateTime)
             self.unanalyzed = self.vDb.Unanalyzed( self.toolName)
-            self.projFile.dbLock.release()
 
         except:
+            raise
+        finally:
             self.projFile.dbLock.release()

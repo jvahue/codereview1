@@ -60,7 +60,7 @@ def Analyze( projFile, fullAnalysis = True, verbose = True):
             pclThread = ThreadSignal( pcl.RunToolAsProcess, pcl)
 
             u4cThread.Go()
-            pclThread.Go()
+            #pclThread.Go()
             while u4cThread.active or pclThread.active:
                 time.sleep(1)
                 if verbose: print('PcLint: %s - U4C: %s' % (pcl.statusMsg, u4co.statusMsg))
@@ -72,7 +72,7 @@ def Analyze( projFile, fullAnalysis = True, verbose = True):
         pclThread = ThreadSignal( pcl.LoadViolations, pcl)
 
         u4cThread.Go()
-        pclThread.Go()
+        #pclThread.Go()
         while u4cThread.active or pclThread.active:
             time.sleep(1)
             if verbose: print('PcLint: %s - U4C: %s' % (pcl.statusMsg, u4co.statusMsg))
@@ -87,4 +87,4 @@ def Analyze( projFile, fullAnalysis = True, verbose = True):
     return status
 
 if __name__ == '__main__':
-    Analyze(projFile)#, False)
+    Analyze(projFile, False)

@@ -2,6 +2,11 @@
 SciTool Understand for C/C++ Tool Manager
 
 Design Assumptions:
+
+Format Specification:
+The user can specify the keywords they want for substitution in the format definitons by
+enclosing the token in <> brackets and providing a regular expression.
+
 """
 #---------------------------------------------------------------------------------------------------
 # Python Modules
@@ -226,18 +231,18 @@ class U4c( ToolManager):
         try:
             self.projFile.dbLock.acquire()
 
-            self.MetricChecks()
+            #self.MetricChecks()
+            #self.NamingChecks()
+            #self.LanguageRestriction()
             self.FormatChecks()
-            self.NamingChecks()
-            self.LanguageRestriction()
 
             self.insertDeleted = self.vDb.MarkNotReported( self.toolName, self.updateTime)
             self.unanalyzed = self.vDb.Unanalyzed( self.toolName)
 
-            self.projFile.dbLock.release()
         except:
-            self.projFile.dbLock.release()
             raise
+        finally:
+            self.projFile.dbLock.release()
 
     #-----------------------------------------------------------------------------------------------
     def MetricChecks(self):
@@ -367,10 +372,69 @@ class U4c( ToolManager):
 
     #-----------------------------------------------------------------------------------------------
     def FormatChecks(self):
+        """ Perform file/function header format checks
+            This must be done last to ensure all the function info has already been filled in
+        """
         self.SetStatusMsg( msg = 'Format Checks')
+
+        self.FunctionHeaderFormat()
+
+
+
+    #-----------------------------------------------------------------------------------------------
+    def FunctionHeaderFormat(self):
+        """ Verify the function header format and content
+        """
+        self.SetStatusMsg( msg = 'Check Function Header Format')
+
+        fhRe = re.compile( self.projFile.formats[PF.eFmtFunction], re.DOTALL)
+
+        pctCtr = 0
+        totalFiles = len(self.srcFiles)
+        for i in self.srcFiles:
+            pctCtr += 1
+            self.SetStatusMsg( (pctCtr/float(totalFiles)*100))
+
+            # compute the relative path from a srcRoot
+            rpfn, fn = self.projFile.RelativePathName( i)
+
+            # Get file/function information
+            funcInfo = self.udb.GetFileFunctionInfo( fn)
+
+            for func in funcInfo:
+                fi = funcInfo[func]
+                hdr = ''.join(fi[udb.eFiHeader])
+                lineNum = fi[udb.eFiStart]
+
+                if hdr.find( func) == -1:
+                    severity = 'Error'
+                    violationId = 'Fmt-FuncHdrName'
+                    print( 'Failed Function header name %s' % func)
+
+                m = fhRe.match( hdr)
+                if not m:
+                    severity = 'Error'
+                    violationId = 'Fmt-FuncHdr'
+                    print( 'Failed Function header %s' % func)
+
+    #-----------------------------------------------------------------------------------------------
+    def FileFormat( self):
+        for f in self.srcFiles:
+            # detemrine file type c/h
+            ext = os.path.splitext( fpfn)[1]
+            if ext == '.h':
+                fmt = re.compile( self.projFile.formats[PF.eFmtFile_h])
+
+                m = fmtRe.match( 'a')
+
+
+
+
 
     #-----------------------------------------------------------------------------------------------
     def NamingChecks(self):
+        """ Perform naming checks for all supplied item types
+        """
         x = 0
         self.SetStatusMsg( msg = 'Naming Checks')
 
@@ -393,6 +457,7 @@ class U4c( ToolManager):
         enumRe  = re.compile( fmt)
         theItems = self.udb.db.lookup( re.compile(r'.*'), 'Enumerator')
         self.NamingChecker( enumRe, size, theItems, 'Enum', 'Enum', self.GetFuncVarName)
+
 
     #-----------------------------------------------------------------------------------------------
     def NamingChecker( self, theRe, maxLength, theItems, name, longname, getFunc):
@@ -470,6 +535,7 @@ class U4c( ToolManager):
 
     #-----------------------------------------------------------------------------------------------
     def GetFuncVarName(self, item):
+        """ Used by Naming rules to find a function when checking variable/enum/? """
         func = 'N/A'
         parent = item.parent()
         if parent and parent.kindname().find( 'Function') != -1:
@@ -478,11 +544,13 @@ class U4c( ToolManager):
         return func
     #-----------------------------------------------------------------------------------------------
     def GetFuncFuncName(self, item):
+        """ Used by Naming rules to find the function name when checking function names """
         func = item.name()
         return func
 
     #-----------------------------------------------------------------------------------------------
     def LanguageRestriction(self):
+        """ Perform checks that restrict the usage of language elements """
         # excluded functions
         # restricted functions
         self.SetStatusMsg( msg = 'Language Restrictions')
@@ -530,6 +598,8 @@ class U4c( ToolManager):
 
     #-----------------------------------------------------------------------------------------------
     def HandleRegister( self):
+        """ handle the declaration of a register variable if the user has disallowed this """
+        # TODO: check that no local variable type is declared as a register
         return []
 
     #-----------------------------------------------------------------------------------------------

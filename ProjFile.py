@@ -78,6 +78,7 @@ eExcludeU4c    = 'Files_U4c'
 eExcludeFunc   = 'Functions'
 eExcludeKeywords = 'Keywords'
 
+eFmtKeywords = 'Keywords'
 eFmtFile_h = 'File_h'
 eFmtFile_c = 'File_c'
 eFmtFunction = 'FunctionHeader'
@@ -151,6 +152,7 @@ class ProjectFile:
         self.exclude[eExcludeKeywords] = []
 
         self.formats = OrderedDict()
+        self.formats[eFmtKeywords] = OrderedDict()
         self.formats[eFmtFile_h] = ''
         self.formats[eFmtFile_c] = ''
         self.formats[eFmtFunction] = ''
@@ -222,6 +224,17 @@ class ProjectFile:
         self.ReadOptions()
         self.ReadRestricted()
 
+        # replace keywords in formats
+        for t in self.formats:
+            if t != eFmtKeywords:
+                v = self.formats[t]
+                for c in r'\.^$*+?{}[]|()':
+                    v = v.replace(c, r'\%s' % c)
+                for k in self.formats[eFmtKeywords]:
+                    kv = self.formats[eFmtKeywords][k]
+                    v = v.replace( k, kv)
+                    self.formats[t] = v
+
     #-----------------------------------------------------------------------------------------------
     def ReadPaths( self):
         """ Write the project and src code root info to the file """
@@ -244,7 +257,10 @@ class ProjectFile:
     #-----------------------------------------------------------------------------------------------
     def ReadFormats( self):
         for i in self.formats:
-            self.formats[i] = self.GetMultiLines( 'Format_%s' % i)
+            if i != eFmtKeywords:
+                self.formats[i] = self.GetMultiLines( 'Format_%s' % i)
+            else:
+                self.formats[i] = self.ReadDict( 'Format_%s' % i)
 
     #-----------------------------------------------------------------------------------------------
     def ReadMetrics( self):
@@ -262,6 +278,26 @@ class ProjectFile:
                         pass
                 else:
                     break
+
+    #-----------------------------------------------------------------------------------------------
+    def ReadDict( self, group):
+        # TODO: assert on format error
+        od = OrderedDict()
+        at = self.GetHdr( group)
+        if at != -1:
+            at += 1
+            while at < len(self.projectFileData):
+                line = self.projectFileData[at]
+                at += 1
+                parts = line.strip().split('=')
+                if len(parts) == 2:
+                    name = parts[0].strip()
+                    info = parts[1].strip()
+                    od[name] = info
+                else:
+                    break
+
+        return od
 
     #-----------------------------------------------------------------------------------------------
     def ReadNaming( self):
@@ -469,7 +505,7 @@ class ProjectFile:
     #-----------------------------------------------------------------------------------------------
     def RelativePathName( self, fpfn):
         """ Convert a full path name to a relative path file name
-            return the relative path name a and the the title
+            return: rpfn, title
         """
         relPathNames = []
         srcRoots = self.paths[ePathSrcRoot]

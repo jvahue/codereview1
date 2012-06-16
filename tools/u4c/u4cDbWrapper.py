@@ -22,6 +22,15 @@ import understand
 #---------------------------------------------------------------------------------------------------
 # Data
 #---------------------------------------------------------------------------------------------------
+eFiHeader = 'header'
+eFiFullPath = 'fullPath'
+eFiContent = 'content'
+eFiStart = 'start'
+eFiEnd = 'end'
+eFiMetrics = 'metrics'
+eFiReturns = 'returns'
+
+eFiMxLines = 'CountLine'
 
 #---------------------------------------------------------------------------------------------------
 # Functions
@@ -60,6 +69,7 @@ class U4cDb:
             self.status = 'DB API License Error'
             self.isOpen = False
 
+        # hold function info for all requested functions
         self.fileFuncInfo = {}
 
     #-----------------------------------------------------------------------------------------------
@@ -98,7 +108,7 @@ class U4cDb:
 
                 for f in functions:
                     funcInfo[f.name()] = self.GetFuncInfo( f, returnsAt)
-                    funcInfo[f.name()]['fullPath'] = self.GetFileEnt( filename).longname()
+                    funcInfo[f.name()][eFiFullPath] = self.GetFileEnt( filename).longname()
 
                 self.fileFuncInfo[filename] = funcInfo
         else:
@@ -128,23 +138,23 @@ class U4cDb:
         """
         info = OrderedDict()
 
-        info['header'] = function.comments('before', True)
-        info['content'] = function.contents()
+        info[eFiHeader] = function.comments('before', True)
+        info[eFiContent] = function.contents()
 
         metrics = function.metric( function.metrics())
 
         # find the start, end line of the functions
         defFile, defLine = self.RefAt( function)
-        info['start'] = defLine
-        info['end'] = info['start'] + (metrics['CountLine'] - 1)
+        info[eFiStart] = defLine
+        info[eFiEnd] = info[eFiStart] + (metrics[eFiMxLines] - 1)
 
-        info['metrics'] = metrics
+        info[eFiMetrics] = metrics
 
         # count how many returns there are in the functions
-        info['returns'] = 0
+        info[eFiReturns] = 0
         for l in returnsAt:
-            if l >= info['start'] and l <= info['end']:
-                info['returns'] += 1
+            if l >= info[eFiStart] and l <= info[eFiEnd]:
+                info[eFiReturns] += 1
 
         return info
 
@@ -177,7 +187,7 @@ class U4cDb:
         info = {}
         for func in funcInfo:
             info = funcInfo[func]
-            if info['start'] <= line <= info['end']:
+            if info[eFiStart] <= line <= info[eFiEnd]:
                 theFunc = func
                 break
 

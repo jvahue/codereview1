@@ -228,21 +228,22 @@ class ViolationDb( DB_SQLite):
             from violations
             where lastReport != ?
             and detectedBy = '%s'
-            and status != '%s'
-            and who != '%s'
-            """ % (detectedBy, eNotReported, eAutoWho)
+            and reviewDate is Null
+            """ % (detectedBy,)
         self.Execute( s, (updateTime,))
         data = self.GetOne()
 
         # mark them as not being reported anymore
         s = """ update violations set
-                status=?, who=?, lastReport=?, reviewDate=?
+                status=?, reviewDate=?
                 where lastReport != ?
                 and detectedBy = '%s'
                 and reviewDate is Null
             """ % (detectedBy)
-        params = (eNotReported, eAutoWho, updateTime, updateTime, updateTime)
+        params = (eNotReported, updateTime, updateTime)
         self.Execute( s, params)
+
+        self.Commit()
 
         return data[0]
 
