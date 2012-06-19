@@ -29,6 +29,8 @@ eFiStart = 'start'
 eFiEnd = 'end'
 eFiMetrics = 'metrics'
 eFiReturns = 'returns'
+eFiParams = 'parameters'
+eFiReturnType = 'returnType'
 
 eFiMxLines = 'CountLine'
 
@@ -138,7 +140,7 @@ class U4cDb:
         """
         info = OrderedDict()
 
-        info[eFiHeader] = function.comments('before', True)
+        info[eFiHeader] = function.comments('before')
         info[eFiContent] = function.contents()
 
         metrics = function.metric( function.metrics())
@@ -149,6 +151,15 @@ class U4cDb:
         info[eFiEnd] = info[eFiStart] + (metrics[eFiMxLines] - 1)
 
         info[eFiMetrics] = metrics
+
+        # get params names: and return type
+        theRefs = function.refs()
+        info[eFiParams] = []
+        for r in theRefs:
+            if r.ent().kindname() == 'Parameter' and r.kindname() == 'Define':
+                info[eFiParams].append( r.ent().name())
+
+        info[eFiReturnType] = function.type()
 
         # count how many returns there are in the functions
         info[eFiReturns] = 0
