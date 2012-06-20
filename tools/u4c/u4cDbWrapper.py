@@ -232,7 +232,7 @@ class U4cDb:
 
 #===================================================================================================
 if __name__ == '__main__':
-    dbName = r'D:\Knowlogic\Tools\CR-Projs\zzzCodereviewPROJ\tool\u4c\db.udb'
+    dbName = r'C:\Knowlogic\Tools\CR-Projs\zzzCodereviewPROJ\tool\u4c\db.udb'
     db = U4cDb(dbName)
     x = db.GetItemRefs('va_end')
 

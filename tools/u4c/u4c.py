@@ -231,9 +231,9 @@ class U4c( ToolManager):
         try:
             self.projFile.dbLock.acquire()
 
-            #self.MetricChecks()
-            #self.NamingChecks()
-            #self.LanguageRestriction()
+            self.MetricChecks()
+            self.NamingChecks()
+            self.LanguageRestriction()
             self.FormatChecks()
 
             self.insertDeleted = self.vDb.MarkNotReported( self.toolName, self.updateTime)
@@ -361,12 +361,34 @@ class U4c( ToolManager):
                     func = data[(ds,de)]
 
             if lineLen > lineLimit:
-                severity = 'Error'
+                severity = 'Warning'
                 violationId = 'Metric-Line'
                 desc = 'Line Length in %s line %d' % (fn, lineNumber)
                 details = '%3d: %s' % (lineLen, txt.strip())
                 self.vDb.Insert( rpfn, func, severity, violationId, desc,
                                  details, u4cLine, eDbDetectId, self.updateTime)
+
+            # check for TODO or TBD
+            txtl = txt.lower()
+            todoRe = re.compile( r' ?todo[: ]+')
+            tbdRe = re.compile( r' ?tbd[: ]+')
+            if todoRe.search( txtl) or tbdRe.search(txtl):
+                severity = 'Info'
+                violationId = 'Misc-TODO'
+                desc = 'Line contains TODO/TBD %s line %d' % (fn, lineNumber)
+                details = '%s' % (txt.strip())
+                self.vDb.Insert( rpfn, func, severity, violationId, desc,
+                                 details, u4cLine, eDbDetectId, self.updateTime)
+
+            # check for tabs
+            if txt.find('\t') != -1:
+                if txt.lower().find('todo') != -1 or txt.lower().find('tbd') != -1:
+                    severity = 'Warning'
+                    violationId = 'Misc-TAB'
+                    desc = 'Line contains TAB(s) %s line %d' % (fn, lineNumber)
+                    details = '%s' % (txt.strip())
+                    self.vDb.Insert( rpfn, func, severity, violationId, desc,
+                                     details, u4cLine, eDbDetectId, self.updateTime)
 
         self.vDb.Commit()
 
