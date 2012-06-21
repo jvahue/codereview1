@@ -77,7 +77,7 @@ class ToolManager:
         self.projFile = projFile
         self.toolName = toolName
 
-        self.SetStatusMsg( msg = 'Starting')
+        self.SetStatusMsg( msg = 'Inactive')
 
         self.jobCmd = ''
         self.job = None

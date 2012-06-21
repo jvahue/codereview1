@@ -437,7 +437,7 @@ class U4c( ToolManager):
                     if k == '<TheParameters>':
                         fhDescLines[lx] = l.replace('<TheParameters>','')
                     elif k == '<TheReturnType>':
-                        fhDescLines[lx] = l.replace('<TheReturnType>', r'(?P<rtn>.*?)' )
+                        fhDescLines[lx] = l.replace('<TheReturnType>', r'(?P<rtn>.*)' )
 
         pctCtr = 0
         totalFiles = len(self.srcFiles)
@@ -454,6 +454,9 @@ class U4c( ToolManager):
             for func in funcInfo:
                 # keep the location each item is found at
                 fhIndex = [-1] * len(fhDescLines)
+
+                if func == 'DPRAM_GetTxInfo':
+                    pass
 
                 # get function info
                 fi = funcInfo[func]
@@ -477,7 +480,7 @@ class U4c( ToolManager):
                 # now scan for the description items in the Function header
                 rtnText = ''
                 for iix, ii in enumerate(fhDescLines):
-                    ii = ii.replace( '<TheFunctionName>', func)
+                    ii = ii.replace( '<TheFunctionName>', '')
 
                     fhre = re.compile( ii, re.DOTALL)
                     wasFound = False
@@ -486,40 +489,52 @@ class U4c( ToolManager):
                         if m:
                             fhIndex[iix] = lx
                             if expectReturn and iix == keywordRefs['<TheReturnType>']:
-                                rtnText = m.group('rtn')
+                               rtnText = m.group('rtn')
                             break
 
-                # verify all the items where there
-                for iix,ii in enumerate(fhDescLines):
-                    if fhIndex[iix] == -1:
+                # verify all the items where present and in the right order
+                orderOk = []
+                expectSeq = fhDescLines[:]
+                for lx,name in enumerate(fhDescLines):
+                    if fhIndex[lx] != -1:
+                        orderOk.append( (lx, fhIndex[lx], name))
+                    else:
                         # missing header field
+                        at = expectSeq.index(name)
+                        del expectSeq[at]
                         severity = 'Error'
                         violationId = 'FuncHdr-FieldMissing'
-                        desc = 'Function Header %s missing %s' % (func, ii)
+                        desc = 'Function Header %s missing %s' % (func, name)
                         details = 'N/A'
                         self.vDb.Insert(rpfn, func, severity, violationId, desc,
                                         details, lineNum, eDbDetectId, self.updateTime)
 
-                # check all the items are in order
-                orderOk = fhIndex[:]
-                orderOk.sort()
-                if orderOk != fhIndex:
-                    # header field order
-                    severity = 'Error'
-                    violationId = 'FuncHdr-Seq'
-                    desc = 'Function Header %s Info Sequence Error' % (func)
-                    for iix,ii in enumerate(fhDescLines):
-                        if fhIndex[iix] != orderOk[0]:
-                            details = 'Sequence Error: %s' % (ii)
-                            self.vDb.Insert(rpfn, func, severity, violationId, desc,
-                                            details, lineNum, eDbDetectId, self.updateTime)
-                        orderOk = orderOk[1:]
+                # report items out of sequence in the header
+                orderOk.sort( key=lambda x: x[1])
+                itemSeq0 = [name for exp, act, name in orderOk]
+                itemSeq = itemSeq0[:]
+                for ix, item in enumerate(expectSeq):
+                    if itemSeq and item != itemSeq[0]:
+                        ax = itemSeq.index( item)
+                        del itemSeq[ax]
+                        # header field order
+                        severity = 'Error'
+                        violationId = 'FuncHdr-Seq'
+                        desc = 'Function Header %s Info Sequence Error' % (func)
+                        ax0 = itemSeq0.index( item)
+                        details = '%s expected position %d found at position %d' % (item,
+                                                                                    ix,
+                                                                                    ax0)
+                        self.vDb.Insert(rpfn, func, severity, violationId, desc,
+                                        details, lineNum, eDbDetectId, self.updateTime)
+                    else:
+                        itemSeq = itemSeq[1:]
 
                 # is the function name supposed to be in the header?
                 if expectFuncName and hdr and hdr.find( func) == -1:
                     severity = 'Error'
                     violationId = 'FuncHdr-FuncName'
-                    desc = 'Function Name Missing %s' % func
+                    desc = 'Function Name %s Missing in header' % func
                     details = 'N/A'
                     self.vDb.Insert(rpfn, func, severity, violationId, desc,
                                     details, lineNum, eDbDetectId, self.updateTime)
