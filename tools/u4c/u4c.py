@@ -455,7 +455,7 @@ class U4c( ToolManager):
                 # keep the location each item is found at
                 fhIndex = [-1] * len(fhDescLines)
 
-                if func == 'DPRAM_GetTxInfo':
+                if func == 'UartMgrMsg_Debug':
                     pass
 
                 # get function info
@@ -505,7 +505,7 @@ class U4c( ToolManager):
                         severity = 'Error'
                         violationId = 'FuncHdr-FieldMissing'
                         desc = 'Function Header %s missing %s' % (func, name)
-                        details = 'N/A'
+                        details = 'Function header consists of %d lines' % len(hdrLines)
                         self.vDb.Insert(rpfn, func, severity, violationId, desc,
                                         details, lineNum, eDbDetectId, self.updateTime)
 
@@ -535,7 +535,7 @@ class U4c( ToolManager):
                     severity = 'Error'
                     violationId = 'FuncHdr-FuncName'
                     desc = 'Function Name %s Missing in header' % func
-                    details = 'N/A'
+                    details = 'Function header consists of %d lines' % len(hdrLines)
                     self.vDb.Insert(rpfn, func, severity, violationId, desc,
                                     details, lineNum, eDbDetectId, self.updateTime)
 
@@ -564,7 +564,7 @@ class U4c( ToolManager):
                     severity = 'Error'
                     violationId = 'FuncHdr-Return'
                     desc = 'Function Header %s Missing return info' % (func)
-                    details = 'N/A'
+                    details = 'Function header consists of %d lines' % len(hdrLines)
                     self.vDb.Insert(rpfn, func, severity, violationId, desc,
                                     details, lineNum, eDbDetectId, self.updateTime)
 
