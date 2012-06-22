@@ -205,6 +205,15 @@ class U4cDb:
         return theFunc, info
 
     #-----------------------------------------------------------------------------------------------
+    def FindEnt(self, item):
+        """ Find where an entity is defined or declared """
+        # check for declared first
+        defFile, defLine = self.RefAt( item, 'Declare')
+        if defFile == '':
+            defFile, defLine = self.RefAt( item)
+        return defFile, defLine
+
+    #-----------------------------------------------------------------------------------------------
     def RefAt(self, item, refType = 'Define'):
         """ find out where an item (ent) is declared
             returns:

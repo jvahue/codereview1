@@ -231,10 +231,11 @@ class U4c( ToolManager):
         try:
             self.projFile.dbLock.acquire()
 
-            self.MetricChecks()
-            self.NamingChecks()
-            self.LanguageRestriction()
-            self.FormatChecks()
+            self.CheckMetrics()
+            self.CheckNaming()
+            self.CheckLanguageRestrictions()
+            self.CheckFormats()
+            self.CheckBaseTypes()
 
             self.insertDeleted = self.vDb.MarkNotReported( self.toolName, self.updateTime)
             self.unanalyzed = self.vDb.Unanalyzed( self.toolName)
@@ -245,7 +246,7 @@ class U4c( ToolManager):
             self.projFile.dbLock.release()
 
     #-----------------------------------------------------------------------------------------------
-    def MetricChecks(self):
+    def CheckMetrics(self):
         """ This function verifies all of the length limits are met on a file by fail basis.
         """
         self.SetStatusMsg( msg = 'Metric Checks')
@@ -368,7 +369,7 @@ class U4c( ToolManager):
                 self.vDb.Insert( rpfn, func, severity, violationId, desc,
                                  details, u4cLine, eDbDetectId, self.updateTime)
 
-            # check for TODO or TBD
+            # check for TO-DO or T.B.D.
             txtl = txt.lower()
             todoRe = re.compile( r' ?todo[: ]+')
             tbdRe = re.compile( r' ?tbd[: ]+')
@@ -393,200 +394,7 @@ class U4c( ToolManager):
         self.vDb.Commit()
 
     #-----------------------------------------------------------------------------------------------
-    def FormatChecks(self):
-        """ Perform file/function header format checks
-            This must be done last to ensure all the function info has already been filled in
-        """
-        self.SetStatusMsg( msg = 'Format Checks')
-
-        self.FunctionHeaderFormat()
-
-
-
-    #-----------------------------------------------------------------------------------------------
-    def FunctionHeaderFormat(self):
-        """ Verify the function header format and content
-            keywords:
-                <TheFunctionName> matches the current functions name
-                <TheParameters> names of parameters must match, void matches empty string
-                <TheReturnType> names the return type, void matches empty string
-
-        """
-        self.SetStatusMsg( msg = 'Check Function Header Format')
-
-        # index into description indexes
-        keywordRefs = {
-            '<TheParameters>':0,
-            '<TheReturnType>':0
-        }
-
-        # in the function header we look for important items
-        fhDesc = self.projFile.formats[PF.eFmtFunction]
-
-        expectFuncName = fhDesc.find( '<TheFunctionName>') != -1
-        expectParams = fhDesc.find( '<TheParameters>') != -1
-        expectReturn = fhDesc.find( '<TheReturnType>') != -1
-
-        fhDescLines = fhDesc.split('\n')
-
-        # find position of keywords in the description items
-        for lx,l in enumerate(fhDescLines):
-            for k in keywordRefs:
-                if l.find(k) != -1:
-                    keywordRefs[k] = lx
-                    if k == '<TheParameters>':
-                        fhDescLines[lx] = l.replace('<TheParameters>','')
-                    elif k == '<TheReturnType>':
-                        fhDescLines[lx] = l.replace('<TheReturnType>', r'(?P<rtn>.*)' )
-
-        pctCtr = 0
-        totalFiles = len(self.srcFiles)
-        for i in self.srcFiles:
-            pctCtr += 1
-            self.SetStatusMsg( (pctCtr/float(totalFiles)*100))
-
-            # compute the relative path from a srcRoot
-            rpfn, fn = self.projFile.RelativePathName( i)
-
-            # Get file/function information
-            funcInfo = self.udb.GetFileFunctionInfo( fn)
-
-            for func in funcInfo:
-                # keep the location each item is found at
-                fhIndex = [-1] * len(fhDescLines)
-
-                if func == 'UartMgrMsg_Debug':
-                    pass
-
-                # get function info
-                fi = funcInfo[func]
-                hdr = fi[udb.eFiHeader]
-                params = fi[udb.eFiParams]
-                lineNum = fi[udb.eFiStart]
-
-                # header split by line
-                if hdr:
-                    hdrLines = hdr.split('\n')
-                else:
-                    # No functin header
-                    severity = 'Error'
-                    violationId = 'FuncHdr-Missing'
-                    desc = 'Function Header %s is missing' % (func)
-                    details = 'N/A'
-                    self.vDb.Insert(rpfn, func, severity, violationId, desc,
-                                    details, lineNum, eDbDetectId, self.updateTime)
-                    continue
-
-                # now scan for the description items in the Function header
-                rtnText = ''
-                for iix, ii in enumerate(fhDescLines):
-                    ii = ii.replace( '<TheFunctionName>', '')
-
-                    fhre = re.compile( ii, re.DOTALL)
-                    wasFound = False
-                    for lx,line in enumerate(hdrLines):
-                        m = fhre.search( line)
-                        if m:
-                            fhIndex[iix] = lx
-                            if expectReturn and iix == keywordRefs['<TheReturnType>']:
-                               rtnText = m.group('rtn')
-                            break
-
-                # verify all the items where present and in the right order
-                orderOk = []
-                expectSeq = fhDescLines[:]
-                for lx,name in enumerate(fhDescLines):
-                    if fhIndex[lx] != -1:
-                        orderOk.append( (lx, fhIndex[lx], name))
-                    else:
-                        # missing header field
-                        at = expectSeq.index(name)
-                        del expectSeq[at]
-                        severity = 'Error'
-                        violationId = 'FuncHdr-FieldMissing'
-                        desc = 'Function Header %s missing %s' % (func, name)
-                        details = 'Function header consists of %d lines' % len(hdrLines)
-                        self.vDb.Insert(rpfn, func, severity, violationId, desc,
-                                        details, lineNum, eDbDetectId, self.updateTime)
-
-                # report items out of sequence in the header
-                orderOk.sort( key=lambda x: x[1])
-                itemSeq0 = [name for exp, act, name in orderOk]
-                itemSeq = itemSeq0[:]
-                for ix, item in enumerate(expectSeq):
-                    if itemSeq and item != itemSeq[0]:
-                        ax = itemSeq.index( item)
-                        del itemSeq[ax]
-                        # header field order
-                        severity = 'Error'
-                        violationId = 'FuncHdr-Seq'
-                        desc = 'Function Header %s Info Sequence Error' % (func)
-                        ax0 = itemSeq0.index( item)
-                        details = '%s expected position %d found at position %d' % (item,
-                                                                                    ix,
-                                                                                    ax0)
-                        self.vDb.Insert(rpfn, func, severity, violationId, desc,
-                                        details, lineNum, eDbDetectId, self.updateTime)
-                    else:
-                        itemSeq = itemSeq[1:]
-
-                # is the function name supposed to be in the header?
-                if expectFuncName and hdr and hdr.find( func) == -1:
-                    severity = 'Error'
-                    violationId = 'FuncHdr-FuncName'
-                    desc = 'Function Name %s Missing in header' % func
-                    details = 'Function header consists of %d lines' % len(hdrLines)
-                    self.vDb.Insert(rpfn, func, severity, violationId, desc,
-                                    details, lineNum, eDbDetectId, self.updateTime)
-
-                # check parameters - if requested and there are any
-                if expectParams and params:
-                    paramsAt = keywordRefs['<TheParameters>']
-                    start = fhIndex[paramsAt]
-                    end = fhIndex[paramsAt+1:]
-                    if end:
-                        paramLines = hdrLines[start:end[0]]
-                    else:
-                        paramLines = hdrLines[start:]
-
-                    for px,p in enumerate(params):
-                        pd = [i for i in paramLines if i.find(p) != -1]
-                        if not pd:
-                            severity = 'Error'
-                            violationId = 'FuncHdr-Param'
-                            desc = 'Function Header %s Missing Param %s' % (func, p)
-                            details = 'Parameter %s not in description' % p
-                            self.vDb.Insert(rpfn, func, severity, violationId, desc,
-                                            details, lineNum, eDbDetectId, self.updateTime)
-
-                # check return type - if requested
-                if expectReturn and not rtnText and fi[udb.eFiReturnType] != 'void':
-                    severity = 'Error'
-                    violationId = 'FuncHdr-Return'
-                    desc = 'Function Header %s Missing return info' % (func)
-                    details = 'Function header consists of %d lines' % len(hdrLines)
-                    self.vDb.Insert(rpfn, func, severity, violationId, desc,
-                                    details, lineNum, eDbDetectId, self.updateTime)
-
-        self.vDb.Commit()
-
-
-    #-----------------------------------------------------------------------------------------------
-    def FileFormat( self):
-        for f in self.srcFiles:
-            # detemrine file type c/h
-            ext = os.path.splitext( fpfn)[1]
-            if ext == '.h':
-                fmt = re.compile( self.projFile.formats[PF.eFmtFile_h])
-
-                m = fmtRe.match( 'a')
-
-
-
-
-
-    #-----------------------------------------------------------------------------------------------
-    def NamingChecks(self):
+    def CheckNaming(self):
         """ Perform naming checks for all supplied item types
         """
         x = 0
@@ -703,7 +511,7 @@ class U4c( ToolManager):
         return func
 
     #-----------------------------------------------------------------------------------------------
-    def LanguageRestriction(self):
+    def CheckLanguageRestrictions(self):
         """ Perform checks that restrict the usage of language elements """
         # excluded functions
         # restricted functions
@@ -775,6 +583,282 @@ class U4c( ToolManager):
             self.vDb.Commit()
 
     #-----------------------------------------------------------------------------------------------
+    def CheckFormats(self):
+        """ Perform file/function header format checks
+            This must be done last to ensure all the function info has already been filled in
+        """
+        self.SetStatusMsg( msg = 'Format Checks')
+
+        self.FunctionHeaderFormat()
+
+
+
+    #-----------------------------------------------------------------------------------------------
+    def FunctionHeaderFormat(self):
+        """ Verify the function header format and content
+            keywords:
+                <TheFunctionName> matches the current functions name
+                <TheParameters> names of parameters must match, void matches empty string
+                <TheReturnType> names the return type, void matches empty string
+
+        """
+        self.SetStatusMsg( msg = 'Check Function Header Format')
+
+        # index into description indexes
+        keywordRefs = {
+            '<TheParameters>':0,
+            '<TheReturnType>':0
+        }
+
+        # in the function header we look for important items
+        fhDesc = self.projFile.formats[PF.eFmtFunction]
+
+        expectFuncName = fhDesc.find( '<TheFunctionName>') != -1
+        expectParams = fhDesc.find( '<TheParameters>') != -1
+        expectReturn = fhDesc.find( '<TheReturnType>') != -1
+
+        fhDescLines = fhDesc.split('\n')
+
+        # find position of keywords in the description items
+        for lx,l in enumerate(fhDescLines):
+            for k in keywordRefs:
+                if l.find(k) != -1:
+                    keywordRefs[k] = lx
+                    if k == '<TheParameters>':
+                        fhDescLines[lx] = l.replace('<TheParameters>','')
+                    elif k == '<TheReturnType>':
+                        fhDescLines[lx] = l.replace('<TheReturnType>', r'(?P<rtn>.*)' )
+
+        pctCtr = 0
+        totalFiles = len(self.srcFiles)
+        for i in self.srcFiles:
+            pctCtr += 1
+            self.SetStatusMsg( (pctCtr/float(totalFiles)*100))
+
+            # compute the relative path from a srcRoot
+            rpfn, fn = self.projFile.RelativePathName( i)
+
+            # Get file/function information
+            funcInfo = self.udb.GetFileFunctionInfo( fn)
+
+            for func in funcInfo:
+                # keep the location each item is found at
+                fhIndex = [-1] * len(fhDescLines)
+
+                if func == 'UartMgrMsg_Debug':
+                    pass
+
+                # get function info
+                fi = funcInfo[func]
+                hdr = fi[udb.eFiHeader]
+                params = fi[udb.eFiParams]
+                lineNum = fi[udb.eFiStart]
+
+                # header split by line
+                if hdr:
+                    hdrLines = hdr.split('\n')
+                else:
+                    # No functin header
+                    severity = 'Error'
+                    violationId = 'FuncHdr-Missing'
+                    desc = 'Function Header %s is missing' % (func)
+                    details = 'N/A'
+                    self.vDb.Insert(rpfn, func, severity, violationId, desc,
+                                    details, lineNum, eDbDetectId, self.updateTime)
+                    continue
+
+                # now scan for the description items in the Function header
+                rtnText = ''
+                for iix, ii in enumerate(fhDescLines):
+                    ii = ii.replace( '<TheFunctionName>', '')
+
+                    fhre = re.compile( ii, re.DOTALL)
+                    wasFound = False
+                    for lx,line in enumerate(hdrLines):
+                        m = fhre.search( line)
+                        if m:
+                            fhIndex[iix] = lx
+                            if expectReturn and iix == keywordRefs['<TheReturnType>']:
+                                rtnText = m.group('rtn')
+                            break
+
+                # verify all the items where present and in the right order
+                orderOk = []
+                expectSeq = fhDescLines[:]
+                for lx,name in enumerate(fhDescLines):
+                    if fhIndex[lx] != -1:
+                        orderOk.append( (lx, fhIndex[lx], name))
+                    else:
+                        # missing header field
+                        at = expectSeq.index(name)
+                        del expectSeq[at]
+                        severity = 'Error'
+                        violationId = 'FuncHdr-FieldMissing'
+                        desc = 'Function Header %s missing %s' % (func, name)
+                        details = 'Function header consists of %d lines' % len(hdrLines)
+                        self.vDb.Insert(rpfn, func, severity, violationId, desc,
+                                        details, lineNum, eDbDetectId, self.updateTime)
+
+                # report items out of sequence in the header
+                orderOk.sort( key=lambda x: x[1])
+                itemSeq0 = [name for exp, act, name in orderOk]
+                itemSeq = itemSeq0[:]
+                for ix, item in enumerate(expectSeq):
+                    if itemSeq and item != itemSeq[0]:
+                        ax = itemSeq.index( item)
+                        del itemSeq[ax]
+                        # header field order
+                        severity = 'Error'
+                        violationId = 'FuncHdr-Seq'
+                        desc = 'Function Header %s Info Sequence Error' % (func)
+                        ax0 = itemSeq0.index( item)
+                        details = '%s expected position %d found at position %d' % (item,
+                                                                                    ix,
+                                                                                    ax0)
+                        self.vDb.Insert(rpfn, func, severity, violationId, desc,
+                                        details, lineNum, eDbDetectId, self.updateTime)
+                    else:
+                        itemSeq = itemSeq[1:]
+
+                # is the function name supposed to be in the header?
+                if expectFuncName and hdr and hdr.find( func) == -1:
+                    severity = 'Error'
+                    violationId = 'FuncHdr-FuncName'
+                    desc = 'Function Name %s Missing in header' % func
+                    details = 'Function header consists of %d lines' % len(hdrLines)
+                    self.vDb.Insert(rpfn, func, severity, violationId, desc,
+                                    details, lineNum, eDbDetectId, self.updateTime)
+
+                # check parameters - if requested and there are any
+                if expectParams and params:
+                    paramsAt = keywordRefs['<TheParameters>']
+                    start = fhIndex[paramsAt]
+                    end = fhIndex[paramsAt+1:]
+                    if end:
+                        paramLines = hdrLines[start:end[0]]
+                    else:
+                        paramLines = hdrLines[start:]
+
+                    for px,p in enumerate(params):
+                        pd = [i for i in paramLines if i.find(p) != -1]
+                        if not pd:
+                            severity = 'Error'
+                            violationId = 'FuncHdr-Param'
+                            desc = 'Function Header %s Missing Param %s' % (func, p)
+                            details = 'Parameter %s not in description' % p
+                            self.vDb.Insert(rpfn, func, severity, violationId, desc,
+                                            details, lineNum, eDbDetectId, self.updateTime)
+
+                # check return type - if requested
+                if expectReturn and not rtnText and fi[udb.eFiReturnType] != 'void':
+                    severity = 'Error'
+                    violationId = 'FuncHdr-Return'
+                    desc = 'Function Header %s Missing return info' % (func)
+                    details = 'Function header consists of %d lines' % len(hdrLines)
+                    self.vDb.Insert(rpfn, func, severity, violationId, desc,
+                                    details, lineNum, eDbDetectId, self.updateTime)
+
+        self.vDb.Commit()
+
+
+    #-----------------------------------------------------------------------------------------------
+    def FileFormat( self):
+        for f in self.srcFiles:
+            # detemrine file type c/h
+            ext = os.path.splitext( fpfn)[1]
+            if ext == '.h':
+                fmt = re.compile( self.projFile.formats[PF.eFmtFile_h])
+
+                m = fmtRe.match( 'a')
+
+
+
+
+
+    #-----------------------------------------------------------------------------------------------
+    def CheckBaseTypes( self):
+        """ insure that all variables and structure definitions, return types, etc. are based on
+            the project base types
+            This additionally accepts: void and void*
+        """
+        baseTypes = self.projFile.baseTypes + ['void']
+        allObjs = sorted(self.udb.db.ents( 'object'),key= lambda ent: ent.name().lower())
+        totalObjs = len(allObjs)
+
+        objStats = {'ok':0, 'bad':0, 'other':0}
+
+        pctCtr = 0
+        self.SetStatusMsg(msg = 'Check Base Types')
+        letter0 = None
+        for obj in allObjs:
+            pctCtr += 1
+            pct = (float(pctCtr)/totalObjs) * 100
+            self.SetStatusMsg( pct)
+
+            oType = obj.type()
+            typeOk = True
+
+            if oType not in baseTypes:
+                typeOk = False
+                if oType is None:
+                    # make sure this is a typedef
+                    if obj.kindname().lower() == 'typedef':
+                        typeOk = True
+                else:
+                    # check is part of type is in any basetype
+                    for b in baseTypes:
+                        if oType.find( b) != -1:
+                            typeOk = True
+                            break
+                    else:
+                        # clean up the type
+                        # remove array size
+                        lsq = oType.find('[')
+                        rsq = oType.find(']')
+                        while lsq != -1 and rsq != -1:
+                            extractStr = oType[lsq:rsq+1]
+                            oType = oType.replace(extractStr,'')
+                            lsq = oType.find('[')
+                            rsq = oType.find(']')
+
+                        for ci in ['*', '[]', '()', 'const', 'volatile']:
+                            oType = oType.replace(ci,'')
+
+                        oType = oType.strip()
+                        tdefFound = self.udb.db.lookup(oType, 'Typedef')
+
+                        tdefFound = [i for i in tdefFound if i.name() == oType]
+                        if len(tdefFound) != 1:
+                            objStats['bad'] += 1
+                        else:
+                            typeOk = True
+
+            if not typeOk:
+                defFile, defLine = self.udb.FindEnt( obj)
+                if defFile != '':
+                    objStats['bad'] += 1
+                    print( '%s: Type(%s), Kind(%s)' % (obj.name(), oType, obj.kindname()))
+                    severity = 'Error'
+                    violationId = 'BaseType'
+                    fpfn = defFile.longname()
+                    rpfn, title = self.projFile.RelativePathName(fpfn)
+                    func, info = self.udb.InFunction( fpfn, defLine)
+                    details = self.ReadLineN( fpfn, defLine)
+                    desc = 'Base Type Error: %s line %d' % (obj.name(), defLine)
+                    self.vDb.Insert( rpfn, func, severity, violationId, desc,
+                                     details, defLine, eDbDetectId, self.updateTime)
+                    if letter0 != obj.name()[0]:
+                        letter0 = obj.name()[0]
+                        self.vDb.Commit()
+                else:
+                    print('BaseType: Library variable %s' % obj.name())
+
+            else:
+                objStats['ok'] += 1
+
+        print('ObjStats: ok(%d), bad(%d), other(%d)' % (objStats['ok'], objStats['bad'], objStats['other']))
+
+    #-----------------------------------------------------------------------------------------------
     def ReadLineN( self, filename, lineNumber):
         """ return the text of 'lineNumber' in file 'filename'
         """
@@ -785,6 +869,7 @@ class U4c( ToolManager):
         f.close()
         txt = lines[lineNumber - 1]
         return txt
+
 
 
 

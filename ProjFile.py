@@ -161,7 +161,7 @@ class ProjectFile:
         self.metrics[eMetricMcCabe] = 10
         self.metrics[eMetricNesting] = 5
         self.metrics[eMetricFile] = 3000
-        self.metrics[eMetricFunc] = 200
+        self.metrics[eMetricFunc] = 250
         self.metrics[eMetricLine] = 95
         self.metrics[eMetricReturns] = 1
 
@@ -171,6 +171,8 @@ class ProjectFile:
         self.naming[eNameEnum] = r'[A-Za-z0-9_]{1,32}'
         self.naming[eNameConst] = r'[A-Za-z0-9_]{1,32}'
         self.naming[eNameDef] = r'[A-Za-z0-9_]{1,32}'
+
+        self.baseTypes = []
 
         self.options = OrderedDict()
         self.options[eOptPcLint] = ''
@@ -223,6 +225,7 @@ class ProjectFile:
         self.ReadNaming()
         self.ReadOptions()
         self.ReadRestricted()
+        self.ReadBaseTypes()
 
         # replace keywords in formats
         for t in self.formats:
@@ -328,9 +331,14 @@ class ProjectFile:
             self.options[i] = self.GetMultiLines( 'Options_%s' % i)
 
     #-----------------------------------------------------------------------------------------------
+    def ReadBaseTypes( self):
+        self.baseTypes = self.GetList( 'Base_Types')
+
+    #-----------------------------------------------------------------------------------------------
     def ReadRestricted( self):
         for i in self.restricted:
             self.restricted[i] = self.GetList( 'Restricted_%s' % i)
+
 
     #-----------------------------------------------------------------------------------------------
     # Save / Write Operations
@@ -348,6 +356,7 @@ class ProjectFile:
             self.WriteFormats()
             self.WriteMetrics()
             self.WriteNaming()
+            self.WriteBaseTypes()
             self.WriteOptions()
             self.WriteRestricted()
 
@@ -387,6 +396,10 @@ class ProjectFile:
         self.PutHdr( 'Naming')
         for i in self.naming:
             self.projectFile.write( '%s=%s\n' % (i, self.naming[i]))
+
+    #-----------------------------------------------------------------------------------------------
+    def WriteBaseTypes( self):
+        self.PutList( 'Base_Types', self.baseTypes)
 
     #-----------------------------------------------------------------------------------------------
     def WriteOptions( self):
@@ -492,13 +505,18 @@ class ProjectFile:
 
     #-----------------------------------------------------------------------------------------------
     def FullPathName( self, rpfn):
-        """ Convert a relative path file name into a full path filename """
-        fullPathNames = []
-        srcRoots = self.paths[ePathSrcRoot]
-        for i in srcRoots:
-            fpfn = os.path.join( i, rpfn)
-            if os.path.isfile( fpfn):
-                fullPathNames.append( fpfn)
+        """ Convert a relative path file name into a full path filename, unless
+            it already is a full path name
+        """
+        if os.path.isfile( rpfn):
+            fullPathNames = [rpfn]
+        else:
+            fullPathNames = []
+            srcRoots = self.paths[ePathSrcRoot]
+            for i in srcRoots:
+                fpfn = os.path.join( i, rpfn)
+                if os.path.isfile( fpfn):
+                    fullPathNames.append( fpfn)
 
         return fullPathNames
 
