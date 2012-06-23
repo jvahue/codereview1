@@ -113,7 +113,7 @@ class U4cSetup( ToolSetup):
             for item in optionData:
                 add = '' if isFirst else 'Add'
                 isFirst = False
-                optionList.append('settings -%s %s' % ( option+add, item))
+                optionList.append('settings -%s "%s"' % ( option+add, item))
             optionList.append('')
 
         return optionList
@@ -606,8 +606,8 @@ class U4c( ToolManager):
 
         # index into description indexes
         keywordRefs = {
-            '<TheParameters>':0,
-            '<TheReturnType>':0
+            '<TheParameters>':-1,
+            '<TheReturnType>':-1
         }
 
         # in the function header we look for important items
@@ -622,7 +622,8 @@ class U4c( ToolManager):
         # find position of keywords in the description items
         for lx,l in enumerate(fhDescLines):
             for k in keywordRefs:
-                if l.find(k) != -1:
+                # only collect the first instance of the keyword
+                if l.find(k) != -1 and keywordRefs[k] == -1:
                     keywordRefs[k] = lx
                     if k == '<TheParameters>':
                         fhDescLines[lx] = l.replace('<TheParameters>','')
@@ -645,7 +646,7 @@ class U4c( ToolManager):
                 # keep the location each item is found at
                 fhIndex = [-1] * len(fhDescLines)
 
-                if func == 'UartMgrMsg_Debug':
+                if func == 'ConvertToDegC':
                     pass
 
                 # get function info
@@ -745,7 +746,7 @@ class U4c( ToolManager):
                             severity = 'Error'
                             violationId = 'FuncHdr-Param'
                             desc = 'Function Header %s Missing Param %s' % (func, p)
-                            details = 'Parameter %s not in description' % p
+                            details = 'Parameter <%s> not in description' % p
                             self.vDb.Insert(rpfn, func, severity, violationId, desc,
                                             details, lineNum, eDbDetectId, self.updateTime)
 

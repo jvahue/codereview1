@@ -97,7 +97,8 @@ class PcLintSetup( ToolSetup):
 
         # put all the PcLint Options together
         userOptions = self.projFile.options['PcLint']
-        defines = '\n'.join(['-d%s' % i for i in self.projFile.defines])
+        # make sure any defines with spaces are wrapped in ""
+        defines = '\n'.join(['++d"%s"' % i for i in self.projFile.defines])
         undefines = '\n'.join(['-u%s' % i for i in self.projFile.undefines])
         includeDirs = self.projFile.paths['IncludeDirs']
 

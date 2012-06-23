@@ -23,7 +23,7 @@ ePcLintBatTemplate = r"""
 cls
 mkdir results
 "%s" +v -i"%s" options.lnt -os(%s) srcFiles.lnt
-exit
+::-exit
 """
 
 eOptionsTemplate = r"""
