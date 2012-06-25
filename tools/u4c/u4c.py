@@ -12,6 +12,8 @@ enclosing the token in <> brackets and providing a regular expression.
 # Python Modules
 #---------------------------------------------------------------------------------------------------
 from collections import OrderedDict
+
+import copy
 import datetime
 import os
 import re
@@ -24,13 +26,14 @@ import understand
 #---------------------------------------------------------------------------------------------------
 # Knowlogic Modules
 #---------------------------------------------------------------------------------------------------
-import ProjFile as PF
-import ViolationDb as VDB
-
+from FormatChecker import FormatChecker
 from tools.u4c import u4cDbWrapper as udb
 from tools.u4c import U4cFileTemplates
 from tools.ToolMgr import ToolSetup, ToolManager
 from utils.DateTime import DateTime
+
+import ProjFile as PF
+import ViolationDb as VDB
 
 #---------------------------------------------------------------------------------------------------
 # Data
@@ -75,10 +78,9 @@ class U4cSetup( ToolSetup):
 
         cmdFilePath = os.path.join( self.projToolRoot, eU4cCmdFileName)
 
-        srcRoots = self.projFile.paths['SrcCodeRoot']
         excludeDirs = self.projFile.exclude['Dirs']
         excludeFiles = self.projFile.exclude['Files_U4c']
-        incDirs, srcFiles = self.projFile.GetSrcCodeFiles( srcRoots, ['.c','.h'], excludeDirs, excludeFiles)
+        incDirs, srcFiles = self.projFile.GetSrcCodeFiles( ['.c','.h'], excludeDirs, excludeFiles)
 
         # U4c Option definitions
         options = OrderedDict()
@@ -150,6 +152,8 @@ class U4c( ToolManager):
 
         # this holds all the file/function info data
         self.fileFuncInfo = {}
+        # this holds keyword data info by file
+        self.fileKeywordData = {}
 
     #-----------------------------------------------------------------------------------------------
     def IsReadyToAnalyze(self):
@@ -206,18 +210,16 @@ class U4c( ToolManager):
     #-----------------------------------------------------------------------------------------------
     def SpecializedLoad(self):
         """ This function is responsible for loading the violations into the violation DB
-
-            This function should be run as a thread by the caller because this will allow
+            NOTE: This function should be run as a thread by the caller because this will allow
             the caller to report on the status of the DB Load as it runs. (i.e., % complete)
         """
         # now run the review of the u4c DB which is the other half of this process
         # get the file list to check
         self.SetStatusMsg( msg = 'Open %s DB' % eDbDetectId)
-        srcRoots = self.projFile.paths[PF.ePathSrcRoot]
+
         excludeDirs = self.projFile.exclude[PF.eExcludeDirs]
         excludeFiles = self.projFile.exclude[PF.eExcludeU4c]
-        x, srcFiles = self.projFile.GetSrcCodeFiles(srcRoots, ['.h','.c'],
-                                                    excludeDirs, excludeFiles)
+        x, srcFiles = self.projFile.GetSrcCodeFiles( ['.h','.c'], excludeDirs, excludeFiles)
 
         # exclude all files that reside in libraryr directories
         self.srcFiles = [i for i in srcFiles if not self.projFile.IsLibraryFile(i)]
@@ -244,30 +246,32 @@ class U4c( ToolManager):
             raise
         finally:
             self.projFile.dbLock.release()
+            pass
 
     #-----------------------------------------------------------------------------------------------
     def CheckMetrics(self):
         """ This function verifies all of the length limits are met on a file by fail basis.
         """
-        self.SetStatusMsg( msg = 'Metric Checks')
+        self.SetStatusMsg( msg = 'Metrics/File Format Checks')
         fileLimit = self.projFile.metrics[PF.eMetricFile]
 
         pctCtr = 0
         totalFiles = len(self.srcFiles)
-        for i in self.srcFiles:
+        for fpfn in self.srcFiles:
             pctCtr += 1
             self.SetStatusMsg( (pctCtr/float(totalFiles)*100))
 
             # compute the relative path from a srcRoot
-            rpfn, fn = self.projFile.RelativePathName( i)
+            rpfn, fn = self.projFile.RelativePathName( fpfn)
 
             # Get file/function information
             funcInfo = self.udb.GetFileFunctionInfo( fn)
             func = 'N/A'
 
-            f = open(i, 'r')
-            lines = f.readlines()
-            f.close()
+            lines = self.projFile.GetFileContents(fpfn)
+
+            if fn == 'AircraftConfigMgr.h':
+                pass
 
             # check to file size violation
             fileSize = len(lines)
@@ -282,15 +286,22 @@ class U4c( ToolManager):
                                 details, line, eDbDetectId, self.updateTime)
                 self.vDb.Commit()
 
+            # check the file structure against the specified layout
+            self.CheckFileFormat( fpfn, lines)
+
             # check the function metrics
             self.CheckFunctionMetrics( rpfn, funcInfo)
 
             # check the length of each line
-            self.CheckLineLength( rpfn, funcInfo, lines)
+            self.CheckLine( rpfn, funcInfo, lines)
 
     #-----------------------------------------------------------------------------------------------
     def CheckFunctionMetrics(self, rpfn, funcInfo):
         """ Check all the function metrics
+        1. Line count
+        2. Cyclomatic
+        3. Max Nesting
+        4. returns
         """
         funcLimit = self.projFile.metrics[PF.eMetricFunc]
         mccabeLimit = self.projFile.metrics[PF.eMetricMcCabe]
@@ -338,7 +349,14 @@ class U4c( ToolManager):
         self.vDb.Commit()
 
     #-----------------------------------------------------------------------------------------------
-    def CheckLineLength(self, rpfn, funcInfo, lines):
+    def CheckLine(self, rpfn, funcInfo, lines):
+        """ Analyze for:
+        1. Lines exceed the max line length
+        2. Lines with the word TODO, TBD
+        3. No tabs in the file
+        report the line number(s) for the above
+        """
+
         # check all line lengths
         fileSize = len(lines)
         fn = os.path.split(rpfn)[1]
@@ -346,22 +364,24 @@ class U4c( ToolManager):
 
         # get the filename and start/end line numbers
         data = {}
-        for i in funcInfo:
-            start = funcInfo[i]['start']
-            end = funcInfo[i]['end']
-            data[(start,end)] = i
+        for func in funcInfo:
+            start = funcInfo[func]['start']
+            end = funcInfo[func]['end']
+            data[(start,end)] = func
 
         for lineNumber in range(0,fileSize):
             txt = lines[lineNumber].rstrip()
             lineLen = len(txt)
             u4cLine = lineNumber + 1 # U4C refs start at line 1
 
-            func = 'N/A'
-            for ds,de in data:
-                if u4cLine >= ds and u4cLine <= de:
-                    func = data[(ds,de)]
+            func = None
 
             if lineLen > lineLimit:
+                func = 'N/A'
+                for ds,de in data:
+                    if u4cLine >= ds and u4cLine <= de:
+                        func = data[(ds,de)]
+
                 severity = 'Warning'
                 violationId = 'Metric-Line'
                 desc = 'Line Length in %s line %d' % (fn, lineNumber)
@@ -374,6 +394,11 @@ class U4c( ToolManager):
             todoRe = re.compile( r' ?todo[: ]+')
             tbdRe = re.compile( r' ?tbd[: ]+')
             if todoRe.search( txtl) or tbdRe.search(txtl):
+                if func is None:
+                    func = 'N/A'
+                    for ds,de in data:
+                        if u4cLine >= ds and u4cLine <= de:
+                            func = data[(ds,de)]
                 severity = 'Info'
                 violationId = 'Misc-TODO'
                 desc = 'Line contains TODO/TBD %s line %d' % (fn, lineNumber)
@@ -384,6 +409,11 @@ class U4c( ToolManager):
             # check for tabs
             if txt.find('\t') != -1:
                 if txt.lower().find('todo') != -1 or txt.lower().find('tbd') != -1:
+                    if func is None:
+                        func = 'N/A'
+                        for ds,de in data:
+                            if u4cLine >= ds and u4cLine <= de:
+                                func = data[(ds,de)]
                     severity = 'Warning'
                     violationId = 'Misc-TAB'
                     desc = 'Line contains TAB(s) %s line %d' % (fn, lineNumber)
@@ -423,7 +453,9 @@ class U4c( ToolManager):
 
     #-----------------------------------------------------------------------------------------------
     def NamingChecker( self, theRe, maxLength, theItems, name, longname, getFunc):
-        """ Verify all variable names - global, local, static global/local """
+        """ Verify all variable names - global, local, static global/local
+        match the naming regex
+        """
 
         # Check all the vairable names
         totalItems = len(theItems)
@@ -458,7 +490,8 @@ class U4c( ToolManager):
                                                                        item.name(),
                                                                        decLine)
                     details = self.ReadLineN( fpfn, decLine)
-                    # TODO: remove is U4C responds why they don't see the definition
+                    # TODO: remove if U4C responds with a fix
+                    # PWC Specific
                     if details.strip().find('EXPORT') != 0:
                         self.vDb.Insert( rpfn, 'N/A', 'Error', violationId, desc,
                                          details, decLine, eDbDetectId, self.updateTime)
@@ -602,33 +635,21 @@ class U4c( ToolManager):
                 <TheReturnType> names the return type, void matches empty string
 
         """
-        self.SetStatusMsg( msg = 'Check Function Header Format')
+        # Function Header Specific keywords
+        eFunctionName = '<TheFunctionName>'
+        eParams = '<TheParameters>'
+        eParamsIn = '<TheParametersIn>'
+        eParamsOut = '<TheParametersOut>'
+        eParamsInOut = '<TheParametersInOut>'
+        eReturnType = '<TheReturnType>'
 
-        # index into description indexes
-        keywordRefs = {
-            '<TheParameters>':-1,
-            '<TheReturnType>':-1
-        }
+        self.SetStatusMsg( msg = 'Check Function Header Format')
 
         # in the function header we look for important items
         fhDesc = self.projFile.formats[PF.eFmtFunction]
+        fhRawDesc = self.projFile.rawFormats[PF.eFmtFunction]
 
-        expectFuncName = fhDesc.find( '<TheFunctionName>') != -1
-        expectParams = fhDesc.find( '<TheParameters>') != -1
-        expectReturn = fhDesc.find( '<TheReturnType>') != -1
-
-        fhDescLines = fhDesc.split('\n')
-
-        # find position of keywords in the description items
-        for lx,l in enumerate(fhDescLines):
-            for k in keywordRefs:
-                # only collect the first instance of the keyword
-                if l.find(k) != -1 and keywordRefs[k] == -1:
-                    keywordRefs[k] = lx
-                    if k == '<TheParameters>':
-                        fhDescLines[lx] = l.replace('<TheParameters>','')
-                    elif k == '<TheReturnType>':
-                        fhDescLines[lx] = l.replace('<TheReturnType>', r'(?P<rtn>.*)' )
+        fc = FormatChecker( eDbDetectId, self.updateTime, fhDesc, fhRawDesc)
 
         pctCtr = 0
         totalFiles = len(self.srcFiles)
@@ -643,9 +664,6 @@ class U4c( ToolManager):
             funcInfo = self.udb.GetFileFunctionInfo( fn)
 
             for func in funcInfo:
-                # keep the location each item is found at
-                fhIndex = [-1] * len(fhDescLines)
-
                 if func == 'ConvertToDegC':
                     pass
 
@@ -658,6 +676,9 @@ class U4c( ToolManager):
                 # header split by line
                 if hdr:
                     hdrLines = hdr.split('\n')
+                    fc.Check(hdr)
+                    fc.ReportErrors( self.vDb, rpfn, lineNum, 'Function Header',
+                                     func, 'FuncHdr')
                 else:
                     # No functin header
                     severity = 'Error'
@@ -668,81 +689,33 @@ class U4c( ToolManager):
                                     details, lineNum, eDbDetectId, self.updateTime)
                     continue
 
-                # now scan for the description items in the Function header
-                rtnText = ''
-                for iix, ii in enumerate(fhDescLines):
-                    ii = ii.replace( '<TheFunctionName>', '')
-
-                    fhre = re.compile( ii, re.DOTALL)
-                    wasFound = False
-                    for lx,line in enumerate(hdrLines):
-                        m = fhre.search( line)
-                        if m:
-                            fhIndex[iix] = lx
-                            if expectReturn and iix == keywordRefs['<TheReturnType>']:
-                                rtnText = m.group('rtn')
-                            break
-
-                # verify all the items where present and in the right order
-                orderOk = []
-                expectSeq = fhDescLines[:]
-                for lx,name in enumerate(fhDescLines):
-                    if fhIndex[lx] != -1:
-                        orderOk.append( (lx, fhIndex[lx], name))
-                    else:
-                        # missing header field
-                        at = expectSeq.index(name)
-                        del expectSeq[at]
-                        severity = 'Error'
-                        violationId = 'FuncHdr-FieldMissing'
-                        desc = 'Function Header %s missing %s' % (func, name)
-                        details = 'Function header consists of %d lines' % len(hdrLines)
-                        self.vDb.Insert(rpfn, func, severity, violationId, desc,
-                                        details, lineNum, eDbDetectId, self.updateTime)
-
-                # report items out of sequence in the header
-                orderOk.sort( key=lambda x: x[1])
-                itemSeq0 = [name for exp, act, name in orderOk]
-                itemSeq = itemSeq0[:]
-                for ix, item in enumerate(expectSeq):
-                    if itemSeq and item != itemSeq[0]:
-                        ax = itemSeq.index( item)
-                        del itemSeq[ax]
-                        # header field order
-                        severity = 'Error'
-                        violationId = 'FuncHdr-Seq'
-                        desc = 'Function Header %s Info Sequence Error' % (func)
-                        ax0 = itemSeq0.index( item)
-                        details = '%s expected position %d found at position %d' % (item,
-                                                                                    ix,
-                                                                                    ax0)
-                        self.vDb.Insert(rpfn, func, severity, violationId, desc,
-                                        details, lineNum, eDbDetectId, self.updateTime)
-                    else:
-                        itemSeq = itemSeq[1:]
-
                 # is the function name supposed to be in the header?
-                if expectFuncName and hdr and hdr.find( func) == -1:
-                    severity = 'Error'
-                    violationId = 'FuncHdr-FuncName'
-                    desc = 'Function Name %s Missing in header' % func
-                    details = 'Function header consists of %d lines' % len(hdrLines)
-                    self.vDb.Insert(rpfn, func, severity, violationId, desc,
-                                    details, lineNum, eDbDetectId, self.updateTime)
+                if eFunctionName in fc.keywordRefs:
+                    for kd in fc.keywordRefs[eFunctionName]:
+                        searchIn = '\n'.join(kd.lines)
+                        if searchIn.find( func) == -1:
+                            severity = 'Error'
+                            violationId = 'FuncHdr-FuncName'
+                            desc = 'Function Name %s Missing in header' % func
+                            details = 'Expected at offset %d of %d lines' % (kd.line0, len(hdrLines))
+                            self.vDb.Insert(rpfn, func, severity, violationId, desc,
+                                            details, lineNum, eDbDetectId, self.updateTime)
 
-                # check parameters - if requested and there are any
-                if expectParams and params:
-                    paramsAt = keywordRefs['<TheParameters>']
-                    start = fhIndex[paramsAt]
-                    end = fhIndex[paramsAt+1:]
-                    if end:
-                        paramLines = hdrLines[start:end[0]]
-                    else:
-                        paramLines = hdrLines[start:]
+                # check parameters - if requested and collect associated lines
+                paramKeys = (eParams, eParamsIn, eParamsOut, eParamsInOut)
+                # collect any lines associated with parameters and see if all the params are defined
+                expectParams = False
+                paramLines = []
+                for kw in paramKeys:
+                    if kw in fc.keywordRefs:
+                        expectParams = True
+                        for kd in fc.keywordRefs[kw]:
+                            paramLines.extend( kd.lines)
 
+                if expectParams:
+                    searchIn = '\n'.join( paramLines)
                     for px,p in enumerate(params):
-                        pd = [i for i in paramLines if i.find(p) != -1]
-                        if not pd:
+                        if searchIn.find( p) == -1:
                             severity = 'Error'
                             violationId = 'FuncHdr-Param'
                             desc = 'Function Header %s Missing Param %s' % (func, p)
@@ -751,30 +724,50 @@ class U4c( ToolManager):
                                             details, lineNum, eDbDetectId, self.updateTime)
 
                 # check return type - if requested
-                if expectReturn and not rtnText and fi[udb.eFiReturnType] != 'void':
-                    severity = 'Error'
-                    violationId = 'FuncHdr-Return'
-                    desc = 'Function Header %s Missing return info' % (func)
-                    details = 'Function header consists of %d lines' % len(hdrLines)
-                    self.vDb.Insert(rpfn, func, severity, violationId, desc,
-                                    details, lineNum, eDbDetectId, self.updateTime)
+                if eReturnType in fc.keywordRefs:
+                    for kd in fc.keywordRefs[eReturnType]:
+                        searchIn = '\n'.join( kd.lines)
+                        # now remove whatever the user was looking for
+                        rtnLineDesc = fc.descLines[kd.descAt]
+                        searchIn = searchIn.replace( rtnLineDesc, '').strip()
+
+                        if not searchIn and fi[udb.eFiReturnType] != 'void':
+                            severity = 'Error'
+                            violationId = 'FuncHdr-Return'
+                            desc = 'Function Header %s Missing return info' % (func)
+                            details = 'Function header consists of %d lines' % len(hdrLines)
+                            self.vDb.Insert(rpfn, func, severity, violationId, desc,
+                                            details, lineNum, eDbDetectId, self.updateTime)
 
         self.vDb.Commit()
 
 
     #-----------------------------------------------------------------------------------------------
-    def FileFormat( self):
-        for f in self.srcFiles:
-            # detemrine file type c/h
-            ext = os.path.splitext( fpfn)[1]
-            if ext == '.h':
-                fmt = re.compile( self.projFile.formats[PF.eFmtFile_h])
+    def CheckFileFormat( self, fpfn, lines):
+        """ Check file formats
+        """
+        # File Specific keywords
+        eFileName = '<TheFileName>'
+        eTheDescription = '<TheDescription>'
+        eLocalFuncProto = '<TheLocalFunctionPrototypes>'
+        eLocalFunctions = '<TheLocalFunctions>'
+        eGlobalFunctions = '<TheGlobalFunctions>'
 
-                m = fmtRe.match( 'a')
+        # detemrine file type c/h
+        ext = os.path.splitext( fpfn)[1]
+        # build format name
+        fmtName = 'File_%s' % ext.replace('.','').upper()
+        fileDescLines = self.projFile.formats.get( fmtName, '')
+        rawDescLines = self.projFile.rawFormats.get( fmtName, '')
 
+        fc = FormatChecker( eDbDetectId, self.updateTime, fileDescLines, rawDescLines)
+        fc.Check( lines)
 
+        rpfn, title = self.projFile.RelativePathName( fpfn)
 
+        fc.ReportErrors( self.vDb, rpfn, -1, 'File Format', title, 'FileFmt')
 
+        self.fileKeywordData[rpfn] = copy.deepcopy(fc.keywordRefs)
 
     #-----------------------------------------------------------------------------------------------
     def CheckBaseTypes( self):

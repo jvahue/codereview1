@@ -30,6 +30,8 @@ eFiEnd = 'end'
 eFiMetrics = 'metrics'
 eFiReturns = 'returns'
 eFiParams = 'parameters'
+eFiParamsTypes = 'paramTypes'
+eDeclareDefine = 'decDef'
 eFiReturnType = 'returnType'
 
 eFiMxLines = 'CountLine'
@@ -75,23 +77,27 @@ class U4cDb:
         self.fileFuncInfo = {}
 
     #-----------------------------------------------------------------------------------------------
-    def GetItemRefs(self, itemName, kindIs = None):
-        """ Search the udb for an object named itemname
-            return all references to it
+    def FindEnt(self, item):
+        """ Find where an entity is defined or declared """
+        # check for declared first
+        defFile, defLine = self.RefAt( item, 'Declare')
+        if defFile == '':
+            defFile, defLine = self.RefAt( item)
+        return defFile, defLine
+
+    #-----------------------------------------------------------------------------------------------
+    def GetFileEnt(self, filename):
+        """ return the full path file name
         """
-        if kindIs:
-            item = self.db.lookup( re.compile(itemName), kindIs)
-        else:
-            item = self.db.lookup( re.compile(itemName))
+        title = os.path.split(filename)[1]
 
-        if len(item) > 1:
-            item = [i for i in item if i.longname() == itemName]
+        fileEnt = self.db.lookup(re.compile(title, re.I), 'File')
 
-        itemRefs = []
-        if item and item[0].longname() == itemName:
-            itemRefs = item[0].refs()
+        if len(fileEnt) > 1:
+            # find the exact match
+            fileEnt = [i for i in fileEnt if i.name() == title]
 
-        return itemRefs
+        return fileEnt[0] if fileEnt else None
 
     #-----------------------------------------------------------------------------------------------
     def GetFileFunctionInfo(self, filename):
@@ -119,18 +125,6 @@ class U4cDb:
         return funcInfo
 
     #-----------------------------------------------------------------------------------------------
-    def GetReturnsInFile(self, lxr):
-        """ return a list of line numbers where a return statement is performed in a function
-        - the lxr is the function of interest
-        """
-        returnsAt = []
-        for l in lxr:
-            if l.text() == 'return':
-                returnsAt.append( l.line_begin())
-
-        return returnsAt
-
-    #-----------------------------------------------------------------------------------------------
     def GetFuncInfo(self, function, returnsAt):
         """ This function returns the following data about all of the functions within a file
             Function Header
@@ -155,11 +149,18 @@ class U4cDb:
         # get params names: and return type
         theRefs = function.refs()
         info[eFiParams] = []
+        info[eFiParamsTypes] = []
         for r in theRefs:
             if r.ent().kindname() == 'Parameter' and r.kindname() == 'Define':
                 info[eFiParams].append( r.ent().name())
+                info[eFiParamsTypes].append( r.ent().type())
 
         info[eFiReturnType] = function.type()
+
+        # declare/define
+        decFile, decLine = self.RefAt( function, 'Declare')
+        defFile, defLine = self.RefAt( function, 'Define')
+        info[eDeclareDefine] = ((decFile, decLine), (defFile, defLine))
 
         # count how many returns there are in the functions
         info[eFiReturns] = 0
@@ -170,18 +171,35 @@ class U4cDb:
         return info
 
     #-----------------------------------------------------------------------------------------------
-    def GetFileEnt(self, filename):
-        """ return the full path file name
+    def GetItemRefs(self, itemName, kindIs = None):
+        """ Search the udb for an object named itemname
+            return all references to it
         """
-        title = os.path.split(filename)[1]
+        if kindIs:
+            item = self.db.lookup( re.compile(itemName), kindIs)
+        else:
+            item = self.db.lookup( re.compile(itemName))
 
-        fileEnt = self.db.lookup(re.compile(title, re.I), 'File')
+        if len(item) > 1:
+            item = [i for i in item if i.longname() == itemName]
 
-        if len(fileEnt) > 1:
-            # find the exact match
-            fileEnt = [i for i in fileEnt if i.name() == title]
+        itemRefs = []
+        if item and item[0].longname() == itemName:
+            itemRefs = item[0].refs()
 
-        return fileEnt[0] if fileEnt else None
+        return itemRefs
+
+    #-----------------------------------------------------------------------------------------------
+    def GetReturnsInFile(self, lxr):
+        """ return a list of line numbers where a return statement is performed in a function
+        - the lxr is the function of interest
+        """
+        returnsAt = []
+        for l in lxr:
+            if l.text() == 'return':
+                returnsAt.append( l.line_begin())
+
+        return returnsAt
 
     #-----------------------------------------------------------------------------------------------
     def InFunction(self, filename, line):
@@ -203,15 +221,6 @@ class U4cDb:
                 break
 
         return theFunc, info
-
-    #-----------------------------------------------------------------------------------------------
-    def FindEnt(self, item):
-        """ Find where an entity is defined or declared """
-        # check for declared first
-        defFile, defLine = self.RefAt( item, 'Declare')
-        if defFile == '':
-            defFile, defLine = self.RefAt( item)
-        return defFile, defLine
 
     #-----------------------------------------------------------------------------------------------
     def RefAt(self, item, refType = 'Define'):
@@ -243,5 +252,7 @@ class U4cDb:
 if __name__ == '__main__':
     dbName = r'C:\Knowlogic\Tools\CR-Projs\zzzCodereviewPROJ\tool\u4c\db.udb'
     db = U4cDb(dbName)
-    x = db.GetItemRefs('va_end')
-
+    f = db.GetFileEnt('alt_Time.h')
+    lxr = f.lexer()
+    for i in db.GetLexerLine( lxr):
+        print(i)

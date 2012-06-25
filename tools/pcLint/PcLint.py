@@ -90,10 +90,9 @@ class PcLintSetup( ToolSetup):
         # get the PcLint Root
         pcLintRoot = os.path.split( toolExe)[0]
 
-        srcRoots = self.projFile.paths['SrcCodeRoot']
         excludeDirs = self.projFile.exclude['Dirs']
         excludeFiles = self.projFile.exclude['Files_PcLint']
-        srcIncludeDirs, srcCodeFiles = self.projFile.GetSrcCodeFiles( srcRoots, ['.c'], excludeDirs, excludeFiles)
+        srcIncludeDirs, srcCodeFiles = self.projFile.GetSrcCodeFiles( ['.c'], excludeDirs, excludeFiles)
 
         # put all the PcLint Options together
         userOptions = self.projFile.options['PcLint']
@@ -326,12 +325,17 @@ class PcLint( ToolManager):
             self.SetStatusMsg( msg = 'Load %s Violations' % eDbDetectId)
 
             pctCtr = 0
+            commitSize = 10
+            nextCommit = commitSize
             for filename,func,line,severity,violationId,desc,details in lintLoader.reducedData:
                 self.vDb.Insert( filename, func, severity, violationId,
                                  desc, details, line, eDbDetectId, self.updateTime)
                 pctCtr += 1
                 pct = (float(pctCtr)/items) * 99.0
                 self.SetStatusMsg( pct)
+                if pct > nextCommit:
+                    self.vDb.Commit()
+                    nextCommit += commitSize
 
             self.insertDeleted = self.vDb.MarkNotReported( self.toolName, self.updateTime)
             self.unanalyzed = self.vDb.Unanalyzed( self.toolName)
@@ -340,3 +344,4 @@ class PcLint( ToolManager):
             raise
         finally:
             self.projFile.dbLock.release()
+            pass

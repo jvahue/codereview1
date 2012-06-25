@@ -48,6 +48,7 @@ The following is a list of project configuraiton items currently support :
 #---------------------------------------------------------------------------------------------------
 from collections import OrderedDict
 
+import copy
 import inspect
 import threading
 import os
@@ -78,9 +79,9 @@ eExcludeU4c    = 'Files_U4c'
 eExcludeFunc   = 'Functions'
 eExcludeKeywords = 'Keywords'
 
-eFmtKeywords = 'Keywords'
-eFmtFile_h = 'File_h'
-eFmtFile_c = 'File_c'
+eFmtRegex = 'Regex'
+eFmtFile_h = 'File_H'
+eFmtFile_c = 'File_C'
 eFmtFunction = 'FunctionHeader'
 
 eMetricMcCabe = 'complexityMcCabe'
@@ -152,7 +153,7 @@ class ProjectFile:
         self.exclude[eExcludeKeywords] = []
 
         self.formats = OrderedDict()
-        self.formats[eFmtKeywords] = OrderedDict()
+        self.formats[eFmtRegex] = OrderedDict()
         self.formats[eFmtFile_h] = ''
         self.formats[eFmtFile_c] = ''
         self.formats[eFmtFunction] = ''
@@ -183,7 +184,7 @@ class ProjectFile:
         self.modified = False
 
     #-----------------------------------------------------------------------------------------------
-    def GetSrcCodeFiles( self, srcRoots, extensions=['.h','.c'], excludeDirs=[], excludedFiles=[]):
+    def GetSrcCodeFiles( self, extensions=['.h','.c'], excludeDirs=[], excludedFiles=[]):
         """ Walk all srcCode roots and files with extension in extensions unless
             the file is in the excludeFileList
 
@@ -191,7 +192,7 @@ class ProjectFile:
         """
         srcFiles = []
         includeDirs = []
-        for root in srcRoots:
+        for root in self.paths[ePathSrcRoot]:
             for dirPath, dirs, fileNames in os.walk( root):
                 if dirPath not in excludeDirs:
                     for f in fileNames:
@@ -227,14 +228,18 @@ class ProjectFile:
         self.ReadRestricted()
         self.ReadBaseTypes()
 
+        # save the raw format info
+        self.rawFormats = copy.deepcopy( self.formats)
+
         # replace keywords in formats
         for t in self.formats:
-            if t != eFmtKeywords:
+            if t != eFmtRegex:
                 v = self.formats[t]
+                # make sure '\' is done first
                 for c in r'\.^$*+?{}[]|()':
                     v = v.replace(c, r'\%s' % c)
-                for k in self.formats[eFmtKeywords]:
-                    kv = self.formats[eFmtKeywords][k]
+                for k in self.formats[eFmtRegex]:
+                    kv = self.formats[eFmtRegex][k]
                     v = v.replace( k, kv)
                     self.formats[t] = v
 
@@ -260,7 +265,7 @@ class ProjectFile:
     #-----------------------------------------------------------------------------------------------
     def ReadFormats( self):
         for i in self.formats:
-            if i != eFmtKeywords:
+            if i != eFmtRegex:
                 self.formats[i] = self.GetMultiLines( 'Format_%s' % i)
             else:
                 self.formats[i] = self.ReadDict( 'Format_%s' % i)
@@ -412,6 +417,15 @@ class ProjectFile:
     #-----------------------------------------------------------------------------------------------
     # Utilities
     #-----------------------------------------------------------------------------------------------
+    def GetFileContents( self, fpfn):
+        lines = []
+        if os.path.isfile( fpfn):
+            f = open( fpfn, 'r')
+            lines = f.readlines()
+            f.close()
+        return lines
+
+    #-----------------------------------------------------------------------------------------------
     def GetHdr( self, header):
         at = 0
         hdr = '[%s]' % header
@@ -512,11 +526,23 @@ class ProjectFile:
             fullPathNames = [rpfn]
         else:
             fullPathNames = []
+
+            # see what we got
+            path, title = os.path.split( rpfn)
             srcRoots = self.paths[ePathSrcRoot]
-            for i in srcRoots:
-                fpfn = os.path.join( i, rpfn)
-                if os.path.isfile( fpfn):
-                    fullPathNames.append( fpfn)
+
+            if path:
+                for i in srcRoots:
+                    fpfn = os.path.join( i, rpfn)
+                    if os.path.isfile( fpfn):
+                        fullPathNames.append( fpfn)
+            else:
+                includes, names = self.GetSrcCodeFiles()
+                for s in srcRoots:
+                    for i in includes:
+                        fpfn = os.path.join( s, i, rpfn)
+                        if os.path.isfile( fpfn):
+                            fullPathNames.append( fpfn)
 
         return fullPathNames
 
