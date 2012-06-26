@@ -92,6 +92,6 @@ if __name__ == '__main__':
     #projFile = r'C:\Knowlogic\tools\CR-Projs\Rypos\Rypos.crp'
 
     if os.path.isfile( projFile):
-        Analyze(projFile)#, False)
+        Analyze(projFile, False)
     else:
         print('Project File does not exist.')
