@@ -442,38 +442,42 @@ class U4c( ToolManager):
 
         #------------------------------------------------- report and file format errors
         # save this info incase we need to do some work for the three eLocal/Gloabl above
-        self.fileKeywordData[rpfn] = copy.deepcopy(fc.keywordRefs)
+        self.fileKeywordData[rpfn] = copy.deepcopy(fc.items)
         fc.ReportErrors( self.vDb, rpfn, -1, 'FileFmt', 'N/A', 'File Format')
 
         # check for the filename being were it is supposed to be
-        if eFileName in fc.keywordRefs:
-            for h in fc.keywordRefs[ eFileName]:
-                text = '\n'.join(h.lines)
+        keyItems = fc.GetKeywordItems( eFileName)
+        if keyItems:
+            for item in keyItems:
+                keyInfo = item.keywords[eFileName]
+                text = '\n'.join(keyInfo.lines)
                 if text.lower().find( fn.lower()) == -1:
                     # no mention of file name
                     severity = 'Error'
                     violationId = 'FileFmt-FileName'
                     func = 'N/A'
-                    desc = 'Missing Filename near line %d' % h.line0
-                    details = 'Expected filename at line %d' % h.line0
+                    desc = 'Missing Filename near line %d' % keyInfo.line0
+                    details = 'Expected filename at line %d' % keyInfo.line0
                     self.vDb.Insert( rpfn, func, severity, violationId,
-                                     desc, details, h.line0, eDbDetectId, self.updateTime)
+                                     desc, details, keyInfo.line0, eDbDetectId, self.updateTime)
 
         # check for a file description
-        if eTheDescription in fc.keywordRefs:
-            for h in fc.keywordRefs[ eTheDescription]:
-                text = '\n'.join(h.lines)
-                replaceTxt = fc.rawDescLines[h.descAt].replace(eTheDescription,'').strip()
+        keyItems = fc.GetKeywordItems( eTheDescription)
+        if keyItems:
+            for item in keyItems:
+                keyInfo = item.keywords[eTheDescription]
+                text = '\n'.join(keyInfo.lines)
+                replaceTxt = item.raw.replace( eTheDescription, '').strip()
                 text = text.replace( replaceTxt, '').strip()
                 if not text:
                     # no mention of file name
                     severity = 'Error'
                     violationId = 'FileFmt-NoDesc'
                     func = 'N/A'
-                    desc = 'Missing File Desc near line %d' % h.line0
-                    details = 'Expected file description at line %d' % h.line0
+                    desc = 'Missing File Desc near line %d' % keyInfo.line0
+                    details = 'Expected file description at line %d' % keyInfo.line0
                     self.vDb.Insert( rpfn, func, severity, violationId,
-                                     desc, details, h.line0, eDbDetectId, self.updateTime)
+                                     desc, details, keyInfo.line0, eDbDetectId, self.updateTime)
 
         self.vDb.Commit()
 
@@ -803,28 +807,30 @@ class U4c( ToolManager):
                     continue
 
                 # is the function name supposed to be in the header?
-                if eFunctionName in fc.keywordRefs:
-                    for kd in fc.keywordRefs[eFunctionName]:
-                        searchIn = '\n'.join(kd.lines)
+                keyItems = fc.GetKeywordItems(eFunctionName)
+                if keyItems:
+                    for item in keyItems:
+                        keyInfo = item.keywords[eFunctionName]
+                        searchIn = '\n'.join(keyInfo.lines)
                         if searchIn.find( func) == -1:
                             severity = 'Error'
                             violationId = 'FuncHdr-FuncName'
                             desc = 'Function Name %s Missing in header' % func
-                            details = 'Expected at offset %d of %d lines' % (kd.line0, len(hdrLines))
+                            details = 'Expected at offset %d of %d lines' % (keyInfo.line0, len(hdrLines))
                             self.vDb.Insert(rpfn, func, severity, violationId, desc,
                                             details, lineNum, eDbDetectId, self.updateTime)
 
                 # check parameters - if requested and collect associated lines
-                paramKeys = (eParams, eParamsIn, eParamsOut, eParamsInOut)
-                # collect any lines associated with parameters and see if all the params are defined
+                # TODO: detect actual out param types *, & report misplaced comments
                 expectParams = False
                 paramLines = []
-                for kw in paramKeys:
-                    if kw in fc.keywordRefs:
+                for p in (eParams, eParamsIn, eParamsOut, eParamsInOut):
+                    keyItems = fc.GetKeywordItems(p)
+                    for item in keyItems:
                         expectParams = True
-                        for kd in fc.keywordRefs[kw]:
-                            paramLines.extend( kd.lines)
+                        paramLines.extend( item.keywords[p].lines)
 
+                # collect any lines associated with parameters and see if all the params are defined
                 if expectParams:
                     searchIn = '\n'.join( paramLines)
                     for px,p in enumerate(params):
@@ -837,20 +843,18 @@ class U4c( ToolManager):
                                             details, lineNum, eDbDetectId, self.updateTime)
 
                 # check return type - if requested
-                if eReturnType in fc.keywordRefs:
-                    for kd in fc.keywordRefs[eReturnType]:
-                        searchIn = '\n'.join( kd.lines)
-                        # now remove whatever the user was looking for
-                        rtnLineDesc = fc.descLines[kd.descAt]
-                        searchIn = searchIn.replace( rtnLineDesc, '').strip()
-
-                        if not searchIn and fi[udb.eFiReturnType] != 'void':
-                            severity = 'Error'
-                            violationId = 'FuncHdr-Return'
-                            desc = 'Function Header %s Missing return info' % (func)
-                            details = 'Function header consists of %d lines' % len(hdrLines)
-                            self.vDb.Insert(rpfn, func, severity, violationId, desc,
-                                            details, lineNum, eDbDetectId, self.updateTime)
+                keyItems = fc.GetKeywordItems(eReturnType)
+                for item in keyItems:
+                    searchIn = '\n'.join(item.keywords[eReturnType].lines)
+                    rtnLineDesc = item.raw.replace(eReturnType, '')
+                    searchIn = searchIn.replace( rtnLineDesc, '').strip()
+                    if not searchIn and fi[udb.eFiReturnType] != 'void':
+                        severity = 'Error'
+                        violationId = 'FuncHdr-Return'
+                        desc = 'Function Header %s Missing return info' % (func)
+                        details = 'Function header consists of %d lines' % len(hdrLines)
+                        self.vDb.Insert(rpfn, func, severity, violationId, desc,
+                                        details, lineNum, eDbDetectId, self.updateTime)
 
         self.vDb.Commit()
 
