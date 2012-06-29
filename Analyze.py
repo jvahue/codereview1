@@ -89,15 +89,14 @@ def Analyze( projFile, fullAnalysis = True, verbose = True):
 #===================================================================================================
 if __name__ == '__main__':
     # jvDesk
-    #projFile = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ\G4.crp'
+    projFile = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ\G4.crp'
     #projFile = r'C:\Knowlogic\tools\CR-Projs\Rypos\Rypos.crp'
 
     # jvLaptop
-    projFile = r'D:\Knowlogic\Tools\CR-Projs\zzzCodereviewPROJ\G4.crp'
+    #projFile = r'D:\Knowlogic\Tools\CR-Projs\zzzCodereviewPROJ\G4.crp'
 
     if os.path.isfile( projFile):
         Analyze(projFile)#, False)
     else:
         print('Project File does not exist.')
 
-    input('all done ...')

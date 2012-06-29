@@ -443,7 +443,7 @@ class U4c( ToolManager):
         #------------------------------------------------- report and file format errors
         # save this info incase we need to do some work for the three eLocal/Gloabl above
         self.fileKeywordData[rpfn] = copy.deepcopy(fc.items)
-        fc.ReportErrors( self.vDb, rpfn, -1, 'FileFmt', 'N/A', 'File Format')
+        fc.ReportErrors( self.vDb, rpfn, -1, 'File Format', 'N/A', 'FileFmt')
 
         # check for the filename being were it is supposed to be
         keyItems = fc.GetKeywordItems( eFileName)
@@ -482,65 +482,6 @@ class U4c( ToolManager):
         self.vDb.Commit()
 
     #-----------------------------------------------------------------------------------------------
-    def CheckFileFormat( self, fpfn, lines):
-        """ Check file formats
-        """
-        # File Specific keywords
-        eFileName = '<TheFileName>'
-        eTheDescription = '<TheDescription>'
-        # leave these - PCLint should report these may need to do some work on it
-        eLocalFuncProto = '<TheLocalFunctionPrototypes>'
-        eLocalFunctions = '<TheLocalFunctions>'
-        eGlobalFunctions = '<TheGlobalFunctions>'
-
-        # detemrine file type c/h
-        ext = os.path.splitext( fpfn)[1]
-        # build format name
-        fmtName = 'File_%s' % ext.replace('.','').upper()
-        fileDescLines = self.projFile.formats.get( fmtName, '')
-        rawDescLines = self.projFile.rawFormats.get( fmtName, '')
-
-        fc = FormatChecker( eDbDetectId, self.updateTime, fileDescLines, rawDescLines)
-        fc.Check( lines)
-
-        rpfn, fn = self.projFile.RelativePathName( fpfn)
-
-        fc.ReportErrors( self.vDb, rpfn, -1, 'File Format', 'N/A', 'FileFmt')
-
-        # save this info incase we need to do some work for the three eLocal/Gloabl above
-        self.fileKeywordData[rpfn] = copy.deepcopy(fc.keywordRefs)
-
-        # check for the filename being were it is supposed to be
-        if eFileName in fc.keywordRefs:
-            for h in fc.keywordRefs[ eFileName]:
-                text = '\n'.join(h.lines)
-                if text.lower().find( fn.lower()) == -1:
-                    # no mention of file name
-                    severity = 'Error'
-                    violationId = 'FileFmt-FileName'
-                    func = 'N/A'
-                    desc = 'Missing Filename near line %d' % h.line0
-                    details = 'Expected filename at line %d' % h.line0
-                    self.vDb.Insert( rpfn, func, severity, violationId,
-                                     desc, details, h.line0, eDbDetectId, self.updateTime)
-
-        # check for a file description
-        if eTheDescription in fc.keywordRefs:
-            for h in fc.keywordRefs[ eTheDescription]:
-                text = '\n'.join(h.lines)
-                replaceTxt = fc.rawDescLines[h.descAt].replace(eTheDescription,'').strip()
-                text = text.replace( replaceTxt, '').strip()
-                if not text:
-                    # no mention of file name
-                    severity = 'Error'
-                    violationId = 'FileFmt-NoDesc'
-                    func = 'N/A'
-                    desc = 'Missing File Desc near line %d' % h.line0
-                    details = 'Expected file description at line %d' % h.line0
-                    self.vDb.Insert( rpfn, func, severity, violationId,
-                                     desc, details, h.line0, eDbDetectId, self.updateTime)
-
-    #-----------------------------------------------------------------------------------------------
     def CheckNaming(self):
         """ Perform naming checks for all supplied item types
         """
@@ -566,7 +507,6 @@ class U4c( ToolManager):
         enumRe  = re.compile( fmt)
         theItems = self.udb.db.lookup( re.compile(r'.*'), 'Enumerator')
         self.NamingChecker( enumRe, size, theItems, 'Enum', 'Enum', self.GetFuncVarName)
-
 
     #-----------------------------------------------------------------------------------------------
     def NamingChecker( self, theRe, maxLength, theItems, name, longname, getFunc):
