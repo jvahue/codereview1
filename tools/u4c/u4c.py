@@ -896,22 +896,26 @@ class U4c( ToolManager):
                             break
                     else:
                         # clean up the type
-                        # remove array size
-                        lsq = oType.find('[')
-                        rsq = oType.find(']')
-                        while lsq != -1 and rsq != -1:
-                            extractStr = oType[lsq:rsq+1]
-                            oType = oType.replace(extractStr,'')
-                            lsq = oType.find('[')
-                            rsq = oType.find(']')
+                        inOtype = oType
+                        # must be 1st or escaped ']' and '-'
+                        cleanRe = re.compile(r'const|volatile|[()+\-*/]+?')
+                        numRe = re.compile(r'\[[0-9A-Za-z_\- ]*\]')
+                        repStr = cleanRe.findall( oType)
+                        for i in repStr:
+                            oType = oType.replace(i,'')
 
-                        for ci in ['*', '[]', '()', 'const', 'volatile']:
-                            oType = oType.replace(ci,'')
+                        # remove extra numbers
+                        rep1Str = numRe.findall( oType)
+                        for i in rep1Str:
+                            oType = oType.replace(i,'')
 
                         oType = oType.strip()
-                        tdefFound = self.udb.db.lookup(oType, 'Typedef')
+                        #print('In: <%s> Out: <%s> RepStr: %s - %s' % (inOtype, oType,
+                        #                                              str(repStr), str(rep1Str)))
 
+                        tdefFound = self.udb.db.lookup(oType, 'Typedef')
                         tdefFound = [i for i in tdefFound if i.name() == oType]
+
                         if len(tdefFound) != 1:
                             objStats['bad'] += 1
                         else:

@@ -191,9 +191,11 @@ class PcLint( ToolManager):
         # monitor PcLint processing
         fileCount = 0
         self.SetStatusMsg( msg = 'Analyzing Files')
+        output = ''
         while self.AnalyzeActive():
             for line in self.job.stdout:
                 line = line.decode(encoding='windows-1252')
+                output += line
                 if line.find( '--- Module:') != -1:
                     fileCount += 1
                     v = ((fileCount/float(ps.fileCount))*100.0)

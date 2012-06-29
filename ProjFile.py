@@ -215,7 +215,9 @@ class ProjectFile:
         """ Read in the contents of a project file
         """
         self.projectFile = open( self.projFileName , 'r')
-        self.projectFileData = self.projectFile.readlines()
+        rawLines = self.projectFile.readlines()
+        # remove comment lines
+        self.projectFileData = [i for i in rawLines if i[0:2] != '##']
         self.projectFile.close()
 
         self.ReadPaths()
