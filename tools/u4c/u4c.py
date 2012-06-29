@@ -142,9 +142,9 @@ class U4c( ToolManager):
         self.projFile = projFile
         self.projRoot = projFile.paths[PF.ePathProject]
 
-        ToolManager.__init__(self, projFile, eDbDetectId)
-
         self.projToolRoot = os.path.join( self.projRoot, eToolRoot)
+
+        ToolManager.__init__(self, projFile, eDbDetectId, self.projToolRoot)
 
         self.dbName = os.path.join( self.projToolRoot, eDbName)
 
@@ -179,7 +179,7 @@ class U4c( ToolManager):
             This function should be run as a thread by the caller becuase this will allow
             the caller to report on the status of the process as it runs. (i.e., % complete)
         """
-        print ('Thread %s' % eDbDetectId, os.getpid())
+        #self.Log ('Thread %s' % eDbDetectId, os.getpid())
 
         # Run the PC-Lint bat file
         self.jobCmd = '%s' % os.path.join( self.projToolRoot, eBatchName)
@@ -192,20 +192,31 @@ class U4c( ToolManager):
         while self.AnalyzeActive():
             for line in self.job.stdout:
                 line = line.decode(encoding='windows-1252').strip()
+                self.Log( '<%s>' % line)
+                self.LogFlush()
                 if line == 'Analyze':
                     analyzing = True
                     fileCount = len( fileList)
                 elif line.find( 'File: ') != -1:
                     line = line.replace('File: ', '').replace(' has been added.', '')
-                    fileList.append(line)
-                else:
+                    # add the .c files so we can track the analysis
+                    if os.path.splitext( line)[1] == '.c':
+                        fileList.append(line)
+                elif analyzing:
                     if line in fileList:
                         fileList.remove( line)
                         v = 100 - (len(fileList)/float(fileCount)*100.0)
                         self.SetStatusMsg( v)
 
+        self.SetStatusMsg( 100)
+        self.Sleep()
+
         self.LoadViolations()
-        self.SetStatusMsg( 100, msg = '%s Processing Complete' % eDbDetectId)
+
+        if line == "Analyze Completed (Errors:0 Warnings:0)":
+            self.SetStatusMsg(100, 'Processing Complete')
+        else:
+            self.SetStatusMsg(100, 'Processing Error Occurred - see Log File')
 
     #-----------------------------------------------------------------------------------------------
     def SpecializedLoad(self):
@@ -221,12 +232,13 @@ class U4c( ToolManager):
         excludeFiles = self.projFile.exclude[PF.eExcludeU4c]
         x, srcFiles = self.projFile.GetSrcCodeFiles( ['.h','.c'], excludeDirs, excludeFiles)
 
-        # exclude all files that reside in libraryr directories
+        # exclude all files that reside in library directories
         self.srcFiles = [i for i in srcFiles if not self.projFile.IsLibraryFile(i)]
 
         self.updateTime = datetime.datetime.today()
 
         self.SetStatusMsg( msg = 'Open %s DB' % eDbDetectId)
+        self.Sleep()
         self.udb = udb.U4cDb( self.dbName)
 
         self.SetStatusMsg( msg = 'Acquire DB Lock')
@@ -574,14 +586,14 @@ class U4c( ToolManager):
                                          details, defLine, eDbDetectId, self.updateTime)
                     else:
                         badNr += 1
-                        print('CheckBadNr %s - %s' % (name, item.name()))
+                        self.Log('CheckBadNr %s - %s' % (name, item.name()))
                 else:
                     good += 1
             else:
                 libItem += 1
-                print('CheckLib %s - %s' % (name, item.name()))
+                self.Log('CheckLib %s - %s' % (name, item.name()))
 
-        print('%s Good/Bad(BadNr)/libItem: %d/%d(%d)/%d' % (name,good,bad,badNr,libItem))
+        self.Log('%s Good/Bad(BadNr)/libItem: %d/%d(%d)/%d' % (name,good,bad,badNr,libItem))
 
         self.vDb.Commit()
 
@@ -608,8 +620,6 @@ class U4c( ToolManager):
         self.SetStatusMsg( msg = 'Language Restrictions')
 
         specialProcessing = {'register': self.HandleRegister, }
-
-        print ('Thread A', os.getpid())
 
         xFuncs = self.projFile.exclude[PF.eExcludeFunc]
         xKeyword  = self.projFile.exclude[PF.eExcludeKeywords]
@@ -680,8 +690,6 @@ class U4c( ToolManager):
         self.SetStatusMsg( msg = 'Format Checks')
 
         self.FunctionHeaderFormat()
-
-
 
     #-----------------------------------------------------------------------------------------------
     def FunctionHeaderFormat(self):
@@ -850,7 +858,7 @@ class U4c( ToolManager):
                             oType = oType.replace(i,'')
 
                         oType = oType.strip()
-                        #print('In: <%s> Out: <%s> RepStr: %s - %s' % (inOtype, oType,
+                        #self.Log('In: <%s> Out: <%s> RepStr: %s - %s' % (inOtype, oType,
                         #                                              str(repStr), str(rep1Str)))
 
                         tdefFound = self.udb.db.lookup(oType, 'Typedef')
@@ -865,7 +873,7 @@ class U4c( ToolManager):
                 defFile, defLine = self.udb.FindEnt( obj)
                 if defFile != '':
                     objStats['bad'] += 1
-                    print( '%s: Type(%s), Kind(%s)' % (obj.name(), oType, obj.kindname()))
+                    self.Log( '%s: Type(%s), Kind(%s)' % (obj.name(), oType, obj.kindname()))
                     severity = 'Error'
                     violationId = 'BaseType'
                     fpfn = defFile.longname()
@@ -879,12 +887,12 @@ class U4c( ToolManager):
                         letter0 = obj.name()[0]
                         self.vDb.Commit()
                 else:
-                    print('BaseType: Library variable %s' % obj.name())
+                    self.Log('BaseType: Library variable %s' % obj.name())
 
             else:
                 objStats['ok'] += 1
 
-        print('ObjStats: ok(%d), bad(%d), other(%d)' % (objStats['ok'], objStats['bad'], objStats['other']))
+        self.Log('ObjStats: ok(%d), bad(%d), other(%d)' % (objStats['ok'], objStats['bad'], objStats['other']))
 
     #-----------------------------------------------------------------------------------------------
     def ReadLineN( self, filename, lineNumber):

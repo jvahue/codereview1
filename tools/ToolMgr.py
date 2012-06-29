@@ -25,6 +25,8 @@ import time
 #---------------------------------------------------------------------------------------------------
 # Knowlogic Modules
 #---------------------------------------------------------------------------------------------------
+from utils import DateTime
+
 import ProjFile as PF
 import ViolationDb as VDB
 
@@ -70,14 +72,12 @@ class ToolManager:
     I/F defintion for all tool managers
     """
     #-----------------------------------------------------------------------------------------------
-    def __init__(self, projFile, toolName):
+    def __init__(self, projFile, toolName, toolDir):
         """ Initialize the base class """
         assert(isinstance( projFile, PF.ProjectFile))
 
         self.projFile = projFile
         self.toolName = toolName
-
-        self.SetStatusMsg( msg = 'Inactive')
 
         self.jobCmd = ''
         self.job = None
@@ -91,6 +91,12 @@ class ToolManager:
         self.insertUpErr = 0
         self.insertDeleted = 0
         self.unanalyzed = 0
+
+        # open a log file for the tool
+        logName = os.path.join( toolDir, '%s.log' % toolName)
+        self.log = open( logName, 'w')
+
+        self.SetStatusMsg( msg = 'Inactive')
 
     #-----------------------------------------------------------------------------------------------
     def RunToolAsProcess(self):
@@ -135,12 +141,26 @@ class ToolManager:
         # we have to close the DB in the thread it was opened in
         self.vDb.Close()
 
-        self.SetStatusMsg( 100, msg = '%s Load Complete' % self.toolName)
+    #-----------------------------------------------------------------------------------------------
+    def Log(self, msg):
+        timeNow = DateTime.DateTime.today()
+        if msg[-1] != '\n':
+            msg += '\n'
+        self.log.write( '%s: %s' % (timeNow, msg))
+
+    #-----------------------------------------------------------------------------------------------
+    def LogFlush(self):
+        self.log.flush()
 
     #-----------------------------------------------------------------------------------------------
     def SpecializedLoad(self):
         """ subclasses define how to monitor their analysis process """
         raise NotImplemented
+
+    #-----------------------------------------------------------------------------------------------
+    def Sleep(self, duration=2):
+        """ If the tool wants to give up control """
+        time.sleep( duration)
 
     #-----------------------------------------------------------------------------------------------
     def Report(self):
@@ -155,6 +175,7 @@ class ToolManager:
         if msg:
             self.analysisStep = msg
             self.sleeper = 0
+            self.Log(msg)
 
         self.sleeper += 1
         if self.sleeper == 500:

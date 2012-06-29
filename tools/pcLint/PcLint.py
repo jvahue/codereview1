@@ -168,8 +168,9 @@ class PcLint( ToolManager):
         self.projFile = projFile
         self.projRoot = projFile.paths['ProjectRoot']
 
-        ToolManager.__init__(self, projFile, eDbDetectId)
         self.projToolRoot = os.path.join( self.projRoot, eToolRoot)
+
+        ToolManager.__init__(self, projFile, eDbDetectId, self.projToolRoot)
 
     #-----------------------------------------------------------------------------------------------
     def RunToolAsProcess(self):
@@ -179,7 +180,8 @@ class PcLint( ToolManager):
             This function should be run as a thread by the caller because this will allow
             the caller to report on the status of the process as it runs. (i.e., % complete)
         """
-        print ('Thread %s' % eDbDetectId, os.getpid())
+        #self.Log ('Thread %s' % eDbDetectId, os.getpid())
+
         # How many files are we analyzing
         ps = PcLintSetup( self.projFile)
         ps.FileCount()
@@ -195,13 +197,22 @@ class PcLint( ToolManager):
         while self.AnalyzeActive():
             for line in self.job.stdout:
                 line = line.decode(encoding='windows-1252')
+                self.Log( line)
+                self.LogFlush()
                 output += line
                 if line.find( '--- Module:') != -1:
                     fileCount += 1
                     v = ((fileCount/float(ps.fileCount))*100.0)
                     self.SetStatusMsg( v)
 
+        self.SetStatusMsg( 100)
+
         self.LoadViolations()
+
+        if fileCount != ps.fileCount:
+            self.SetStatusMsg(100, 'Processing Error Occurred - see DB')
+        else:
+            self.SetStatusMsg(100, 'Processing Complete')
 
     #-----------------------------------------------------------------------------------------------
     def SpecializedLoad(self):
@@ -220,6 +231,8 @@ class PcLint( ToolManager):
             new items
             repeat open items
             repeats closed items
+
+            TODO: detect errors in processing ... not all files processed
         """
         self.SetStatusMsg( msg = 'Format PC-Lint Output')
 
