@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'C:\PWES\FASTTesting\CodeReview1\crmainwindow.ui'
 #
-# Created: Mon Jul 16 10:26:46 2012
+# Created: Mon Jul 16 11:56:52 2012
 #      by: pyside-uic 0.2.14 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,7 +12,7 @@ from PySide import QtCore, QtGui
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(939, 638)
+        MainWindow.resize(855, 964)
         self.centralWidget = QtGui.QWidget(MainWindow)
         self.centralWidget.setObjectName("centralWidget")
         self.verticalLayout_13 = QtGui.QVBoxLayout(self.centralWidget)
@@ -68,14 +68,15 @@ class Ui_MainWindow(object):
         self.label_5.setObjectName("label_5")
         self.horizontalLayout_5.addWidget(self.label_5)
         self.textBrowser_ProjFile = QtGui.QTextBrowser(self.groupBox_2)
+        self.textBrowser_ProjFile.setMinimumSize(QtCore.QSize(591, 0))
         self.textBrowser_ProjFile.setMaximumSize(QtCore.QSize(591, 29))
         self.textBrowser_ProjFile.setObjectName("textBrowser_ProjFile")
         self.horizontalLayout_5.addWidget(self.textBrowser_ProjFile)
+        spacerItem1 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
+        self.horizontalLayout_5.addItem(spacerItem1)
         self.pushButton_pFileBrowse = QtGui.QPushButton(self.groupBox_2)
         self.pushButton_pFileBrowse.setObjectName("pushButton_pFileBrowse")
         self.horizontalLayout_5.addWidget(self.pushButton_pFileBrowse)
-        spacerItem1 = QtGui.QSpacerItem(118, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
-        self.horizontalLayout_5.addItem(spacerItem1)
         self.verticalLayout_6.addLayout(self.horizontalLayout_5)
         self.horizontalLayout_6 = QtGui.QHBoxLayout()
         self.horizontalLayout_6.setObjectName("horizontalLayout_6")
@@ -382,7 +383,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_13.addLayout(self.verticalLayout)
         MainWindow.setCentralWidget(self.centralWidget)
         self.menuBar = QtGui.QMenuBar(MainWindow)
-        self.menuBar.setGeometry(QtCore.QRect(0, 0, 939, 21))
+        self.menuBar.setGeometry(QtCore.QRect(0, 0, 855, 21))
         self.menuBar.setObjectName("menuBar")
         MainWindow.setMenuBar(self.menuBar)
         self.mainToolBar = QtGui.QToolBar(MainWindow)
