@@ -180,7 +180,7 @@ class ViolationDb( DB_SQLite):
         else:
             updateItems = (updateTime, desc, details, line)
             s = """
-                update Violations set lastReport=?, description=?, details=?, lineNUmber=? where
+                update Violations set lastReport=?, description=?, details=?, lineNumber=? where
                 filename=?
                 and function=?
                 and severity=?
