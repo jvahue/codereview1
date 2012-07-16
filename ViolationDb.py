@@ -127,9 +127,10 @@ class ViolationDb( DB_SQLite):
             """
 
         d = ( filename,function,severity,violationId,detectedBy,details,updateTime)
-        if self.Execute( s, d) != 1:
+        data0 = self.Query( s, filename,function,severity,violationId,detectedBy,details,updateTime)
+        if data0 is None:
             self.insertSelErr += 1
-        data0 = Query(s, self, self.GetAll())
+            data0 = []
 
         isInsert = True
         if len(data0) > 0:
@@ -173,7 +174,8 @@ class ViolationDb( DB_SQLite):
                 (filename,function,severity,violationId,description,details,lineNumber,detectedBy,firstReport,lastReport)
                 values (%s)
                 """ % ','.join('?'*len(d))
-            if self.Execute( s, d) != 1:
+            if self.Execute( s, filename, function, severity, violationId,
+                                desc, details, line, detectedBy,updateTime,updateTime) != 1:
                 self.insertInErr += 1
             else:
                 self.insertNew += 1
@@ -189,7 +191,8 @@ class ViolationDb( DB_SQLite):
                 and details=?
                 and lineNumber=?
                 """
-            if self.Execute( s, updateItems + primary) != 1:
+            params = updateItems + primary
+            if self.Execute( s, *params) != 1:
                 self.insertUpErr += 1
             else:
                 self.insertUpdate += 1
@@ -230,7 +233,7 @@ class ViolationDb( DB_SQLite):
             and detectedBy = '%s'
             and reviewDate is Null
             """ % (detectedBy,)
-        self.Execute( s, (updateTime,))
+        self.Execute( s, updateTime)
         data = self.GetOne()
 
         # mark them as not being reported anymore
@@ -240,8 +243,7 @@ class ViolationDb( DB_SQLite):
                 and detectedBy = '%s'
                 and reviewDate is Null
             """ % (detectedBy)
-        params = (eNotReported, updateTime, updateTime)
-        self.Execute( s, params)
+        self.Execute( s, eNotReported, updateTime, updateTime)
 
         self.Commit()
 
@@ -256,7 +258,7 @@ class ViolationDb( DB_SQLite):
         where detectedBy = ?
         and reviewDate is NULL
         """
-        self.Execute( s, (detectedBy,))
+        self.Execute( s, detectedBy)
         data = self.GetOne()
 
         return data[0]

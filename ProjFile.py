@@ -101,6 +101,8 @@ eNameDef = 'defines'
 eOptPcLint = 'PcLint'
 eRestrictedFunc = 'Functions'
 
+eAnalysisComments = 'Analysis_Comments'
+
 #---------------------------------------------------------------------------------------------------
 # Functions
 #---------------------------------------------------------------------------------------------------
@@ -183,8 +185,12 @@ class ProjectFile:
         self.restricted = OrderedDict()
         self.restricted[eRestrictedFunc] = []
 
+        self.analysisComments = []
+
         self.modified = False
         self.isValid = False
+
+        self.errors = []
 
     #-----------------------------------------------------------------------------------------------
     def GetSrcCodeFiles( self, extensions=['.h','.c'], excludeDirs=[], excludedFiles=[]):
@@ -232,6 +238,7 @@ class ProjectFile:
         self.ReadOptions()
         self.ReadRestricted()
         self.ReadBaseTypes()
+        self.ReadAnalysisComments()
 
         # save the raw format info
         self.rawFormats = copy.deepcopy( self.formats)
@@ -248,6 +255,9 @@ class ProjectFile:
                     v = v.replace( k, kv)
                     self.formats[t] = v
 
+        # good project file ?
+        self.isValid = self.errors == []
+
     #-----------------------------------------------------------------------------------------------
     def ReadPaths( self):
         """ Write the project and src code root info to the file """
@@ -258,10 +268,39 @@ class ProjectFile:
         self.paths[ePathU4c] = self.GetLine( 'Path_U4c')
         self.paths[ePathViewer] = self.GetLine( 'Path_Viewer')
 
+        # verify all paths are valid
+        for p in self.paths:
+            v = self.paths[p]
+            if type(v) == str:
+                v = [v]
+
+            for vx in v:
+                if not self.CheckPath( vx):
+                    self.errors.append( '%s Invalid Path/File: %s' % (p, vx))
+
+    #-----------------------------------------------------------------------------------------------
+    def CheckPath( self, aPath):
+        status = True
+        # is it a directory
+        if not os.path.isdir( aPath):
+            # is it a file
+            if not os.path.isfile(aPath):
+                # how about the parts
+                parts = aPath.split()
+                current = parts[0]
+                parts = parts[1:]
+                while parts and not (os.path.isdir( current) or os.path.isfile( current)):
+                    current = current + ' ' + parts[0]
+                    parts = parts[1:]
+                status = os.path.isdir( current) or os.path.isfile( current)
+
+        return status
+
     #-----------------------------------------------------------------------------------------------
     def ReadDefs( self):
         self.defines = self.GetList( 'Defines')
         self.undefines = self.GetList( 'Undefines')
+
 
     #-----------------------------------------------------------------------------------------------
     def ReadExcludes( self):
@@ -350,6 +389,9 @@ class ProjectFile:
         for i in self.restricted:
             self.restricted[i] = self.GetList( 'Restricted_%s' % i)
 
+    #-----------------------------------------------------------------------------------------------
+    def ReadAnalysisComments( self):
+        self.analysisComments = self.GetList( eAnalysisComments)
 
     #-----------------------------------------------------------------------------------------------
     # Save / Write Operations
@@ -419,6 +461,10 @@ class ProjectFile:
     #-----------------------------------------------------------------------------------------------
     def WriteRestricted( self):
         self.PutDictItems( 'Restricted', self.restricted)
+
+    #-----------------------------------------------------------------------------------------------
+    def WriteAnalysisComments( self):
+        self.PutList( eAnalysisComments, self.analysisComments)
 
     #-----------------------------------------------------------------------------------------------
     # Utilities

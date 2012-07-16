@@ -102,6 +102,7 @@ class DB:
 
     #------------------------------------------------------------------------------------------
     def Query( self, sql, *args):
+        qr = None
         if self.Execute( sql, *args):
             data = self.GetAll()
             qr = Query( sql, self, data = data)
@@ -132,12 +133,12 @@ class DB:
                 rv = 1
             except :
                 self.queryValid = False
-                    print(traceback.print_exc())
-                    print()
-                    print(sql)
-                    if args:
-                        for i in args[0]:
-                            print(i)
+                print(traceback.print_exc())
+                print()
+                print(sql)
+                if args:
+                    for i in args:
+                        print(i)
                 rv = 0
         return rv
 

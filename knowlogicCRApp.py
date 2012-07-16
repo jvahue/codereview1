@@ -99,6 +99,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.userName = ''
 
+        self.filterInfo = {
+            'Filename':'filename',
+            'Function':'function',
+            'Severity':'Severity',
+            'Id':'violationId',
+            'DetectedBy':'detectedBy',
+            'Status':'Status'
+        }
+
+        self.db = None
         self.ResetProject()
 
         self.fnameFilter    =  dict(name = 'fName', value = '', comboBoxTitle = 'Select Filename')
@@ -119,7 +129,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         #------------------------------------------------------------------------------
         # Handle Tabs of TabWidget
         #------------------------------------------------------------------------------
-        self.tabWidget.currentChanged.connect(self.currentTabChanged)
+        self.tabWidget.currentChanged.connect(self.CurrentTabChanged)
 
         #------------------------------------------------------------------------------
         # Handle Config Tab Data
@@ -132,30 +142,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         #------------------------------------------------------------------------------
         # Set up the filter comboboxes and the Apply Filter pushbutton
         #------------------------------------------------------------------------------
-        self.comboBox_Filename.setCurrentIndex(0)
-        self.comboBox_Filename.addItems([self.fnameFilter['comboBoxTitle']])
-        self.comboBox_Filename.addItems(self.GetFilenames())
-        self.comboBox_Filename.currentIndexChanged.connect(self.FilenameComboBoxIndexChanged)
-
-        self.comboBox_Function.setCurrentIndex(0)
-        self.comboBox_Function.addItems([self.functionFilter['comboBoxTitle']])
-        self.comboBox_Function.currentIndexChanged.connect(self.FunctionComboBoxIndexChanged)
-
-        self.comboBox_Severity.setCurrentIndex(0)
-        self.comboBox_Severity.addItems(self.GetSeverity())
-        self.comboBox_Severity.currentIndexChanged.connect(self.SeverityComboBoxIndexChanged)
-
-        self.comboBox_Id.setCurrentIndex(0)
-        self.comboBox_Id.addItems(self.GetIds())
-        self.comboBox_Id.currentIndexChanged.connect(self.IdComboBoxIndexChanged)
-
-        self.comboBox_DetectedBy.setCurrentIndex(0)
-        self.comboBox_DetectedBy.addItems(self.GetDetectedBy())
-        self.comboBox_DetectedBy.currentIndexChanged.connect(self.DetectedByComboBoxIndexChanged)
-
-        self.comboBox_Status.setCurrentIndex(0)
-        self.comboBox_Status.addItems(self.GetStatus())
-        self.comboBox_Status.currentIndexChanged.connect(self.StatusComboBoxIndexChanged)
+        # the a is the index that is selected => if 0 we know they cleared this filter
+        self.comboBox_Filename.currentIndexChanged.connect(lambda a,x='Filename', fx=self.FillFilters: fx(a,x))
+        self.comboBox_Function.currentIndexChanged.connect(lambda a,x='Function', fx=self.FillFilters: fx(a,x))
+        self.comboBox_Severity.currentIndexChanged.connect(lambda a,x='Severity', fx=self.FillFilters: fx(a,x))
+        self.comboBox_Id.currentIndexChanged.connect(lambda a,x='Id', fx=self.FillFilters: fx(a,x))
+        self.comboBox_DetectedBy.currentIndexChanged.connect(lambda a,x='DetectedBy', fx=self.FillFilters: fx(a,x))
+        self.comboBox_Status.currentIndexChanged.connect(lambda a,x='Status', fx=self.FillFilters: fx(a,x))
 
         self.pushButton_ApplyFilters.clicked.connect(self.ApplyFilters)
 
@@ -165,7 +158,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.horizontalScrollBar.setMinimum(0)
         self.horizontalScrollBar.setMaximum(0)
 
-        self.horizontalScrollBar.valueChanged.connect(self.ViolationsSliderChanged)
+        self.horizontalScrollBar.valueChanged.connect(self.DisplayViolationsData)
 
         self.pushButton_GotoCode.clicked.connect(self.GotoCode)
 
@@ -183,9 +176,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.pushButton_BrowseReport.clicked.connect(self.DisplayReportFileBrowser)
         self.pushButton_GenerateReport.clicked.connect(self.GenerateReport)
 
-
     #-----------------------------------------------------------------------------------------------
     def ResetProject( self, projFileName = None):
+        """ A new project file has been selected - reset all the info in the display
+        """
+        self.filterUpdateInProgress = False
+        self.currentFilters = []
+
         if projFileName is None:
             projFileName = eDefaultProjectFileName
 
@@ -193,24 +190,31 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.pFullFilename = projFileName
             self.projFile = PF.ProjectFile( projFileName)
 
-            self.dbFname = eDbName
-            self.dbFullFilename = os.path.join( self.projFile.paths[PF.ePathProject],
-                                                eDbRoot, eDbName)
+            if self.projFile.isValid:
+                self.dbFname = eDbName
+                self.dbFullFilename = os.path.join( self.projFile.paths[PF.ePathProject],
+                                                    eDbRoot, eDbName)
 
-            #------------------------------------------------------------------------------
-            # Establish a DataBase connection
-            #------------------------------------------------------------------------------
-            self.db = DB_SQLite()
-            self.db.Connect(self.dbFullFilename)
+                #------------------------------------------------------------------------------
+                # Establish a DataBase connection
+                #------------------------------------------------------------------------------
+                self.db = DB_SQLite()
+                self.db.Connect(self.dbFullFilename)
 
-            self.violationsData = []
-            self.v = None
+                self.violationsData = []
+                self.v = None
 
-            # display the project file name
-            self.textBrowser_ProjFile.setText(projFileName)
+                self.FillFilters( 0, '', True)
+                self.DisplayViolationStatistics()
+
+                # display the project file name
+                self.textBrowser_ProjFile.setText(projFileName)
+            else:
+                msg = '\n'.join( self.projFile.errors)
+                self.CrErrPopup( msg)
 
     #-----------------------------------------------------------------------------------------------
-    def crErrPopup(self, errText):
+    def CrErrPopup(self, errText):
         """ The crErrPopup provides a popup dialog to be used for simple
             notifications to the user through the GUI """
         msgBox = QMessageBox()
@@ -225,15 +229,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         return(dlg)
 
     #-----------------------------------------------------------------------------------------------
-    def currentTabChanged(self):
-        """ If moving onto any tab other than config tab"""
+    def CurrentTabChanged(self):
+        """ When moving onto any tab check conditions and perform actions
+        """
+        # Make sure we have a username and project file before moving off config tab
         if self.tabWidget.currentIndex() != 0:
-            """ Make sure they enter a username and project file before moving off config tab """
             if self.db == None or self.userName == '':
-                self.crErrPopup('Please enter a valid Username and Project File.')
                 self.tabWidget.setCurrentIndex(0)
-        self.curTab = self.tabWidget.currentIndex()
+                self.CrErrPopup('Please enter a valid Username and Project File.')
 
+        # Coming back to the Config tab update the Stats as they may have analyzed something
+        elif self.tabWidget.currentIndex() == 0 and self.curTab != 0:
+            self.DisplayViolationStatistics()
+
+        self.curTab = self.tabWidget.currentIndex()
 
     #-----------------------------------------------------------------------------------------------
     def lineEditUserNameChanged(self):
@@ -268,6 +277,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.textBrowser_Accepted.setText(str(numAccepted))
         self.textBrowser_Reviewed.setText(str(numReviewed))
 
+    #-----------------------------------------------------------------------------------------------
     def RunAnalysis(self):
         # TODO: Call Analyze Here
         # TODO: this should be launched as a thread, this way the main giu can display the
@@ -277,10 +287,61 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if analyzer.isValid:
             analyzer.Analyze(fullAnalysis)
         """
-        self.crErrPopup('Not fully integrated. Run Analysis commandline and GUI works with KsCrDb.db in working directory.')
+        msg = 'Not fully integrated. Run Analysis commandline and GUI works with KsCrDb.db in working directory.'
+        self.crErrPopup(msg)
         self.DisplayViolationStatistics()
 
+    #-----------------------------------------------------------------------------------------------
+    def FillFilters( self, index, name='', reset=False):
+        """ This function fills in all of the filter selection dropdowns based on the
+            settings in the other filter dropdowns.
 
+            filterUpdateInProgress - stop re-entrant calls when we update the filter lists items
+                                     as it appears the selection changed
+        """
+        if not self.filterUpdateInProgress:
+            self.filterUpdateInProgress = True
+
+            noFilterRe = re.compile('Select <[A-Za-z]+> \[[0-9]+\]')
+
+            # don't refill the one that changed
+            if name:
+                if name not in self.currentFilters:
+                    self.currentFilters.append(name)
+                if index <= 0:
+                    self.currentFilters.remove( name)
+
+            whereClause = ''
+            if not reset:
+                whereClause = self.BuildSqlStatement()
+
+            # now loop through each filter applying the constraint
+            for dd in self.filterInfo:
+                if dd not in self.currentFilters:
+                    gui = getattr( self, 'comboBox_%s' % dd)
+                    s = """select distinct(%s)
+                           from violations
+                           %s
+                           order by %s""" % ( self.filterInfo[dd], whereClause, self.filterInfo[dd])
+                    q = self.db.Query(s)
+
+                    # special handling for filenames to remove the (W)
+                    if dd == 'Filename':
+                        comboList = [i.data for i in q if i.data.find('(W)') == -1]
+                    else:
+                        comboList = [i.data for i in q]
+
+                    # put some stuff up front
+                    comboList = ['Select <%s> [%d]' % (dd, len(comboList))] + comboList
+
+                    gui.clear()
+                    gui.addItems( comboList)
+                    gui.setCurrentIndex(0)
+
+            # done with the filter update
+            self.filterUpdateInProgress = False
+
+    #-----------------------------------------------------------------------------------------------
     def UpdateFunctionsComboBox(self):
         self.comboBox_Function.setCurrentIndex(0)
         self.comboBox_Function.clear()
@@ -419,6 +480,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         else:
             self.statusFilter['value'] = """status = '%s' """ % self.comboBox_Status.currentText()
 
+    #-----------------------------------------------------------------------------------------------
     def GetStatus(self):
         """ GetStatus returns list of status choices to display in the combobox for user selection"""
         statusList = []
@@ -426,84 +488,69 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         return statusList
 
-    def FilenameComboBoxIndexChanged(self):
-        """ Filename choice changed """
-        """ Update filter """
-        self.UpdateFileNameFilter()
-        """ Update functions combobox """
-        """ If filename changed, update function combobox"""
-        self.UpdateFunctionsComboBox()
+    #-----------------------------------------------------------------------------------------------
+    def ApplyFilters(self):
+        """ Display the violations information based on selected filters """
 
-    def FunctionComboBoxIndexChanged(self):
-        """ Function choice changed """
-        """ Update filter """
-        self.UpdateFunctionsFilter()
+        """ Query the database using filters selected """
+        s = """
+            SELECT filename, function, severity, violationId, description, details,
+                   lineNumber, detectedBy, firstReport, lastReport, status, analysis,
+                   who, reviewDate
+            FROM Violations
+            %s
+            order by filename, detectedBy, violationId, function, severity
+            """
+        whereClause = self.BuildSqlStatement()
+        sql = s % whereClause
 
-    def SeverityComboBoxIndexChanged(self):
-        """ Severity choice changed """
-        """ Update filter """
-        self.UpdateSeverityFilter()
+        self.violationsData = []
+        self.violationsData = self.db.Query( sql)
 
-    def IdComboBoxIndexChanged(self):
-        """ ViolationId choice changed """
-        """ Update filter """
-        if self.comboBox_Id.currentText() == 'Custom':
-            self.vIdCustom = 1
-            """ Add custom dialog here """
-            dlg = self.DisplayCRAppCustomIdDialog()
-            if dlg.exec_():
-                customText = dlg.getValue()
-                self.comboBox_Id.setItemText(self.comboBox_Id.currentIndex(), customText)
-        self.UpdatevIdFilter()
+        """ Display Violations Data """
+        if self.violationsData:
+            self.horizontalScrollBar.setMinimum(0)
+            self.horizontalScrollBar.setMaximum((len(self.violationsData)-1))
+            self.horizontalScrollBar.setValue(0)
+        else:
+            self.horizontalScrollBar.setMinimum(0)
+            self.horizontalScrollBar.setMaximum(0)
 
-    def DetectedByComboBoxIndexChanged(self):
-        """ DetectedBy choice changed """
-        """ Update filter """
-        self.UpdatedetectedByFilter()
+        self.DisplayViolationsData()
 
-    def StatusComboBoxIndexChanged(self):
-        """ Status choice changed """
-        """ Update filter """
-        self.UpdateStatusFilter()
-
+    #-----------------------------------------------------------------------------------------------
     def BuildSqlStatement(self):
-        sql = ("""SELECT filename,
-                         function,
-                         severity,
-                         violationId,
-                         description,
-                         details,
-                         lineNumber,
-                         detectedBy,
-                         firstReport,
-                         lastReport,
-                         status,
-                         analysis,
-                         who,
-                         reviewDate
-                    FROM Violations """)
-        numFilters = 0
-        for f in self.filterList:
-            if f['value']:
-                if numFilters == 0:
-                    sql = sql + "WHERE "
-                else:
-                    sql = sql + "AND "
-                sql = sql + f['value']
-                numFilters = numFilters + 1
+        noFilterRe = re.compile('Select <[A-Za-z]+>')
 
-        sql += '\norder by filename, detectedBy, violationId, function, severity '
+        whereClause = ''
+        constraints = []
 
-        print("Built sql statement:")
-        print(sql)
-        return(sql)
+        # get the value of all filter and make a constraint on all the queries
+        for dd in self.filterInfo:
+            gui = getattr( self, 'comboBox_%s' % dd)
+            text = gui.currentText()
+            filterOff = noFilterRe.search( text)
+            if filterOff is None and text:
+                # ok we have something to filter on
+                filterText = "%s like '%%%s%%'" % (self.filterInfo[dd], text)
+                constraints.append( filterText)
 
+        if constraints:
+            queryConstraint = '\nand '.join( constraints)
+            whereClause = 'where %s' % queryConstraint
 
+        return whereClause
+
+    #-----------------------------------------------------------------------------------------------
     def DisplayViolationsData(self):
         """ Display violations data """
+        at = self.horizontalScrollBar.value()
+        at += 1
+        total = len(self.violationsData)
+
         if self.violationsData:
             """ Violation 'number' is one greater than scrollbar index which starts at 0 """
-            self.groupBox_Violations.setTitle("Currently Selected Violation %d of %d" % ((self.horizontalScrollBar.value()+1),len(self.violationsData)))
+            self.groupBox_Violations.setTitle("Currently Selected Violation %d of %d" % (at,total))
 
             """ Populate the fields in the violations groupbox """
             self.v = self.violationsData[self.horizontalScrollBar.value()]
@@ -524,9 +571,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.textBrowser_Reviewer.setText(self.userName)
             self.textBrowser_Date.setText(str(datetime.datetime.now()))
 
-
         else:
-            self.groupBox_Violations.setTitle("Currently Selected Violation %d of %d" % (self.horizontalScrollBar.value(),len(self.violationsData)))
+            self.groupBox_Violations.setTitle("Currently Selected Violation %d of %d" % (at,total))
             self.textBrowser_Filename.clear()
             self.textBrowser_Function.clear()
             self.textBrowser_Description.clear()
@@ -536,32 +582,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.textBrowser_DetectedBy.clear()
             self.v = None
 
-
-    def ViolationsSliderChanged(self):
-        """ Slider changed, so redisplay  violations data """
-        self.DisplayViolationsData()
-
-    def ApplyFilters(self):
-        """ Display the violations information based on selected filters """
-
-        """ Query the database using filters selected """
-        sql = ''
-        sql = self.BuildSqlStatement()
-
-        self.violationsData = []
-        self.violationsData = Query(sql, self.db)
-
-        """ Display Violations Data """
-        if self.violationsData:
-            self.horizontalScrollBar.setMinimum(0)
-            self.horizontalScrollBar.setMaximum((len(self.violationsData)-1))
-        else:
-            self.horizontalScrollBar.setMinimum(0)
-            self.horizontalScrollBar.setMaximum(0)
-
-
-        self.DisplayViolationsData()
-
+    #-----------------------------------------------------------------------------------------------
     def GotoCode(self):
         viewerCommand = self.projFile.paths[PF.ePathViewer]
         # get the filename and line number for this violation
@@ -581,72 +602,70 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
                     subprocess.Popen( viewerCommand)
             else:
-                # TODO: alert user of ambiguous filename in project
-                pass
+                msg = 'Ambiguous filename\n%s' % '\n'.join(fpfn)
+                self.CrErrPopup( msg)
         else:
-            # TODO warn no violations match the filter criteria
-            pass
+            msg = 'No matching violations.'
+            self.CrErrPopup( msg)
 
+    #-----------------------------------------------------------------------------------------------
     def SaveAnalysisData(self, status):
         """ Save analysis data entered and mark status as reviewed or accepted based status passed in """
-
         if self.v:
             analysisText = self.plainTextEdit_Analysis.toPlainText()
 
-            updateCmd = ("""UPDATE Violations
-                               SET status = '%s',
-                                   analysis = '%s',
-                                   who = '%s',
-                                   reviewDate = '%s'
-                             WHERE filename = '%s'
-                               AND function = '%s'
-                               AND severity = '%s'
-                               AND violationId = '%s'
-                               AND description = '%s'
-                               AND details = '%s'
-                               AND lineNumber = %d """ % (status,
-                                                          analysisText,
-                                                          self.userName,
-                                                          datetime.datetime.now(),
-                                                          self.v.filename,
-                                                          self.v.function,
-                                                          self.v.severity,
-                                                          self.v.violationId,
-                                                          self.v.description,
-                                                          self.v.details,
-                                                          self.v.lineNumber))
-            print('updateCmd:')
-            print(updateCmd)
-            self.db.Execute(updateCmd)
+            updateCmd = """UPDATE Violations
+                               SET status = ?, analysis = ?, who = ?, reviewDate = ?
+                             WHERE filename = ?
+                               AND function = ?
+                               AND severity = ?
+                               AND violationId = ?
+                               AND description = ?
+                               AND details = ?
+                               AND lineNumber = ? """
+
+            self.db.Execute(updateCmd,
+                            status,
+                            analysisText,
+                            self.userName,
+                            datetime.datetime.now(),
+                            self.v.filename,
+                            self.v.function,
+                            self.v.severity,
+                            self.v.violationId,
+                            self.v.description,
+                            self.v.details,
+                            self.v.lineNumber)
 
             self.db.Commit()
 
-            """ Need to get new Query object now that the database has been changed """
-            sql = ''
-            sql = self.BuildSqlStatement()
+            # remember where we are to the next issue
+            at = self.horizontalScrollBar.value()
 
-            self.violationsData = []
-            self.violationsData = Query(sql, self.db)
+            # refresh the data in our cache
+            self.ApplyFilters()
 
-            """ Redisplay violations data. """
-            self.DisplayViolationsData()
+            # now go there
+            self.horizontalScrollBar.setValue(at + 1)
 
-
+    #-----------------------------------------------------------------------------------------------
     def MarkReviewed(self):
         """ Save analysis data entered and Mark violation as reviewed """
         self.SaveAnalysisData('Reviewed')
+
+    #-----------------------------------------------------------------------------------------------
     def MarkAccepted(self):
         """ Save analysis data entered and Mark violation as accepted """
         self.SaveAnalysisData('Accepted')
 
+    #-----------------------------------------------------------------------------------------------
     def DisplaySrcFileBrowser(self):
-
         # Display a file browser for the user to select the project file database directory
-
         srcFile = str(QFileDialog.getExistingDirectory(self, "Select Source Code Directory"))
 
         self.textBrowser_ReportFile.setText(srcFile)
 
+    #-----------------------------------------------------------------------------------------------
     def DisplayReportFileBrowser(self):
 
         # Display a file browser for the user to select the reports file directory
@@ -655,9 +674,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.textBrowser_ReportDir.setText(reportFile)
 
-
+    #-----------------------------------------------------------------------------------------------
     def GenerateReport(self):
-        self.crErrPopup('Not yet implemented...')
+        self.CrErrPopup('Not yet implemented...')
 
 
 #------------------------------------------------------------------------------------

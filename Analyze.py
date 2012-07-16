@@ -44,8 +44,12 @@ class Analyzer:
         """ Initializ an analyzer object """
         if os.path.isfile( projFile):
             self.projFile = ProjFile.ProjectFile( projFile)
-            self.status = 'Ready'
-            self.isValid = True
+            if self.projFile.isValid:
+                self.status = 'Ready'
+                self.isValid = True
+            else:
+                self.status = 'Error'
+                self.isValid = False
         else:
             self.status = 'Project file does not exist!'
             self.isValid = False
@@ -80,7 +84,9 @@ class Analyzer:
                     time.sleep(1)
                     timeNow = DateTime.DateTime.today()
                     timeNow.ShowMs(False)
-                    self.status = '%s: PcLint: %s - U4C: %s' % (timeNow, pcl.statusMsg, u4co.statusMsg)
+                    self.status = '%s: PcLint: %s - U4C: %s              ' % (timeNow,
+                                                                              pcl.statusMsg,
+                                                                              u4co.statusMsg)
                     if verbose:
                         print((' '*100)+'\r', end='') # clear the line
                         print(self.status+'\r', end='')
@@ -139,6 +145,8 @@ if __name__ == '__main__':
         else:
             fullAnalysis = True
         analyzer.Analyze(fullAnalysis)
+    else:
+        print( 'Errors:\n%s' % '\n'.join(analyzer.projFile.errors))
 
     print( analyzer.status)
 

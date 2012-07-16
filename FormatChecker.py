@@ -227,7 +227,7 @@ class FormatChecker:
             else:
                 severity = 'Error'
                 violationId = errMsg + '-MissingField'
-                lineMis = -1
+                lineMis = lineNum
                 desc = '%s <%s>[%d] missing in\n<%s>' % (checkDesc, item.raw, ix, func )
                 details = '<%s>[%d] not found in %d possible lines' % (item.raw, ix, self.lineCount)
                 db.Insert(rpfn, func, severity, violationId, desc,
