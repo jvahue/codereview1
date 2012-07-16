@@ -226,8 +226,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     #-----------------------------------------------------------------------------------------------
     def currentTabChanged(self):
+        """ If moving onto any tab other than config tab"""
+        if self.tabWidget.currentIndex() != 0:
+            """ Make sure they enter a username and project file before moving off config tab """
+            if self.db == None or self.userName == '':
+                self.crErrPopup('Please enter a valid Username and Project File.')
+                self.tabWidget.setCurrentIndex(0)
         self.curTab = self.tabWidget.currentIndex()
-        # TODO : make sure they select a username before moving off config tab?
+
 
     #-----------------------------------------------------------------------------------------------
     def lineEditUserNameChanged(self):
