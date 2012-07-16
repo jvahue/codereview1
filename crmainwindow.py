@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'C:\PWES\FASTTesting\CodeReview1\crmainwindow.ui'
 #
-# Created: Mon Jul 16 11:56:52 2012
+# Created: Mon Jul 16 12:30:37 2012
 #      by: pyside-uic 0.2.14 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -394,7 +394,7 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusBar)
 
         self.retranslateUi(MainWindow)
-        self.tabWidget.setCurrentIndex(1)
+        self.tabWidget.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
