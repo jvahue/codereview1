@@ -49,7 +49,7 @@
       <item>
        <widget class="QTabWidget" name="tabWidget">
         <property name="currentIndex">
-         <number>2</number>
+         <number>1</number>
         </property>
         <widget class="QWidget" name="tab_Config">
          <property name="minimumSize">
@@ -373,140 +373,134 @@
             <property name="title">
              <string>View Violations</string>
             </property>
-            <widget class="QWidget" name="">
-             <property name="geometry">
-              <rect>
-               <x>10</x>
-               <y>20</y>
-               <width>801</width>
-               <height>171</height>
-              </rect>
-             </property>
-             <layout class="QVBoxLayout" name="verticalLayout_8">
-              <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_filtervalues">
-                <item>
-                 <layout class="QVBoxLayout" name="verticalLayout_fnameandbox">
-                  <item>
-                   <widget class="QLabel" name="label_Filename">
-                    <property name="text">
-                     <string>Filename:</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QTextBrowser" name="textBrowser_Filename"/>
-                  </item>
-                 </layout>
-                </item>
-                <item>
-                 <layout class="QVBoxLayout" name="verticalLayout_fnnameandbox">
-                  <item>
-                   <widget class="QLabel" name="label_Function">
-                    <property name="text">
-                     <string>Function:</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QTextBrowser" name="textBrowser_Function"/>
-                  </item>
-                 </layout>
-                </item>
-                <item>
-                 <layout class="QVBoxLayout" name="verticalLayout_severityandbox">
-                  <item>
-                   <widget class="QLabel" name="label_6">
-                    <property name="text">
-                     <string>Error Severity:</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QTextBrowser" name="textBrowser_Severity"/>
-                  </item>
-                 </layout>
-                </item>
-                <item>
-                 <layout class="QVBoxLayout" name="verticalLayout_idandbox">
-                  <item>
-                   <widget class="QLabel" name="label_Id">
-                    <property name="text">
-                     <string>Violation Id:</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QTextBrowser" name="textBrowser_Id"/>
-                  </item>
-                 </layout>
-                </item>
-                <item>
-                 <layout class="QVBoxLayout" name="verticalLayout_dbyandbox">
-                  <item>
-                   <widget class="QLabel" name="label_DetectedBy">
-                    <property name="text">
-                     <string>Detected By:</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QTextBrowser" name="textBrowser_DetectedBy"/>
-                  </item>
-                 </layout>
-                </item>
-               </layout>
-              </item>
-              <item>
-               <layout class="QVBoxLayout" name="verticalLayout_7">
-                <item>
-                 <widget class="QTextBrowser" name="textBrowser_Description">
-                  <property name="minimumSize">
-                   <size>
-                    <width>797</width>
-                    <height>47</height>
-                   </size>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QTextBrowser" name="textBrowser_Details">
-                  <property name="minimumSize">
-                   <size>
-                    <width>797</width>
-                    <height>46</height>
-                   </size>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-              <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_13">
-                <item>
-                 <widget class="QScrollBar" name="horizontalScrollBar">
-                  <property name="orientation">
-                   <enum>Qt::Horizontal</enum>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="pushButton_GotoCode">
-                  <property name="maximumSize">
-                   <size>
-                    <width>75</width>
-                    <height>23</height>
-                   </size>
-                  </property>
-                  <property name="text">
-                   <string>Go To Code</string>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-             </layout>
-            </widget>
+            <layout class="QHBoxLayout" name="horizontalLayout_22">
+             <item>
+              <layout class="QVBoxLayout" name="verticalLayout_8">
+               <item>
+                <layout class="QHBoxLayout" name="horizontalLayout_filtervalues">
+                 <item>
+                  <layout class="QVBoxLayout" name="verticalLayout_fnameandbox">
+                   <item>
+                    <widget class="QLabel" name="label_Filename">
+                     <property name="text">
+                      <string>Filename:</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QTextBrowser" name="textBrowser_Filename"/>
+                   </item>
+                  </layout>
+                 </item>
+                 <item>
+                  <layout class="QVBoxLayout" name="verticalLayout_fnnameandbox">
+                   <item>
+                    <widget class="QLabel" name="label_Function">
+                     <property name="text">
+                      <string>Function:</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QTextBrowser" name="textBrowser_Function"/>
+                   </item>
+                  </layout>
+                 </item>
+                 <item>
+                  <layout class="QVBoxLayout" name="verticalLayout_severityandbox">
+                   <item>
+                    <widget class="QLabel" name="label_6">
+                     <property name="text">
+                      <string>Error Severity:</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QTextBrowser" name="textBrowser_Severity"/>
+                   </item>
+                  </layout>
+                 </item>
+                 <item>
+                  <layout class="QVBoxLayout" name="verticalLayout_idandbox">
+                   <item>
+                    <widget class="QLabel" name="label_Id">
+                     <property name="text">
+                      <string>Violation Id:</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QTextBrowser" name="textBrowser_Id"/>
+                   </item>
+                  </layout>
+                 </item>
+                 <item>
+                  <layout class="QVBoxLayout" name="verticalLayout_dbyandbox">
+                   <item>
+                    <widget class="QLabel" name="label_DetectedBy">
+                     <property name="text">
+                      <string>Detected By:</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QTextBrowser" name="textBrowser_DetectedBy"/>
+                   </item>
+                  </layout>
+                 </item>
+                </layout>
+               </item>
+               <item>
+                <layout class="QVBoxLayout" name="verticalLayout_7">
+                 <item>
+                  <widget class="QTextBrowser" name="textBrowser_Description">
+                   <property name="minimumSize">
+                    <size>
+                     <width>797</width>
+                     <height>47</height>
+                    </size>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QTextBrowser" name="textBrowser_Details">
+                   <property name="minimumSize">
+                    <size>
+                     <width>797</width>
+                     <height>46</height>
+                    </size>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
+               <item>
+                <layout class="QHBoxLayout" name="horizontalLayout_13">
+                 <item>
+                  <widget class="QScrollBar" name="horizontalScrollBar">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="pushButton_GotoCode">
+                   <property name="maximumSize">
+                    <size>
+                     <width>75</width>
+                     <height>23</height>
+                    </size>
+                   </property>
+                   <property name="text">
+                    <string>Go To Code</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
+              </layout>
+             </item>
+            </layout>
            </widget>
           </item>
           <item>
@@ -520,117 +514,111 @@
             <property name="title">
              <string>Enter Analysis</string>
             </property>
-            <widget class="QWidget" name="">
-             <property name="geometry">
-              <rect>
-               <x>10</x>
-               <y>20</y>
-               <width>791</width>
-               <height>91</height>
-              </rect>
-             </property>
-             <layout class="QHBoxLayout" name="horizontalLayout_20">
-              <item>
-               <layout class="QVBoxLayout" name="verticalLayout_4">
-                <item>
-                 <widget class="QPlainTextEdit" name="plainTextEdit_Analysis"/>
-                </item>
-                <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_16">
-                  <item>
-                   <layout class="QHBoxLayout" name="horizontalLayout_14">
-                    <item>
-                     <widget class="QLabel" name="label_3">
-                      <property name="text">
-                       <string>Reviewer:</string>
-                      </property>
-                     </widget>
-                    </item>
-                    <item>
-                     <widget class="QTextBrowser" name="textBrowser_Reviewer"/>
-                    </item>
-                    <item>
-                     <widget class="QLabel" name="label_4">
-                      <property name="text">
-                       <string>Date:</string>
-                      </property>
-                     </widget>
-                    </item>
-                    <item>
-                     <widget class="QTextBrowser" name="textBrowser_Date"/>
-                    </item>
-                   </layout>
-                  </item>
-                  <item>
-                   <layout class="QHBoxLayout" name="horizontalLayout_15">
-                    <item>
-                     <widget class="QPushButton" name="pushButton_MarkReviewed">
-                      <property name="text">
-                       <string>Mark Reviewed</string>
-                      </property>
-                     </widget>
-                    </item>
-                    <item>
-                     <widget class="QPushButton" name="pushButton_MarkAccepted">
-                      <property name="text">
-                       <string>Mark Accepted</string>
-                      </property>
-                     </widget>
-                    </item>
-                   </layout>
-                  </item>
-                 </layout>
-                </item>
-               </layout>
-              </item>
-              <item>
-               <layout class="QVBoxLayout" name="verticalLayout_5">
-                <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_17">
-                  <item>
-                   <widget class="QLabel" name="label_prevName">
-                    <property name="text">
-                     <string>Previous Reviewer</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QTextBrowser" name="textBrowser_PrevReviewer"/>
-                  </item>
-                 </layout>
-                </item>
-                <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_18">
-                  <item>
-                   <widget class="QLabel" name="label_PrevDate">
-                    <property name="text">
-                     <string>Previous Date</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QTextBrowser" name="textBrowser_PrevDate"/>
-                  </item>
-                 </layout>
-                </item>
-                <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_19">
-                  <item>
-                   <widget class="QLabel" name="label_PrevStatus">
-                    <property name="text">
-                     <string>Previous Status</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QTextBrowser" name="textBrowser_PrevStatus"/>
-                  </item>
-                 </layout>
-                </item>
-               </layout>
-              </item>
-             </layout>
-            </widget>
+            <layout class="QHBoxLayout" name="horizontalLayout_12">
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_20">
+               <item>
+                <layout class="QVBoxLayout" name="verticalLayout_4">
+                 <item>
+                  <widget class="QPlainTextEdit" name="plainTextEdit_Analysis"/>
+                 </item>
+                 <item>
+                  <layout class="QHBoxLayout" name="horizontalLayout_16">
+                   <item>
+                    <layout class="QHBoxLayout" name="horizontalLayout_14">
+                     <item>
+                      <widget class="QLabel" name="label_3">
+                       <property name="text">
+                        <string>Reviewer:</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QTextBrowser" name="textBrowser_Reviewer"/>
+                     </item>
+                     <item>
+                      <widget class="QLabel" name="label_4">
+                       <property name="text">
+                        <string>Date:</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QTextBrowser" name="textBrowser_Date"/>
+                     </item>
+                    </layout>
+                   </item>
+                   <item>
+                    <layout class="QHBoxLayout" name="horizontalLayout_15">
+                     <item>
+                      <widget class="QPushButton" name="pushButton_MarkReviewed">
+                       <property name="text">
+                        <string>Mark Reviewed</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QPushButton" name="pushButton_MarkAccepted">
+                       <property name="text">
+                        <string>Mark Accepted</string>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </item>
+                  </layout>
+                 </item>
+                </layout>
+               </item>
+               <item>
+                <layout class="QVBoxLayout" name="verticalLayout_5">
+                 <item>
+                  <layout class="QHBoxLayout" name="horizontalLayout_17">
+                   <item>
+                    <widget class="QLabel" name="label_prevName">
+                     <property name="text">
+                      <string>Previous Reviewer</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QTextBrowser" name="textBrowser_PrevReviewer"/>
+                   </item>
+                  </layout>
+                 </item>
+                 <item>
+                  <layout class="QHBoxLayout" name="horizontalLayout_18">
+                   <item>
+                    <widget class="QLabel" name="label_PrevDate">
+                     <property name="text">
+                      <string>Previous Date</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QTextBrowser" name="textBrowser_PrevDate"/>
+                   </item>
+                  </layout>
+                 </item>
+                 <item>
+                  <layout class="QHBoxLayout" name="horizontalLayout_19">
+                   <item>
+                    <widget class="QLabel" name="label_PrevStatus">
+                     <property name="text">
+                      <string>Previous Status</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QTextBrowser" name="textBrowser_PrevStatus"/>
+                   </item>
+                  </layout>
+                 </item>
+                </layout>
+               </item>
+              </layout>
+             </item>
+            </layout>
             <zorder></zorder>
             <zorder></zorder>
            </widget>
