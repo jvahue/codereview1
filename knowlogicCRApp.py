@@ -218,30 +218,31 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         msgBox.setText(errText)
         msgBox.exec_()
 
+    #-----------------------------------------------------------------------------------------------
     def DisplayCRAppCustomIdDialog(self):
         dlg = CRAppCustomIdDialog()
         dlg.setWindowTitle("Knowlogic Custom Filter")
         return(dlg)
 
+    #-----------------------------------------------------------------------------------------------
     def currentTabChanged(self):
         self.curTab = self.tabWidget.currentIndex()
         # TODO : make sure they select a username before moving off config tab?
 
+    #-----------------------------------------------------------------------------------------------
     def lineEditUserNameChanged(self):
         self.userName = self.lineEdit_userName.text()
 
+    #-----------------------------------------------------------------------------------------------
     def DisplaypFileBrowser(self):
 
         # Display a file browser for the user to select the project file database directory
 
         pFile, selFilter = QFileDialog.getOpenFileName(self, "Select Project File")
-        if (not pFile):
-            # TODO: add warning you need a project file
-            pFile = self.defaultDBLocation
-        else:
+        if pFile:
             self.ResetProject( pFile)
 
-
+    #-----------------------------------------------------------------------------------------------
     def DisplayViolationStatistics(self):
 
         sqlTotal = 'SELECT status from Violations'
