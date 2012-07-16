@@ -81,12 +81,12 @@ class ResultRow:
 
     #------------------------------------------------------------------------------------------
     def __iter__(self):
-        """ Initialize the ieterator """
+        """ Initialize the iterator """
         self.index = 0
         return self
 
     #------------------------------------------------------------------------------------------
-    def next( self):
+    def __next__( self):
         """ Get the next row form the data set """
         if self.index < self.length:
             rv = self.data[ self.index]
