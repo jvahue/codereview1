@@ -27,7 +27,7 @@ import sqlite3
 #---------------------------------------------------------------------------------------------------
 # Knowlogic Modules
 #---------------------------------------------------------------------------------------------------
-#from Analyze import Analyzer
+from Analyze import Analyzer
 from crappcustomiddialog import Ui_CRAppCustomIdDialog
 from crmainwindow import Ui_MainWindow
 
@@ -277,17 +277,28 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     #-----------------------------------------------------------------------------------------------
     def RunAnalysis(self):
-        # TODO: Call Analyze Here
-        # TODO: this should be launched as a thread, this way the main giu can display the
-        #       output of the analyzer for status
-        """
+        """ Run the analysis """
         analyzer = Analyzer(self.pFullFilename)
+
         if analyzer.isValid:
-            analyzer.Analyze(fullAnalysis)
-        """
-        msg = 'Not fully integrated. Run Analysis commandline and GUI works with KsCrDb.db in working directory.'
-        self.crErrPopup(msg)
-        self.DisplayViolationStatistics()
+            self.analyzerThread = util.ThreadSignal( analyzer.Analyze, analyzer)
+            self.analyzerThread.Go()
+
+            self.timer = QtCore.QTimer(self)
+            self.connect(self.timer, QtCore.SIGNAL("timeout()"), self.AnalysisUpdate)
+            self.timer.start(500)
+
+    #-----------------------------------------------------------------------------------------------
+    def AnalysisUpdate( self):
+        if self.analyzerThread.active:
+            sts = self.analyzerThread.classRef.status
+            # use the project file for status display while it's running
+            self.textBrowser_ProjFile.setText(sts)
+        else:
+            # kill the timer
+            self.timer.stop()
+            # reset the proj file path name
+            self.textBrowser_ProjFile.setText(self.pFullFilename)
 
     #-----------------------------------------------------------------------------------------------
     def FillFilters( self, index, name='', reset=False):
