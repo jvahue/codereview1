@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>939</width>
-    <height>638</height>
+    <width>855</width>
+    <height>964</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -49,7 +49,7 @@
       <item>
        <widget class="QTabWidget" name="tabWidget">
         <property name="currentIndex">
-         <number>2</number>
+         <number>1</number>
         </property>
         <widget class="QWidget" name="tab_Config">
          <property name="minimumSize">
@@ -121,18 +121,17 @@
                  </item>
                  <item>
                   <widget class="QTextBrowser" name="textBrowser_ProjFile">
+                   <property name="minimumSize">
+                    <size>
+                     <width>591</width>
+                     <height>0</height>
+                    </size>
+                   </property>
                    <property name="maximumSize">
                     <size>
                      <width>591</width>
                      <height>29</height>
                     </size>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QPushButton" name="pushButton_pFileBrowse">
-                   <property name="text">
-                    <string>Browse...</string>
                    </property>
                   </widget>
                  </item>
@@ -143,11 +142,18 @@
                    </property>
                    <property name="sizeHint" stdset="0">
                     <size>
-                     <width>118</width>
+                     <width>40</width>
                      <height>20</height>
                     </size>
                    </property>
                   </spacer>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="pushButton_pFileBrowse">
+                   <property name="text">
+                    <string>Browse...</string>
+                   </property>
+                  </widget>
                  </item>
                 </layout>
                </item>
@@ -373,13 +379,13 @@
             <property name="title">
              <string>View Violations</string>
             </property>
-            <widget class="QWidget" name="">
+            <widget class="QWidget" name="layoutWidget">
              <property name="geometry">
               <rect>
                <x>10</x>
                <y>20</y>
                <width>801</width>
-               <height>171</height>
+               <height>234</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_8">
@@ -520,13 +526,13 @@
             <property name="title">
              <string>Enter Analysis</string>
             </property>
-            <widget class="QWidget" name="">
+            <widget class="QWidget" name="layoutWidget">
              <property name="geometry">
               <rect>
                <x>10</x>
                <y>20</y>
                <width>791</width>
-               <height>91</height>
+               <height>235</height>
               </rect>
              </property>
              <layout class="QHBoxLayout" name="horizontalLayout_20">
@@ -631,8 +637,6 @@
               </item>
              </layout>
             </widget>
-            <zorder></zorder>
-            <zorder></zorder>
            </widget>
           </item>
          </layout>
@@ -764,7 +768,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>939</width>
+     <width>855</width>
      <height>21</height>
     </rect>
    </property>

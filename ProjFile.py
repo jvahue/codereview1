@@ -72,6 +72,7 @@ ePathSrcRoot = 'SrcCodeRoot'
 ePathInclude = 'IncludeDirs'
 ePathPcLint  = 'PcLint'
 ePathU4c     = 'U4c'
+ePathViewer  = 'Viewer'
 
 eExcludeDirs = 'Dirs'
 eExcludePcLint = 'Files_PcLint'
@@ -139,8 +140,9 @@ class ProjectFile:
         self.paths[ePathProject] = os.path.split(ffn)[0]
         self.paths[ePathSrcRoot] = [] # a list of roots
         self.paths[ePathInclude] = [] # a list of include dirs
-        self.paths[ePathPcLint] = ePcLintPath  # path to PcLint executable
-        self.paths[ePathU4c] = eU4cPath        # path to U4c executable
+        self.paths[ePathPcLint] = ePcLintPath # path to PcLint executable
+        self.paths[ePathU4c] = eU4cPath # path to U4c executable
+        self.paths[ePathViewer] = None # path/cmdline to run the viewer <filename> <linenumber>
 
         self.defines = []     # a list of defines
         self.undefines = []
@@ -182,6 +184,7 @@ class ProjectFile:
         self.restricted[eRestrictedFunc] = []
 
         self.modified = False
+        self.isValid = False
 
     #-----------------------------------------------------------------------------------------------
     def GetSrcCodeFiles( self, extensions=['.h','.c'], excludeDirs=[], excludedFiles=[]):
@@ -248,11 +251,12 @@ class ProjectFile:
     #-----------------------------------------------------------------------------------------------
     def ReadPaths( self):
         """ Write the project and src code root info to the file """
-        self.paths['ProjectRoot'] = self.GetLine( 'Path_ProjectRoot')
-        self.paths['SrcCodeRoot'] = self.GetList( 'Path_SrcCodeRoot')
-        self.paths['IncludeDirs'] = self.GetList( 'Path_IncludeDirs')
-        self.paths['PcLint'] = self.GetLine( 'Path_PcLint')
-        self.paths['U4c'] = self.GetLine( 'Path_U4c')
+        self.paths[ePathProject] = self.GetLine( 'Path_ProjectRoot')
+        self.paths[ePathSrcRoot] = self.GetList( 'Path_SrcCodeRoot')
+        self.paths[ePathInclude] = self.GetList( 'Path_IncludeDirs')
+        self.paths[ePathPcLint] = self.GetLine( 'Path_PcLint')
+        self.paths[ePathU4c] = self.GetLine( 'Path_U4c')
+        self.paths[ePathViewer] = self.GetLine( 'Path_Viewer')
 
     #-----------------------------------------------------------------------------------------------
     def ReadDefs( self):
