@@ -97,8 +97,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         self.setWindowTitle("Knowlogic Code Review Application")
 
-        self.userName = ''
-
         self.filterInfo = {
             'Filename':'filename',
             'Function':'function',
@@ -108,7 +106,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             'Status':'Status'
         }
 
+        # declare object attributes
+        self.userName = ''
+        self.curTab = 0
         self.db = None
+
         self.ResetProject()
 
         self.fnameFilter    =  dict(name = 'fName', value = '', comboBoxTitle = 'Select Filename')
@@ -149,7 +151,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.comboBox_Id.currentIndexChanged.connect(lambda a,x='Id', fx=self.FillFilters: fx(a,x))
         self.comboBox_DetectedBy.currentIndexChanged.connect(lambda a,x='DetectedBy', fx=self.FillFilters: fx(a,x))
         self.comboBox_Status.currentIndexChanged.connect(lambda a,x='Status', fx=self.FillFilters: fx(a,x))
-
         self.pushButton_ApplyFilters.clicked.connect(self.ApplyFilters)
 
         #------------------------------------------------------------------------------
@@ -157,15 +158,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         #------------------------------------------------------------------------------
         self.horizontalScrollBar.setMinimum(0)
         self.horizontalScrollBar.setMaximum(0)
-
         self.horizontalScrollBar.valueChanged.connect(self.DisplayViolationsData)
-
         self.pushButton_GotoCode.clicked.connect(self.GotoCode)
 
         #------------------------------------------------------------------------------
         # Manage the analysis push buttons
         #------------------------------------------------------------------------------
-
         self.pushButton_MarkReviewed.clicked.connect(self.MarkReviewed)
         self.pushButton_MarkAccepted.clicked.connect(self.MarkAccepted)
 
@@ -340,153 +338,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             # done with the filter update
             self.filterUpdateInProgress = False
-
-    #-----------------------------------------------------------------------------------------------
-    def UpdateFunctionsComboBox(self):
-        self.comboBox_Function.setCurrentIndex(0)
-        self.comboBox_Function.clear()
-        self.comboBox_Function.addItems([self.functionFilter['comboBoxTitle']])
-        self.comboBox_Function.addItems(self.GetFunctions())
-        self.FunctionComboBoxIndexChanged()
-
-
-    def UpdateFileNameFilter(self):
-
-        curSel = self.comboBox_Filename.currentText()
-        if curSel == self.fnameFilter['comboBoxTitle']:
-            self.fnameFilter['value'] = ''
-        else:
-            self.fnameFilter['value'] = """filename = '%s' """ % self.comboBox_Filename.currentText()
-
-    def GetFilenames(self):
-        """ GetFilenames returns list of filenames to display in the combobox for user selection"""
-        sql = 'SELECT DISTINCT filename from Violations'
-        q = Query(sql, self.db)
-        #filenameList = [self.fnameFilter['comboBoxTitle']]
-        filenameList = []
-        for i in q:
-            filenameList.append(str(i))
-
-        self.UpdateFileNameFilter()
-
-        """ If filename changed, update function combobox"""
-        #self.UpdateFunctionsComboBox()
-
-        return filenameList
-
-
-    def UpdateFunctionsFilter(self):
-        curSel = self.comboBox_Function.currentText()
-        if (curSel == self.functionFilter['comboBoxTitle']) or (curSel == 'N/A'):
-            self.functionFilter['value'] = ''
-        else:
-            self.functionFilter['value'] = """function = '%s' """ % self.comboBox_Function.currentText()
-
-
-    def GetFunctions(self):
-        """ GetFunctions returns list of functions to display in the combobox for user selection"""
-        sql = ("""SELECT DISTINCT function
-                   FROM Violations
-                   WHERE filename =  '%s'""" % self.comboBox_Filename.currentText())
-        q = Query(sql, self.db)
-        #functionList = [self.functionFilter['comboBoxTitle']]
-        functionList = []
-        for i in q:
-            functionList.append(str(i))
-
-        self.UpdateFunctionsFilter()
-
-        return functionList
-
-    def UpdateSeverityFilter(self):
-
-        curSel = self.comboBox_Severity.currentText()
-        if curSel == self.severityFilter['comboBoxTitle']:
-            self.severityFilter['value'] = ''
-        else:
-            self.severityFilter['value'] = """severity = '%s' """ % self.comboBox_Severity.currentText()
-
-    def GetSeverity(self):
-        """ GetSeverity returns list of severity choices to display in the combobox for user selection"""
-
-        sql = 'SELECT DISTINCT severity from Violations'
-        q = Query(sql, self.db)
-        severityList = [self.severityFilter['comboBoxTitle']]
-        for i in q:
-            severityList.append(str(i))
-        print('SeverityList:')
-        print (severityList)
-
-        #self.UpdateSeverityFilter()
-
-        return severityList
-
-    def UpdatevIdFilter(self):
-
-        curSel = self.comboBox_Id.currentText()
-        if curSel == self.vIdFilter['comboBoxTitle']:
-            self.vIdFilter['value'] = ''
-        else:
-            if self.vIdCustom:
-                """ Custom vIdFilter """
-                filterStr = """violationId LIKE '"""+"%"+self.comboBox_Id.currentText()+"%"+"""'"""
-                self.vIdFilter['value'] = filterStr
-            else:
-                self.vIdFilter['value'] = """violationId = '%s' """ % self.comboBox_Id.currentText()
-
-    def GetIds(self):
-        """ GetIds returns list of violationId choices to display in the combobox for user selection"""
-
-        """ Initialize custom vidfilter to false """
-        self.vIdCustom = 0
-
-        sql = 'SELECT DISTINCT violationId from Violations'
-        q = Query(sql, self.db)
-
-        vIdList = [self.vIdFilter['comboBoxTitle'], 'Custom']
-        for i in q:
-            vIdList.append(str(i))
-
-        print('vIdList:')
-        print (vIdList)
-        return vIdList
-
-    def UpdatedetectedByFilter(self):
-
-        curSel = self.comboBox_DetectedBy.currentText()
-        if curSel == self.detByFilter['comboBoxTitle']:
-            self.detByFilter['value'] = ''
-        else:
-            self.detByFilter['value'] = """detectedBy = '%s' """ % self.comboBox_DetectedBy.currentText()
-
-    def GetDetectedBy(self):
-        """ GetDetectedBy returns list of detectedBy choices to display in the combobox for user selection"""
-
-        sql = 'SELECT DISTINCT detectedBy from Violations'
-        q = Query(sql, self.db)
-
-        detectedByList = [self.detByFilter['comboBoxTitle']]
-        for i in q:
-            detectedByList.append(str(i))
-
-        print('detectedByList:')
-        print (detectedByList)
-        return detectedByList
-
-    def UpdateStatusFilter(self):
-        curSel = self.comboBox_Status.currentText()
-        if curSel == self.statusFilter['comboBoxTitle']:
-            self.statusFilter['value'] = ''
-        else:
-            self.statusFilter['value'] = """status = '%s' """ % self.comboBox_Status.currentText()
-
-    #-----------------------------------------------------------------------------------------------
-    def GetStatus(self):
-        """ GetStatus returns list of status choices to display in the combobox for user selection"""
-        statusList = []
-        statusList = [self.statusFilter['comboBoxTitle'], 'Reviewed', 'Accepted', 'Not Reported']
-
-        return statusList
 
     #-----------------------------------------------------------------------------------------------
     def ApplyFilters(self):
