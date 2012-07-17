@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'crmainwindow.ui'
 #
-# Created: Tue Jul 17 08:05:48 2012
+# Created: Tue Jul 17 08:56:17 2012
 #      by: pyside-uic 0.2.13 running on PySide 1.1.0
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,7 +12,7 @@ from PySide import QtCore, QtGui
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(855, 671)
+        MainWindow.resize(855, 772)
         self.centralWidget = QtGui.QWidget(MainWindow)
         self.centralWidget.setObjectName("centralWidget")
         self.verticalLayout_13 = QtGui.QVBoxLayout(self.centralWidget)
@@ -22,7 +22,7 @@ class Ui_MainWindow(object):
         self.label = QtGui.QLabel(self.centralWidget)
         font = QtGui.QFont()
         font.setFamily("Cambria")
-        font.setPointSize(14)
+        font.setPointSize(16)
         font.setWeight(75)
         font.setBold(True)
         self.label.setFont(font)
@@ -421,7 +421,7 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QtGui.QApplication.translate("MainWindow", "CRMainWindow", None, QtGui.QApplication.UnicodeUTF8))
         self.label.setText(QtGui.QApplication.translate("MainWindow", "Knowlogic Software", None, QtGui.QApplication.UnicodeUTF8))
-        self.label_2.setText(QtGui.QApplication.translate("MainWindow", "Code Review Data", None, QtGui.QApplication.UnicodeUTF8))
+        self.label_2.setText(QtGui.QApplication.translate("MainWindow", "Code Review Tool", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox_2.setTitle(QtGui.QApplication.translate("MainWindow", "Code Review Administration", None, QtGui.QApplication.UnicodeUTF8))
         self.label_7.setText(QtGui.QApplication.translate("MainWindow", "User Name", None, QtGui.QApplication.UnicodeUTF8))
         self.label_5.setText(QtGui.QApplication.translate("MainWindow", "Project File", None, QtGui.QApplication.UnicodeUTF8))

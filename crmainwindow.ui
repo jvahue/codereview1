@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>855</width>
-    <height>671</height>
+    <height>772</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -22,7 +22,7 @@
         <property name="font">
          <font>
           <family>Cambria</family>
-          <pointsize>14</pointsize>
+          <pointsize>16</pointsize>
           <weight>75</weight>
           <bold>true</bold>
          </font>
@@ -42,7 +42,7 @@
          </font>
         </property>
         <property name="text">
-         <string>Code Review Data</string>
+         <string>Code Review Tool</string>
         </property>
        </widget>
       </item>
