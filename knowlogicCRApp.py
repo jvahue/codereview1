@@ -30,8 +30,9 @@ import sqlite3
 from Analyze import Analyzer
 from crappcustomiddialog import Ui_CRAppCustomIdDialog
 from crmainwindow import Ui_MainWindow
+from test import Ui_Dialog
 
-from utils import util
+from utils import DateTime, util
 from utils.DB.database import Query, GetAll, GetCursor
 from utils.DB.sqlLite.database import DB_SQLite
 
@@ -139,7 +140,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.lineEdit_userName.editingFinished.connect(self.lineEditUserNameChanged)
         self.pushButton_pFileBrowse.clicked.connect(self.DisplaypFileBrowser)
         self.pushButton_RunAnalysis.clicked.connect(self.RunAnalysis)
-        self.pushButton_Statistics.clicked.connect(self.DisplayViolationStatistics)
+        #self.pushButton_Statistics.clicked.connect(self.DisplayViolationStatistics)
 
         #------------------------------------------------------------------------------
         # Set up the filter comboboxes and the Apply Filter pushbutton
@@ -206,7 +207,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.DisplayViolationStatistics()
 
                 # display the project file name
-                self.textBrowser_ProjFile.setText(projFileName)
+                self.projectFileNameEditor.setText(projFileName)
             else:
                 msg = '\n'.join( self.projFile.errors)
                 self.CrErrPopup( msg)
@@ -264,16 +265,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         total = 0
         numAccepted = 0
         numReviewed = 0
+        notReported = 0
         for i in q:
             if i.status == 'Accepted':
-                numAccepted = numAccepted + 1
-            if i.status == 'Reviewed':
-                numReviewed = numReviewed + 1
+                numAccepted += 1
+            elif i.status == 'Reviewed':
+                numReviewed += 1
+            elif i.status == 'Not Reported':
+                notReported += 1
             total = total +1
 
-        self.textBrowser_Total.setText(str(total))
-        self.textBrowser_Accepted.setText(str(numAccepted))
-        self.textBrowser_Reviewed.setText(str(numReviewed))
+        self.totalViolations.setText(str(total))
+        self.acceptedViolations.setText(str(numAccepted))
+        self.reviewedViolations.setText(str(numReviewed))
+        self.removedViolations.setText(str(notReported))
 
     #-----------------------------------------------------------------------------------------------
     def RunAnalysis(self):
@@ -293,12 +298,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if self.analyzerThread.active:
             sts = self.analyzerThread.classRef.status
             # use the project file for status display while it's running
-            self.textBrowser_ProjFile.setText(sts)
+            self.projectFileNameEditor.setText(sts)
         else:
             # kill the timer
             self.timer.stop()
             # reset the proj file path name
-            self.textBrowser_ProjFile.setText(self.pFullFilename)
+            self.projectFileNameEditor.setText(self.pFullFilename)
 
     #-----------------------------------------------------------------------------------------------
     def FillFilters( self, index, name='', reset=False):
@@ -425,13 +430,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.textBrowser_DetectedBy.setText(self.v.detectedBy)
 
             """ Populate the fields in the Analysis groupbox """
-            self.textBrowser_PrevReviewer.setText(self.v.who)
-            self.textBrowser_PrevDate.setText(self.v.reviewDate)
-            self.textBrowser_PrevStatus.setText(self.v.status)
+            if self.v.reviewDate:
+                self.textBrowser_PrevReviewer.setText(self.v.who)
+                rd = '%s' % self.v.reviewDate
+                dt = DateTime.DateTime.today()
+                dt = dt.Set(rd)
+                dt.ShowMs( False)
+                self.textBrowser_PrevDate.setText(str(dt))
+                self.textBrowser_PrevStatus.setText(self.v.status)
+            else:
+                self.textBrowser_PrevReviewer.clear()
+                self.textBrowser_PrevDate.clear()
+                self.textBrowser_PrevStatus.clear()
 
             self.plainTextEdit_Analysis.setPlainText(self.v.analysis)
-            self.textBrowser_Reviewer.setText(self.userName)
-            self.textBrowser_Date.setText(str(datetime.datetime.now()))
 
         else:
             self.groupBox_Violations.setTitle("Currently Selected Violation %d of %d" % (at,total))

@@ -135,7 +135,7 @@ class DateTime( datetime.datetime):
         mi = int( l[1])
         s  = int( l[2])
         if len(l) == 4:
-            ms = int( l[3])
+            ms = int(int( l[3])/1000)
         else:
             ms = 0
         return datetime.time( h,mi,s,ms*1000)

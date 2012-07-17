@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>855</width>
-    <height>964</height>
+    <height>705</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -120,33 +120,7 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QTextBrowser" name="textBrowser_ProjFile">
-                   <property name="minimumSize">
-                    <size>
-                     <width>591</width>
-                     <height>0</height>
-                    </size>
-                   </property>
-                   <property name="maximumSize">
-                    <size>
-                     <width>591</width>
-                     <height>29</height>
-                    </size>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <spacer name="horizontalSpacer_3">
-                   <property name="orientation">
-                    <enum>Qt::Horizontal</enum>
-                   </property>
-                   <property name="sizeHint" stdset="0">
-                    <size>
-                     <width>40</width>
-                     <height>20</height>
-                    </size>
-                   </property>
-                  </spacer>
+                  <widget class="QLineEdit" name="projectFileNameEditor"/>
                  </item>
                  <item>
                   <widget class="QPushButton" name="pushButton_pFileBrowse">
@@ -205,93 +179,59 @@
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_15">
              <item>
-              <layout class="QVBoxLayout" name="verticalLayout_3">
-               <item>
-                <layout class="QHBoxLayout" name="horizontalLayout_9">
-                 <item>
-                  <widget class="QLabel" name="label_10">
-                   <property name="text">
-                    <string>TOTAL number of violations :</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QTextBrowser" name="textBrowser_Total">
-                   <property name="maximumSize">
-                    <size>
-                     <width>139</width>
-                     <height>29</height>
-                    </size>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
+              <layout class="QGridLayout" name="gridLayout">
+               <item row="0" column="0">
+                <widget class="QLabel" name="label_9">
+                 <property name="text">
+                  <string>Total Violations</string>
+                 </property>
+                </widget>
                </item>
-               <item>
-                <layout class="QHBoxLayout" name="horizontalLayout_10">
-                 <item>
-                  <widget class="QLabel" name="label_13">
-                   <property name="text">
-                    <string>Number of records Accepted :</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QTextBrowser" name="textBrowser_Accepted">
-                   <property name="maximumSize">
-                    <size>
-                     <width>139</width>
-                     <height>29</height>
-                    </size>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
+               <item row="1" column="0">
+                <widget class="QLabel" name="label_8">
+                 <property name="text">
+                  <string>Accepted Violations</string>
+                 </property>
+                </widget>
                </item>
-               <item>
-                <layout class="QHBoxLayout" name="horizontalLayout_11">
-                 <item>
-                  <widget class="QLabel" name="label_12">
-                   <property name="text">
-                    <string>Number of records Reviewed :</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QTextBrowser" name="textBrowser_Reviewed">
-                   <property name="maximumSize">
-                    <size>
-                     <width>137</width>
-                     <height>29</height>
-                    </size>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
+               <item row="2" column="0">
+                <widget class="QLabel" name="label_11">
+                 <property name="text">
+                  <string>Reviewed Violations</string>
+                 </property>
+                </widget>
                </item>
-               <item>
-                <layout class="QHBoxLayout" name="horizontalLayout_23">
-                 <item>
-                  <spacer name="horizontalSpacer_6">
-                   <property name="orientation">
-                    <enum>Qt::Horizontal</enum>
-                   </property>
-                   <property name="sizeHint" stdset="0">
-                    <size>
-                     <width>498</width>
-                     <height>20</height>
-                    </size>
-                   </property>
-                  </spacer>
-                 </item>
-                 <item>
-                  <widget class="QPushButton" name="pushButton_Statistics">
-                   <property name="text">
-                    <string>Update Statistics</string>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
+               <item row="3" column="0">
+                <widget class="QLabel" name="label_10">
+                 <property name="text">
+                  <string>Removed Violations</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="1">
+                <widget class="QLineEdit" name="removedViolations"/>
+               </item>
+               <item row="2" column="1">
+                <widget class="QLineEdit" name="reviewedViolations"/>
+               </item>
+               <item row="1" column="1">
+                <widget class="QLineEdit" name="acceptedViolations"/>
+               </item>
+               <item row="0" column="1">
+                <widget class="QLineEdit" name="totalViolations"/>
+               </item>
+               <item row="1" column="2">
+                <spacer name="horizontalSpacer_3">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
                </item>
               </layout>
              </item>
@@ -319,10 +259,16 @@
             <layout class="QVBoxLayout" name="verticalLayout_23">
              <item>
               <layout class="QHBoxLayout" name="horizontalLayout_3">
+               <property name="topMargin">
+                <number>0</number>
+               </property>
                <item>
                 <layout class="QVBoxLayout" name="verticalLayout_2">
                  <item>
                   <layout class="QHBoxLayout" name="horizontalLayout">
+                   <property name="topMargin">
+                    <number>0</number>
+                   </property>
                    <item>
                     <widget class="QComboBox" name="comboBox_Filename"/>
                    </item>
@@ -383,76 +329,66 @@
              <item>
               <layout class="QVBoxLayout" name="verticalLayout_8">
                <item>
-                <layout class="QHBoxLayout" name="horizontalLayout_filtervalues">
+                <layout class="QHBoxLayout" name="horizontalLayout_10">
+                 <property name="topMargin">
+                  <number>0</number>
+                 </property>
                  <item>
-                  <layout class="QVBoxLayout" name="verticalLayout_fnameandbox">
-                   <item>
-                    <widget class="QLabel" name="label_Filename">
-                     <property name="text">
-                      <string>Filename:</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QTextBrowser" name="textBrowser_Filename"/>
-                   </item>
-                  </layout>
+                  <widget class="QLabel" name="label_Filename">
+                   <property name="text">
+                    <string>Filename:</string>
+                   </property>
+                  </widget>
                  </item>
                  <item>
-                  <layout class="QVBoxLayout" name="verticalLayout_fnnameandbox">
-                   <item>
-                    <widget class="QLabel" name="label_Function">
-                     <property name="text">
-                      <string>Function:</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QTextBrowser" name="textBrowser_Function"/>
-                   </item>
-                  </layout>
+                  <widget class="QLineEdit" name="textBrowser_Filename"/>
                  </item>
                  <item>
-                  <layout class="QVBoxLayout" name="verticalLayout_severityandbox">
-                   <item>
-                    <widget class="QLabel" name="label_6">
-                     <property name="text">
-                      <string>Error Severity:</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QTextBrowser" name="textBrowser_Severity"/>
-                   </item>
-                  </layout>
+                  <widget class="QLabel" name="label_Function">
+                   <property name="text">
+                    <string>Function:</string>
+                   </property>
+                  </widget>
                  </item>
                  <item>
-                  <layout class="QVBoxLayout" name="verticalLayout_idandbox">
-                   <item>
-                    <widget class="QLabel" name="label_Id">
-                     <property name="text">
-                      <string>Violation Id:</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QTextBrowser" name="textBrowser_Id"/>
-                   </item>
-                  </layout>
+                  <widget class="QLineEdit" name="textBrowser_Function"/>
+                 </item>
+                </layout>
+               </item>
+               <item>
+                <layout class="QHBoxLayout" name="horizontalLayout_11">
+                 <property name="topMargin">
+                  <number>0</number>
+                 </property>
+                 <item>
+                  <widget class="QLabel" name="label_6">
+                   <property name="text">
+                    <string>Error Severity:</string>
+                   </property>
+                  </widget>
                  </item>
                  <item>
-                  <layout class="QVBoxLayout" name="verticalLayout_dbyandbox">
-                   <item>
-                    <widget class="QLabel" name="label_DetectedBy">
-                     <property name="text">
-                      <string>Detected By:</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QTextBrowser" name="textBrowser_DetectedBy"/>
-                   </item>
-                  </layout>
+                  <widget class="QLineEdit" name="textBrowser_Severity"/>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="label_Id">
+                   <property name="text">
+                    <string>Violation Id:</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLineEdit" name="textBrowser_Id"/>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="label_DetectedBy">
+                   <property name="text">
+                    <string>Detected By:</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLineEdit" name="textBrowser_DetectedBy"/>
                  </item>
                 </layout>
                </item>
@@ -526,74 +462,37 @@
                <item>
                 <layout class="QVBoxLayout" name="verticalLayout_4">
                  <item>
-                  <widget class="QPlainTextEdit" name="plainTextEdit_Analysis"/>
+                  <widget class="QPlainTextEdit" name="plainTextEdit_Analysis">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                  </widget>
                  </item>
                  <item>
                   <layout class="QHBoxLayout" name="horizontalLayout_16">
+                   <property name="topMargin">
+                    <number>0</number>
+                   </property>
                    <item>
-                    <layout class="QHBoxLayout" name="horizontalLayout_14">
-                     <item>
-                      <widget class="QLabel" name="label_3">
-                       <property name="text">
-                        <string>Reviewer:</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QTextBrowser" name="textBrowser_Reviewer"/>
-                     </item>
-                     <item>
-                      <widget class="QLabel" name="label_4">
-                       <property name="text">
-                        <string>Date:</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QTextBrowser" name="textBrowser_Date"/>
-                     </item>
-                    </layout>
-                   </item>
-                   <item>
-                    <layout class="QHBoxLayout" name="horizontalLayout_15">
-                     <item>
-                      <widget class="QPushButton" name="pushButton_MarkReviewed">
-                       <property name="text">
-                        <string>Mark Reviewed</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QPushButton" name="pushButton_MarkAccepted">
-                       <property name="text">
-                        <string>Mark Accepted</string>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
-                   </item>
-                  </layout>
-                 </item>
-                </layout>
-               </item>
-               <item>
-                <layout class="QVBoxLayout" name="verticalLayout_5">
-                 <item>
-                  <layout class="QHBoxLayout" name="horizontalLayout_17">
-                   <item>
-                    <widget class="QLabel" name="label_prevName">
+                    <widget class="QLabel" name="label_3">
                      <property name="text">
                       <string>Previous Reviewer</string>
                      </property>
                     </widget>
                    </item>
                    <item>
-                    <widget class="QTextBrowser" name="textBrowser_PrevReviewer"/>
+                    <widget class="QLineEdit" name="textBrowser_PrevReviewer">
+                     <property name="minimumSize">
+                      <size>
+                       <width>30</width>
+                       <height>0</height>
+                      </size>
+                     </property>
+                    </widget>
                    </item>
-                  </layout>
-                 </item>
-                 <item>
-                  <layout class="QHBoxLayout" name="horizontalLayout_18">
                    <item>
                     <widget class="QLabel" name="label_PrevDate">
                      <property name="text">
@@ -602,12 +501,15 @@
                     </widget>
                    </item>
                    <item>
-                    <widget class="QTextBrowser" name="textBrowser_PrevDate"/>
+                    <widget class="QLineEdit" name="textBrowser_PrevDate">
+                     <property name="minimumSize">
+                      <size>
+                       <width>20</width>
+                       <height>0</height>
+                      </size>
+                     </property>
+                    </widget>
                    </item>
-                  </layout>
-                 </item>
-                 <item>
-                  <layout class="QHBoxLayout" name="horizontalLayout_19">
                    <item>
                     <widget class="QLabel" name="label_PrevStatus">
                      <property name="text">
@@ -616,7 +518,28 @@
                     </widget>
                    </item>
                    <item>
-                    <widget class="QTextBrowser" name="textBrowser_PrevStatus"/>
+                    <widget class="QLineEdit" name="textBrowser_PrevStatus">
+                     <property name="minimumSize">
+                      <size>
+                       <width>20</width>
+                       <height>0</height>
+                      </size>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QPushButton" name="pushButton_MarkReviewed">
+                     <property name="text">
+                      <string>Mark Reviewed</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QPushButton" name="pushButton_MarkAccepted">
+                     <property name="text">
+                      <string>Mark Accepted</string>
+                     </property>
+                    </widget>
                    </item>
                   </layout>
                  </item>
