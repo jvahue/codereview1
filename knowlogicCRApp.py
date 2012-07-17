@@ -145,13 +145,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # Set up the filter comboboxes and the Apply Filter pushbutton
         #------------------------------------------------------------------------------
         # the a is the index that is selected => if 0 we know they cleared this filter
-        self.comboBox_Filename.currentIndexChanged.connect(lambda a,x='Filename', fx=self.FillFilters: fx(a,x))
-        self.comboBox_Function.currentIndexChanged.connect(lambda a,x='Function', fx=self.FillFilters: fx(a,x))
-        self.comboBox_Severity.currentIndexChanged.connect(lambda a,x='Severity', fx=self.FillFilters: fx(a,x))
-        self.comboBox_Id.currentIndexChanged.connect(lambda a,x='Id', fx=self.FillFilters: fx(a,x))
-        self.comboBox_DetectedBy.currentIndexChanged.connect(lambda a,x='DetectedBy', fx=self.FillFilters: fx(a,x))
-        self.comboBox_Status.currentIndexChanged.connect(lambda a,x='Status', fx=self.FillFilters: fx(a,x))
-        self.dispositioned.stateChanged.connect( lambda a,x='', fx=self.FillFilters: fx(a,x))
+        self.comboBox_Filename.currentIndexChanged.connect(lambda a,x='Filename',
+                                                           fx=self.FillFilters: fx(a,x))
+        self.comboBox_Function.currentIndexChanged.connect(lambda a,x='Function',
+                                                           fx=self.FillFilters: fx(a,x))
+        self.comboBox_Severity.currentIndexChanged.connect(lambda a,x='Severity',
+                                                           fx=self.FillFilters: fx(a,x))
+        self.comboBox_Id.currentIndexChanged.connect(lambda a,x='Id',
+                                                     fx=self.FillFilters: fx(a,x))
+        self.comboBox_DetectedBy.currentIndexChanged.connect(lambda a,x='DetectedBy',
+                                                             fx=self.FillFilters: fx(a,x))
+        self.comboBox_Status.currentIndexChanged.connect(lambda a,x='Status',
+                                                         fx=self.FillFilters: fx(a,x))
+        self.dispositioned.stateChanged.connect( lambda a,x='',
+                                                 fx=self.FillFilters: fx(a,x))
         self.pushButton_ApplyFilters.clicked.connect(self.ApplyFilters)
 
         #------------------------------------------------------------------------------
@@ -165,8 +172,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         #------------------------------------------------------------------------------
         # Manage the analysis push buttons
         #------------------------------------------------------------------------------
-        self.pushButton_MarkReviewed.clicked.connect(self.MarkReviewed)
-        self.pushButton_MarkAccepted.clicked.connect(self.MarkAccepted)
+        self.pushButton_MarkReviewed.clicked.connect(lambda x='Reviewed',
+                                                     fx=self.SaveAnalysis: fx(x))
+        self.pushButton_MarkAccepted.clicked.connect(lambda x='Accepted',
+                                                     fx=self.SaveAnalysis: fx(x))
 
         #------------------------------------------------------------------------------
         # Handle GenerateReport Tab Data
@@ -249,16 +258,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     #-----------------------------------------------------------------------------------------------
     def SelectProjectFile(self):
-
-        # Display a file browser for the user to select the project file database directory
-
+        """ Display a file browser for the user to select the project file """
         pFile, selFilter = QFileDialog.getOpenFileName(self, "Select Project File")
         if pFile:
             self.ResetProject( pFile)
 
     #-----------------------------------------------------------------------------------------------
     def DisplayViolationStatistics(self):
-
         s = 'SELECT count(*) from Violations'
         total = self.db.Query(s)
 
@@ -527,7 +533,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.CrErrPopup( msg)
 
     #-----------------------------------------------------------------------------------------------
-    def SaveAnalysisData(self, status):
+    def SaveAnalysis(self, status):
         """ Save analysis data entered and mark status as reviewed or accepted based status passed in """
         if self.v:
             analysisText = self.plainTextEdit_Analysis.toPlainText()
@@ -568,16 +574,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.horizontalScrollBar.setValue(at+1)
             else:
                 self.horizontalScrollBar.setValue(at)
-
-    #-----------------------------------------------------------------------------------------------
-    def MarkReviewed(self):
-        """ Save analysis data entered and Mark violation as reviewed """
-        self.SaveAnalysisData('Reviewed')
-
-    #-----------------------------------------------------------------------------------------------
-    def MarkAccepted(self):
-        """ Save analysis data entered and Mark violation as accepted """
-        self.SaveAnalysisData('Accepted')
 
     #-----------------------------------------------------------------------------------------------
     def DisplaySrcFileBrowser(self):
