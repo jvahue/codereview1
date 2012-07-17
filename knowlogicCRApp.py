@@ -207,11 +207,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 # Establish a DataBase connection
                 #------------------------------------------------------------------------------
                 if os.path.isfile(self.dbFullFilename):
-                    self.db = DB_SQLite()
-                    self.db.Connect(self.dbFullFilename)
+                    self.OpenDb( True)
 
-                    self.FillFilters( 0, '')
-                    self.DisplayViolationStatistics()
                 else:
                     self.toolOutput.setText('No Database exists for this project yet.')
 
@@ -223,6 +220,19 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             else:
                 msg = '\n'.join( self.projFile.errors)
                 self.CrErrPopup( msg)
+
+    #-----------------------------------------------------------------------------------------------
+    def OpenDb(self, forceOpen = False):
+        if forceOpen:
+            del self.db
+            self.db = None
+
+        if self.db is None:
+            self.db = DB_SQLite()
+            self.db.Connect(self.dbFullFilename)
+
+            self.FillFilters( 0, '')
+            self.DisplayViolationStatistics()
 
     #-----------------------------------------------------------------------------------------------
     def CrErrPopup(self, errText):
@@ -348,6 +358,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             # kill the timer
             self.timer.stop()
+
+            self.OpenDb()
 
             # populate the display data
             self.FillFilters( 0, '', True)
