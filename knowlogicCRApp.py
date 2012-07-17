@@ -206,14 +206,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 #------------------------------------------------------------------------------
                 # Establish a DataBase connection
                 #------------------------------------------------------------------------------
-                self.db = DB_SQLite()
-                self.db.Connect(self.dbFullFilename)
+                if os.path.isfile(self.dbFullFilename):
+                    self.db = DB_SQLite()
+                    self.db.Connect(self.dbFullFilename)
+
+                    self.FillFilters( 0, '')
+                    self.DisplayViolationStatistics()
+                else:
+                    self.toolOutput.setText('No Database exists for this project yet.')
 
                 self.violationsData = []
                 self.v = None
-
-                self.FillFilters( 0, '')
-                self.DisplayViolationStatistics()
 
                 # display the project file name
                 self.projectFileNameEditor.setText(projFileName)
@@ -267,56 +270,57 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def DisplayViolationStatistics(self):
         s = 'SELECT count(*) from Violations'
         total = self.db.Query(s)
+        if len(total) > 0:
 
-        s = "SELECT count(*) from Violations where status = 'Accepted'"
-        accepted = self.db.Query(s)
+            s = "SELECT count(*) from Violations where status = 'Accepted'"
+            accepted = self.db.Query(s)
 
-        s = "SELECT count(*) from Violations where status = 'Reviewed'"
-        reviewed = self.db.Query(s)
+            s = "SELECT count(*) from Violations where status = 'Reviewed'"
+            reviewed = self.db.Query(s)
 
-        s = "SELECT count(*) from Violations where status = 'Not Reported'"
-        noRep = self.db.Query(s)
+            s = "SELECT count(*) from Violations where status = 'Not Reported'"
+            noRep = self.db.Query(s)
 
-        self.totalViolations.setText(str(total[0]))
-        self.reviewedViolations.setText(str(reviewed[0]))
-        self.acceptedViolations.setText(str(accepted[0]))
-        self.removedViolations.setText(str(noRep[0]))
+            self.totalViolations.setText(str(total[0]))
+            self.reviewedViolations.setText(str(reviewed[0]))
+            self.acceptedViolations.setText(str(accepted[0]))
+            self.removedViolations.setText(str(noRep[0]))
 
-        #-------------- KS Totals
-        s = "SELECT count(*) from Violations where detectedBy = 'Knowlogic'"
-        total = self.db.Query(s)
+            #-------------- KS Totals
+            s = "SELECT count(*) from Violations where detectedBy = 'Knowlogic'"
+            total = self.db.Query(s)
 
-        s = "SELECT count(*) from Violations where status = 'Accepted' and detectedby = 'Knowlogic'"
-        accepted = self.db.Query(s)
+            s = "SELECT count(*) from Violations where status = 'Accepted' and detectedby = 'Knowlogic'"
+            accepted = self.db.Query(s)
 
-        s = "SELECT count(*) from Violations where status = 'Reviewed' and detectedby = 'Knowlogic'"
-        reviewed = self.db.Query(s)
+            s = "SELECT count(*) from Violations where status = 'Reviewed' and detectedby = 'Knowlogic'"
+            reviewed = self.db.Query(s)
 
-        s = "SELECT count(*) from Violations where status = 'Not Reported' and detectedby = 'Knowlogic'"
-        noRep = self.db.Query(s)
+            s = "SELECT count(*) from Violations where status = 'Not Reported' and detectedby = 'Knowlogic'"
+            noRep = self.db.Query(s)
 
-        self.ksTotal.setText(str(total[0]))
-        self.ksReviewed.setText(str(reviewed[0]))
-        self.ksAccepted.setText(str(accepted[0]))
-        self.ksRemoved.setText(str(noRep[0]))
+            self.ksTotal.setText(str(total[0]))
+            self.ksReviewed.setText(str(reviewed[0]))
+            self.ksAccepted.setText(str(accepted[0]))
+            self.ksRemoved.setText(str(noRep[0]))
 
-        #-------------- PC-LINT Totals
-        s = "SELECT count(*) from Violations where detectedBy = 'PcLint'"
-        total = self.db.Query(s)
+            #-------------- PC-LINT Totals
+            s = "SELECT count(*) from Violations where detectedBy = 'PcLint'"
+            total = self.db.Query(s)
 
-        s = "SELECT count(*) from Violations where status = 'Accepted' and detectedby = 'PcLint'"
-        accepted = self.db.Query(s)
+            s = "SELECT count(*) from Violations where status = 'Accepted' and detectedby = 'PcLint'"
+            accepted = self.db.Query(s)
 
-        s = "SELECT count(*) from Violations where status = 'Reviewed' and detectedby = 'PcLint'"
-        reviewed = self.db.Query(s)
+            s = "SELECT count(*) from Violations where status = 'Reviewed' and detectedby = 'PcLint'"
+            reviewed = self.db.Query(s)
 
-        s = "SELECT count(*) from Violations where status = 'Not Reported' and detectedby = 'PcLint'"
-        noRep = self.db.Query(s)
+            s = "SELECT count(*) from Violations where status = 'Not Reported' and detectedby = 'PcLint'"
+            noRep = self.db.Query(s)
 
-        self.pcTotal.setText(str(total[0]))
-        self.pcReviewed.setText(str(reviewed[0]))
-        self.pcAccepted.setText(str(accepted[0]))
-        self.pcRemoved.setText(str(noRep[0]))
+            self.pcTotal.setText(str(total[0]))
+            self.pcReviewed.setText(str(reviewed[0]))
+            self.pcAccepted.setText(str(accepted[0]))
+            self.pcRemoved.setText(str(noRep[0]))
 
     #-----------------------------------------------------------------------------------------------
     def RunAnalysis(self):
