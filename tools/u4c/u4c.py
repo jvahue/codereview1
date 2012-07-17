@@ -74,7 +74,7 @@ class U4cSetup( ToolSetup):
         batTmpl = U4cFileTemplates.eU4cBatTemplate
         optTmpl = U4cFileTemplates.eCmdTemplate
 
-        toolExe = self.projFile.paths['U4c']
+        toolExe = self.projFile.paths[PF.eU4cPath]
 
         cmdFilePath = os.path.join( self.projToolRoot, eU4cCmdFileName)
 

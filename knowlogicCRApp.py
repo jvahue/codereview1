@@ -30,7 +30,6 @@ import sqlite3
 from Analyze import Analyzer
 from crappcustomiddialog import Ui_CRAppCustomIdDialog
 from crmainwindow import Ui_MainWindow
-from test import Ui_Dialog
 
 from utils import DateTime, util
 from utils.DB.database import Query, GetAll, GetCursor
@@ -138,7 +137,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # Handle Config Tab Data
         #------------------------------------------------------------------------------
         self.lineEdit_userName.editingFinished.connect(self.lineEditUserNameChanged)
-        self.pushButton_pFileBrowse.clicked.connect(self.DisplaypFileBrowser)
+        self.pushButton_pFileBrowse.clicked.connect(self.SelectProjectFile)
         self.pushButton_RunAnalysis.clicked.connect(self.RunAnalysis)
         #self.pushButton_Statistics.clicked.connect(self.DisplayViolationStatistics)
 
@@ -248,7 +247,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.userName = self.lineEdit_userName.text()
 
     #-----------------------------------------------------------------------------------------------
-    def DisplaypFileBrowser(self):
+    def SelectProjectFile(self):
 
         # Display a file browser for the user to select the project file database directory
 
@@ -304,6 +303,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.timer.stop()
             # reset the proj file path name
             self.projectFileNameEditor.setText(self.pFullFilename)
+
+            # populate the display data
+            self.FillFilters( 0, '', True)
+            self.DisplayViolationStatistics()
 
     #-----------------------------------------------------------------------------------------------
     def FillFilters( self, index, name='', reset=False):
