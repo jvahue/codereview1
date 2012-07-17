@@ -151,6 +151,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.comboBox_Id.currentIndexChanged.connect(lambda a,x='Id', fx=self.FillFilters: fx(a,x))
         self.comboBox_DetectedBy.currentIndexChanged.connect(lambda a,x='DetectedBy', fx=self.FillFilters: fx(a,x))
         self.comboBox_Status.currentIndexChanged.connect(lambda a,x='Status', fx=self.FillFilters: fx(a,x))
+        self.dispositioned.stateChanged.connect( lambda a,x='', fx=self.FillFilters: fx(a,x))
         self.pushButton_ApplyFilters.clicked.connect(self.ApplyFilters)
 
         #------------------------------------------------------------------------------
@@ -202,7 +203,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.violationsData = []
                 self.v = None
 
-                self.FillFilters( 0, '', True)
+                self.FillFilters( 0, '')
                 self.DisplayViolationStatistics()
 
                 # display the project file name
@@ -258,26 +259,58 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     #-----------------------------------------------------------------------------------------------
     def DisplayViolationStatistics(self):
 
-        sqlTotal = 'SELECT status from Violations'
-        q = Query(sqlTotal, self.db)
+        s = 'SELECT count(*) from Violations'
+        total = self.db.Query(s)
 
-        total = 0
-        numAccepted = 0
-        numReviewed = 0
-        notReported = 0
-        for i in q:
-            if i.status == 'Accepted':
-                numAccepted += 1
-            elif i.status == 'Reviewed':
-                numReviewed += 1
-            elif i.status == 'Not Reported':
-                notReported += 1
-            total = total +1
+        s = "SELECT count(*) from Violations where status = 'Accepted'"
+        accepted = self.db.Query(s)
 
-        self.totalViolations.setText(str(total))
-        self.acceptedViolations.setText(str(numAccepted))
-        self.reviewedViolations.setText(str(numReviewed))
-        self.removedViolations.setText(str(notReported))
+        s = "SELECT count(*) from Violations where status = 'Reviewed'"
+        reviewed = self.db.Query(s)
+
+        s = "SELECT count(*) from Violations where status = 'Not Reported'"
+        noRep = self.db.Query(s)
+
+        self.totalViolations.setText(str(total[0]))
+        self.reviewedViolations.setText(str(reviewed[0]))
+        self.acceptedViolations.setText(str(accepted[0]))
+        self.removedViolations.setText(str(noRep[0]))
+
+        #-------------- KS Totals
+        s = "SELECT count(*) from Violations where detectedBy = 'Knowlogic'"
+        total = self.db.Query(s)
+
+        s = "SELECT count(*) from Violations where status = 'Accepted' and detectedby = 'Knowlogic'"
+        accepted = self.db.Query(s)
+
+        s = "SELECT count(*) from Violations where status = 'Reviewed' and detectedby = 'Knowlogic'"
+        reviewed = self.db.Query(s)
+
+        s = "SELECT count(*) from Violations where status = 'Not Reported' and detectedby = 'Knowlogic'"
+        noRep = self.db.Query(s)
+
+        self.ksTotal.setText(str(total[0]))
+        self.ksReviewed.setText(str(reviewed[0]))
+        self.ksAccepted.setText(str(accepted[0]))
+        self.ksRemoved.setText(str(noRep[0]))
+
+        #-------------- PC-LINT Totals
+        s = "SELECT count(*) from Violations where detectedBy = 'PcLint'"
+        total = self.db.Query(s)
+
+        s = "SELECT count(*) from Violations where status = 'Accepted' and detectedby = 'PcLint'"
+        accepted = self.db.Query(s)
+
+        s = "SELECT count(*) from Violations where status = 'Reviewed' and detectedby = 'PcLint'"
+        reviewed = self.db.Query(s)
+
+        s = "SELECT count(*) from Violations where status = 'Not Reported' and detectedby = 'PcLint'"
+        noRep = self.db.Query(s)
+
+        self.pcTotal.setText(str(total[0]))
+        self.pcReviewed.setText(str(reviewed[0]))
+        self.pcAccepted.setText(str(accepted[0]))
+        self.pcRemoved.setText(str(noRep[0]))
 
     #-----------------------------------------------------------------------------------------------
     def RunAnalysis(self):
@@ -294,12 +327,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     #-----------------------------------------------------------------------------------------------
     def AnalysisUpdate( self):
+        sts = self.analyzerThread.classRef.status
         if self.analyzerThread.active:
-            sts = self.analyzerThread.classRef.status
             # use the project file for status display while it's running
             self.toolOutput.setText(sts)
 
         else:
+            sts += '\nProcessing Complete.'
+            self.toolOutput.setText(sts)
+
             # kill the timer
             self.timer.stop()
 
@@ -327,9 +363,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 if index <= 0:
                     self.currentFilters.remove( name)
 
-            whereClause = ''
-            if not reset:
-                whereClause = self.BuildSqlStatement()
+            whereClause = self.BuildSqlStatement()
 
             # now loop through each filter applying the constraint
             for dd in self.filterInfo:
@@ -392,17 +426,25 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         noFilterRe = re.compile('Select <[A-Za-z]+>')
 
         whereClause = ''
-        constraints = []
+        constraints = ['reviewDate is NULL']
+
+        if self.dispositioned.isChecked():
+            constraints = []
 
         # get the value of all filter and make a constraint on all the queries
         for dd in self.filterInfo:
             gui = getattr( self, 'comboBox_%s' % dd)
-            text = gui.currentText()
-            filterOff = noFilterRe.search( text)
-            if filterOff is None and text:
-                # ok we have something to filter on
-                filterText = "%s like '%%%s%%'" % (self.filterInfo[dd], text)
-                constraints.append( filterText)
+            if gui.count() > 0:
+                text = gui.currentText()
+                filterOff = noFilterRe.search( text)
+                if filterOff is None:
+                    # ok we have something to filter on
+                    filterText = "%s like '%%%s%%'" % (self.filterInfo[dd], text)
+                    constraints.append( filterText)
+                elif text == '':
+                    # ok we want an empty string
+                    filterText = "%s = ''" % (self.filterInfo[dd])
+                    constraints.append( filterText)
 
         if constraints:
             queryConstraint = '\nand '.join( constraints)
@@ -522,7 +564,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.ApplyFilters()
 
             # now go there
-            self.horizontalScrollBar.setValue(at + 1)
+            if self.dispositioned.isChecked():
+                self.horizontalScrollBar.setValue(at+1)
+            else:
+                self.horizontalScrollBar.setValue(at)
 
     #-----------------------------------------------------------------------------------------------
     def MarkReviewed(self):

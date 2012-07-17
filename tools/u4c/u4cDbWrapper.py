@@ -54,23 +54,8 @@ class U4cDb:
             self.db = understand.open( name)
             self.status = 'DB Open'
             self.isOpen = True
-        except understand.DBAlreadyOpen:
-            self.status = 'DB Already Open'
-            self.isOpen = False
-        except understand.DBCorrupt:
-            self.status = 'DB Corrupt'
-            self.isOpen = False
-        except understand.DBOldVersion:
-            self.status = 'DB Old Version'
-            self.isOpen = False
-        except understand.DBUnknownVersion:
-            self.status = 'DB Unknown Version'
-            self.isOpen = False
-        except understand.DBUnableOpen:
-            self.status = 'DB Unable to Open'
-            self.isOpen = False
-        except understand.NoApiLicense:
-            self.status = 'DB API License Error'
+        except understand.UnderstandError as e:
+            self.status = e.msg
             self.isOpen = False
 
         # hold function info for all requested functions

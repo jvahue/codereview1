@@ -134,7 +134,11 @@
                <item>
                 <layout class="QHBoxLayout" name="horizontalLayout_6">
                  <item>
-                  <widget class="QTextEdit" name="toolOutput"/>
+                  <widget class="QTextEdit" name="toolOutput">
+                   <property name="readOnly">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
                  </item>
                  <item>
                   <widget class="QPushButton" name="pushButton_RunAnalysis">
@@ -177,10 +181,10 @@
                  </property>
                 </widget>
                </item>
-               <item row="1" column="0">
-                <widget class="QLabel" name="label_8">
+               <item row="4" column="0">
+                <widget class="QLabel" name="label_10">
                  <property name="text">
-                  <string>Accepted Violations</string>
+                  <string>Removed Violations</string>
                  </property>
                 </widget>
                </item>
@@ -191,37 +195,152 @@
                  </property>
                 </widget>
                </item>
+               <item row="2" column="1">
+                <widget class="QLineEdit" name="reviewedViolations">
+                 <property name="readOnly">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="QLineEdit" name="totalViolations">
+                 <property name="readOnly">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
                <item row="3" column="0">
-                <widget class="QLabel" name="label_10">
+                <widget class="QLabel" name="label_8">
                  <property name="text">
-                  <string>Removed Violations</string>
+                  <string>Accepted Violations</string>
                  </property>
                 </widget>
                </item>
                <item row="3" column="1">
-                <widget class="QLineEdit" name="removedViolations"/>
-               </item>
-               <item row="2" column="1">
-                <widget class="QLineEdit" name="reviewedViolations"/>
-               </item>
-               <item row="1" column="1">
-                <widget class="QLineEdit" name="acceptedViolations"/>
-               </item>
-               <item row="0" column="1">
-                <widget class="QLineEdit" name="totalViolations"/>
-               </item>
-               <item row="1" column="2">
-                <spacer name="horizontalSpacer_3">
-                 <property name="orientation">
-                  <enum>Qt::Horizontal</enum>
+                <widget class="QLineEdit" name="acceptedViolations">
+                 <property name="readOnly">
+                  <bool>true</bool>
                  </property>
-                 <property name="sizeHint" stdset="0">
-                  <size>
-                   <width>40</width>
-                   <height>20</height>
-                  </size>
+                </widget>
+               </item>
+               <item row="4" column="1">
+                <widget class="QLineEdit" name="removedViolations">
+                 <property name="readOnly">
+                  <bool>true</bool>
                  </property>
-                </spacer>
+                </widget>
+               </item>
+               <item row="0" column="2">
+                <widget class="QLabel" name="label_4">
+                 <property name="text">
+                  <string>Knowlogic</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="3">
+                <widget class="QLineEdit" name="ksTotal">
+                 <property name="readOnly">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="2">
+                <widget class="QLabel" name="Reviewed">
+                 <property name="text">
+                  <string>Reviewed</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="2">
+                <widget class="QLabel" name="label_13">
+                 <property name="text">
+                  <string>Accepted</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="4" column="2">
+                <widget class="QLabel" name="label_14">
+                 <property name="text">
+                  <string>Removed</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="4">
+                <widget class="QLabel" name="label_12">
+                 <property name="text">
+                  <string>PC-Lint</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="3">
+                <widget class="QLineEdit" name="ksReviewed">
+                 <property name="readOnly">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="3">
+                <widget class="QLineEdit" name="ksAccepted">
+                 <property name="readOnly">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item row="4" column="3">
+                <widget class="QLineEdit" name="ksRemoved">
+                 <property name="readOnly">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="5">
+                <widget class="QLineEdit" name="pcReviewed">
+                 <property name="readOnly">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="4">
+                <widget class="QLabel" name="label_15">
+                 <property name="text">
+                  <string>Reviewed</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="4">
+                <widget class="QLabel" name="label_16">
+                 <property name="text">
+                  <string>Accepted</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="4" column="4">
+                <widget class="QLabel" name="label_17">
+                 <property name="text">
+                  <string>Removed</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="5">
+                <widget class="QLineEdit" name="pcTotal">
+                 <property name="readOnly">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="5">
+                <widget class="QLineEdit" name="pcAccepted">
+                 <property name="readOnly">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item row="4" column="5">
+                <widget class="QLineEdit" name="pcRemoved">
+                 <property name="readOnly">
+                  <bool>true</bool>
+                 </property>
+                </widget>
                </item>
               </layout>
              </item>
@@ -281,6 +400,13 @@
                    <item>
                     <widget class="QComboBox" name="comboBox_Status"/>
                    </item>
+                   <item>
+                    <widget class="QCheckBox" name="dispositioned">
+                     <property name="text">
+                      <string>Include Dispositioned</string>
+                     </property>
+                    </widget>
+                   </item>
                   </layout>
                  </item>
                 </layout>
@@ -331,7 +457,11 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QLineEdit" name="textBrowser_Filename"/>
+                  <widget class="QLineEdit" name="textBrowser_Filename">
+                   <property name="readOnly">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
                  </item>
                  <item>
                   <widget class="QLabel" name="label_Function">
@@ -341,7 +471,11 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QLineEdit" name="textBrowser_Function"/>
+                  <widget class="QLineEdit" name="textBrowser_Function">
+                   <property name="readOnly">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
                  </item>
                 </layout>
                </item>
@@ -358,7 +492,11 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QLineEdit" name="textBrowser_Severity"/>
+                  <widget class="QLineEdit" name="textBrowser_Severity">
+                   <property name="readOnly">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
                  </item>
                  <item>
                   <widget class="QLabel" name="label_Id">
@@ -368,7 +506,11 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QLineEdit" name="textBrowser_Id"/>
+                  <widget class="QLineEdit" name="textBrowser_Id">
+                   <property name="readOnly">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
                  </item>
                  <item>
                   <widget class="QLabel" name="label_DetectedBy">
@@ -378,17 +520,29 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QLineEdit" name="textBrowser_DetectedBy"/>
+                  <widget class="QLineEdit" name="textBrowser_DetectedBy">
+                   <property name="readOnly">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
                  </item>
                 </layout>
                </item>
                <item>
                 <layout class="QVBoxLayout" name="verticalLayout_7">
                  <item>
-                  <widget class="QTextEdit" name="textBrowser_Description"/>
+                  <widget class="QTextEdit" name="textBrowser_Description">
+                   <property name="readOnly">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
                  </item>
                  <item>
-                  <widget class="QTextEdit" name="textBrowser_Details"/>
+                  <widget class="QTextEdit" name="textBrowser_Details">
+                   <property name="readOnly">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
                  </item>
                 </layout>
                </item>
@@ -460,6 +614,9 @@
                        <height>0</height>
                       </size>
                      </property>
+                     <property name="readOnly">
+                      <bool>true</bool>
+                     </property>
                     </widget>
                    </item>
                    <item>
@@ -477,6 +634,9 @@
                        <height>0</height>
                       </size>
                      </property>
+                     <property name="readOnly">
+                      <bool>true</bool>
+                     </property>
                     </widget>
                    </item>
                    <item>
@@ -493,6 +653,9 @@
                        <width>20</width>
                        <height>0</height>
                       </size>
+                     </property>
+                     <property name="readOnly">
+                      <bool>true</bool>
                      </property>
                     </widget>
                    </item>

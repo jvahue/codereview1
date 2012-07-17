@@ -91,7 +91,9 @@ class Analyzer:
                         print(self.status+'\r', end='')
             else:
                 if verbose:
-                    self.status = 'U4C DB is currently open.\nClose the Project then select Analyze.'
+                    msg  = 'U4C DB is currently open.\n'
+                    msg += 'Close the Project then select Run Analysis.\n'
+                    self.status = msg
                     print(self.status)
                 status = False
         else:
@@ -113,8 +115,10 @@ class Analyzer:
             self.status = 'Analysis Completed in %s' % (end - start)
 
         if verbose:
-            pcl.ShowRunStats()
-            u4co.ShowRunStats()
+            m1 = pcl.ShowRunStats()
+            m2 = u4co.ShowRunStats()
+            msg = '\n'.join(m1 + m2)
+            self.status += msg
             print(self.status)
 
         # give the FE time to display final status

@@ -208,9 +208,9 @@ class ToolManager:
                      'unanalyzed',
                      'updateTime',)
 
-        print('\n%s Stats' % self.toolName)
+        msg = ['\n%s Stats' % self.toolName]
         for i in statNames:
-            print('%s: %s' % (i, str(getattr(self, i, -1))))
+            msg.append('%s: %s' % (i, str(getattr(self, i, -1))))
+        print('\n'.join( msg))
 
-
-
+        return msg

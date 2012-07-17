@@ -239,7 +239,9 @@ class U4c( ToolManager):
 
         self.SetStatusMsg( msg = 'Open %s DB' % eDbDetectId)
         self.Sleep()
+        print('Open seeza me')
         self.udb = udb.U4cDb( self.dbName)
+        print('Opened by seeza me')
 
         self.SetStatusMsg( msg = 'Acquire DB Lock')
         try:
