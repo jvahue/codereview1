@@ -297,12 +297,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if self.analyzerThread.active:
             sts = self.analyzerThread.classRef.status
             # use the project file for status display while it's running
-            self.projectFileNameEditor.setText(sts)
+            self.toolOutput.setText(sts)
+
         else:
             # kill the timer
             self.timer.stop()
-            # reset the proj file path name
-            self.projectFileNameEditor.setText(self.pFullFilename)
 
             # populate the display data
             self.FillFilters( 0, '', True)

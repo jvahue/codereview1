@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'crmainwindow.ui'
 #
-# Created: Mon Jul 16 23:17:16 2012
+# Created: Tue Jul 17 00:03:28 2012
 #      by: pyside-uic 0.2.13 running on PySide 1.1.0
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,7 +12,7 @@ from PySide import QtCore, QtGui
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(855, 705)
+        MainWindow.resize(855, 671)
         self.centralWidget = QtGui.QWidget(MainWindow)
         self.centralWidget.setObjectName("centralWidget")
         self.verticalLayout_13 = QtGui.QVBoxLayout(self.centralWidget)
@@ -76,8 +76,9 @@ class Ui_MainWindow(object):
         self.verticalLayout_6.addLayout(self.horizontalLayout_5)
         self.horizontalLayout_6 = QtGui.QHBoxLayout()
         self.horizontalLayout_6.setObjectName("horizontalLayout_6")
-        spacerItem1 = QtGui.QSpacerItem(518, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
-        self.horizontalLayout_6.addItem(spacerItem1)
+        self.toolOutput = QtGui.QTextEdit(self.groupBox_2)
+        self.toolOutput.setObjectName("toolOutput")
+        self.horizontalLayout_6.addWidget(self.toolOutput)
         self.pushButton_RunAnalysis = QtGui.QPushButton(self.groupBox_2)
         self.pushButton_RunAnalysis.setMaximumSize(QtCore.QSize(81, 31))
         self.pushButton_RunAnalysis.setObjectName("pushButton_RunAnalysis")
@@ -116,8 +117,8 @@ class Ui_MainWindow(object):
         self.totalViolations = QtGui.QLineEdit(self.groupBox)
         self.totalViolations.setObjectName("totalViolations")
         self.gridLayout.addWidget(self.totalViolations, 0, 1, 1, 1)
-        spacerItem2 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
-        self.gridLayout.addItem(spacerItem2, 1, 2, 1, 1)
+        spacerItem1 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
+        self.gridLayout.addItem(spacerItem1, 1, 2, 1, 1)
         self.verticalLayout_15.addLayout(self.gridLayout)
         self.verticalLayout_9.addWidget(self.groupBox)
         self.tabWidget.addTab(self.tab_Config, "")
@@ -214,12 +215,10 @@ class Ui_MainWindow(object):
         self.verticalLayout_8.addLayout(self.horizontalLayout_11)
         self.verticalLayout_7 = QtGui.QVBoxLayout()
         self.verticalLayout_7.setObjectName("verticalLayout_7")
-        self.textBrowser_Description = QtGui.QTextBrowser(self.groupBox_Violations)
-        self.textBrowser_Description.setMinimumSize(QtCore.QSize(797, 47))
+        self.textBrowser_Description = QtGui.QTextEdit(self.groupBox_Violations)
         self.textBrowser_Description.setObjectName("textBrowser_Description")
         self.verticalLayout_7.addWidget(self.textBrowser_Description)
-        self.textBrowser_Details = QtGui.QTextBrowser(self.groupBox_Violations)
-        self.textBrowser_Details.setMinimumSize(QtCore.QSize(797, 46))
+        self.textBrowser_Details = QtGui.QTextEdit(self.groupBox_Violations)
         self.textBrowser_Details.setObjectName("textBrowser_Details")
         self.verticalLayout_7.addWidget(self.textBrowser_Details)
         self.verticalLayout_8.addLayout(self.verticalLayout_7)
@@ -245,12 +244,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_20.setObjectName("horizontalLayout_20")
         self.verticalLayout_4 = QtGui.QVBoxLayout()
         self.verticalLayout_4.setObjectName("verticalLayout_4")
-        self.plainTextEdit_Analysis = QtGui.QPlainTextEdit(self.groupBox_Analysis)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.plainTextEdit_Analysis.sizePolicy().hasHeightForWidth())
-        self.plainTextEdit_Analysis.setSizePolicy(sizePolicy)
+        self.plainTextEdit_Analysis = QtGui.QTextEdit(self.groupBox_Analysis)
         self.plainTextEdit_Analysis.setObjectName("plainTextEdit_Analysis")
         self.verticalLayout_4.addWidget(self.plainTextEdit_Analysis)
         self.horizontalLayout_16 = QtGui.QHBoxLayout()
@@ -322,12 +316,12 @@ class Ui_MainWindow(object):
         self.pushButton_BrowseReport.setObjectName("pushButton_BrowseReport")
         self.horizontalLayout_8.addWidget(self.pushButton_BrowseReport)
         self.verticalLayout_11.addLayout(self.horizontalLayout_8)
-        spacerItem3 = QtGui.QSpacerItem(728, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
-        self.verticalLayout_11.addItem(spacerItem3)
+        spacerItem2 = QtGui.QSpacerItem(728, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
+        self.verticalLayout_11.addItem(spacerItem2)
         self.horizontalLayout_21 = QtGui.QHBoxLayout()
         self.horizontalLayout_21.setObjectName("horizontalLayout_21")
-        spacerItem4 = QtGui.QSpacerItem(638, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
-        self.horizontalLayout_21.addItem(spacerItem4)
+        spacerItem3 = QtGui.QSpacerItem(638, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
+        self.horizontalLayout_21.addItem(spacerItem3)
         self.pushButton_GenerateReport = QtGui.QPushButton(self.tab_Reports)
         self.pushButton_GenerateReport.setObjectName("pushButton_GenerateReport")
         self.horizontalLayout_21.addWidget(self.pushButton_GenerateReport)

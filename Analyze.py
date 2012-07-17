@@ -60,8 +60,7 @@ class Analyzer:
         """
         status = True
         start = DateTime.DateTime.today()
-        if verbose:
-            print('Start Analysis %s' % start)
+        self.status ='Start Analysis %s' % start
 
         # create the tool analysis files
         pcs = PcLint.PcLintSetup( self.projFile)
@@ -92,7 +91,7 @@ class Analyzer:
                         print(self.status+'\r', end='')
             else:
                 if verbose:
-                    self.status = 'U4C DB is currently open'
+                    self.status = 'U4C DB is currently open.\nClose the Project then select Analyze.'
                     print(self.status)
                 status = False
         else:
@@ -118,6 +117,8 @@ class Analyzer:
             u4co.ShowRunStats()
             print(self.status)
 
+        # give the FE time to display final status
+        time.sleep(2)
         return status
 
 #===================================================================================================
