@@ -247,11 +247,19 @@ class U4c( ToolManager):
         try:
             self.projFile.dbLock.acquire()
 
-            self.CheckMetrics()
-            self.CheckNaming()
-            self.CheckLanguageRestrictions()
-            self.CheckFormats()
-            self.CheckBaseTypes()
+            tasks = (
+                self.CheckMetrics,
+                self.CheckNaming,
+                self.CheckLanguageRestrictions,
+                self.CheckFormats,
+                self.CheckBaseTypes
+                )
+
+            step = 1
+            totalTasks = len( tasks)
+            for t in tasks:
+                t(step,totalTasks)
+                step += 1
 
             self.insertDeleted = self.vDb.MarkNotReported( self.toolName, self.updateTime)
             self.unanalyzed = self.vDb.Unanalyzed( self.toolName)
@@ -263,10 +271,10 @@ class U4c( ToolManager):
             pass
 
     #-----------------------------------------------------------------------------------------------
-    def CheckMetrics(self):
+    def CheckMetrics(self,step,totalTasks):
         """ This function verifies all of the length limits are met on a file by fail basis.
         """
-        self.SetStatusMsg( msg = 'Metrics/File Format Checks')
+        self.SetStatusMsg( msg = 'Metrics/File Format Checks [Step %d of %d]'%(step,totalTasks))
         fileLimit = self.projFile.metrics[PF.eMetricFile]
 
         pctCtr = 0
@@ -496,11 +504,11 @@ class U4c( ToolManager):
         self.vDb.Commit()
 
     #-----------------------------------------------------------------------------------------------
-    def CheckNaming(self):
+    def CheckNaming(self,step,totalTasks):
         """ Perform naming checks for all supplied item types
         """
         x = 0
-        self.SetStatusMsg( msg = 'Naming Checks')
+        self.SetStatusMsg( msg = 'Naming Checks [Step %d of %d]'%(step,totalTasks))
 
         size, fmt = self.projFile.naming[PF.eNameVar]
         varRe = re.compile( fmt)
@@ -615,11 +623,11 @@ class U4c( ToolManager):
         return func
 
     #-----------------------------------------------------------------------------------------------
-    def CheckLanguageRestrictions(self):
+    def CheckLanguageRestrictions(self,step,totalTasks):
         """ Perform checks that restrict the usage of language elements """
         # excluded functions
         # restricted functions
-        self.SetStatusMsg( msg = 'Language Restrictions')
+        self.SetStatusMsg( msg = 'Language Restrictions [Step %d of %d]'%(step,totalTasks))
 
         specialProcessing = {'register': self.HandleRegister, }
 
@@ -685,11 +693,11 @@ class U4c( ToolManager):
             self.vDb.Commit()
 
     #-----------------------------------------------------------------------------------------------
-    def CheckFormats(self):
+    def CheckFormats(self,step,totalTasks):
         """ Perform file/function header format checks
             This must be done last to ensure all the function info has already been filled in
         """
-        self.SetStatusMsg( msg = 'Format Checks')
+        self.SetStatusMsg( msg = 'Format Checks [Step %d of %d]'%(step,totalTasks))
 
         self.FunctionHeaderFormat()
 
@@ -810,7 +818,7 @@ class U4c( ToolManager):
 
 
     #-----------------------------------------------------------------------------------------------
-    def CheckBaseTypes( self):
+    def CheckBaseTypes( self,step,totalTasks):
         """ insure that all variables and structure definitions, return types, etc. are based on
             the project base types
             This additionally accepts: void and void*
@@ -822,7 +830,7 @@ class U4c( ToolManager):
         objStats = {'ok':0, 'bad':0, 'other':0}
 
         pctCtr = 0
-        self.SetStatusMsg(msg = 'Check Base Types')
+        self.SetStatusMsg(msg = 'Check Base Types [Step %d of %d]'%(step,totalTasks))
         letter0 = None
         for obj in allObjs:
             pctCtr += 1

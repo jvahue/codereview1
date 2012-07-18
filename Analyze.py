@@ -55,7 +55,7 @@ class Analyzer:
             self.isValid = False
 
     #-----------------------------------------------------------------------------------------------
-    def Analyze( self, fullAnalysis = True, verbose = True):
+    def Analyze( self, fullAnalysis = True, verbose = False):
         """ Analyze the project file with the tools selected
         """
         status = True
@@ -85,17 +85,16 @@ class Analyzer:
                     time.sleep(1)
                     timeNow = DateTime.DateTime.today()
                     timeNow.ShowMs(False)
-                    self.status = '%s: PcLint: %s - U4C: %s              ' % (timeNow,
-                                                                              pcl.statusMsg,
-                                                                              u4co.statusMsg)
+                    self.status = '%s: PcLint: %s%% - U4C: %s%%              ' % (
+                        timeNow, pcl.statusMsg, u4co.statusMsg)
                     if verbose:
                         print((' '*100)+'\r', end='') # clear the line
                         print(self.status+'\r', end='')
             else:
+                msg  = 'U4C DB is currently open.\n'
+                msg += 'Close the Project then select Run Analysis.\n'
+                self.status = msg
                 if verbose:
-                    msg  = 'U4C DB is currently open.\n'
-                    msg += 'Close the Project then select Run Analysis.\n'
-                    self.status = msg
                     print(self.status)
                 status = False
         else:
@@ -108,23 +107,26 @@ class Analyzer:
                 time.sleep(1)
                 timeNow = DateTime.DateTime.today()
                 timeNow.ShowMs(False)
-                self.status = '%s: PcLint: %s - U4C: %s' % (timeNow, pcl.statusMsg, u4co.statusMsg)
+                self.status = '%s: PcLint: %s%% - U4C: %s%%              ' % (
+                    timeNow, pcl.statusMsg, u4co.statusMsg)
                 if verbose:
                     print((' '*100)+'\r', end='') #clear the line
                     print(self.status+'\r', end='')
 
             end = datetime.datetime.today()
-            self.status = 'Analysis Completed in %s' % (end - start)
+
+        self.status += '\n\nAnalysis Completed in %s' % (end - start)
+
+        m1 = pcl.ShowRunStats()
+        m2 = u4co.ShowRunStats()
+        msg = '\n'.join(m1 + m2)
+        self.status = msg + '\n\n' + self.status
 
         if verbose:
-            m1 = pcl.ShowRunStats()
-            m2 = u4co.ShowRunStats()
-            msg = '\n'.join(m1 + m2)
-            self.status = msg + '\n' + self.status
             print(self.status)
 
         # give the FE time to display final status
-        time.sleep(2)
+        time.sleep(1)
         return status
 
 #===================================================================================================

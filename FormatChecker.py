@@ -57,6 +57,7 @@ class FormatChecker:
         """ desc - the string of lines describing the format
             lines followed by a :#: indicate how many lines after the previous descLine it can be
             in the actual file, this allows defining grouping
+            NEW: groups are looked for together as a block or group or flock or chunck or ...
         """
         eAnyText = '.*?'
 

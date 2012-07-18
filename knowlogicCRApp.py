@@ -99,6 +99,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         self.setWindowTitle("Knowlogic Code Review Application")
 
+        #------------------------------------------------------------------------------
+        # Declare All object attributes
+        #------------------------------------------------------------------------------
         self.filterInfo = {
             'Filename':'filename',
             'Function':'function',
@@ -113,22 +116,28 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.curTab = 0
         self.db = None
 
+        self.violationsData = []
+        self.v = None
+
+        self.programOpenedU4c = False
+        self.analysisActive = False
+
         self.ResetProject()
 
-        self.fnameFilter    =  dict(name = 'fName', value = '', comboBoxTitle = 'Select Filename')
-        self.functionFilter =  dict(name = 'function', value = '', comboBoxTitle = 'Select Function')
-        self.severityFilter =  dict(name = 'severityFilter', value = '', comboBoxTitle = 'Select Severity')
-        self.vIdFilter      =  dict(name = 'vIdFilter', value = '', comboBoxTitle = 'Select Violation Id')
-        self.detByFilter    =  dict(name = 'detByFilter', value = '', comboBoxTitle = 'Select Detected By')
-        self.statusFilter   =  dict(name = 'statusFilter', value = '', comboBoxTitle = 'Select Status')
+        #self.fnameFilter    =  dict(name = 'fName', value = '', comboBoxTitle = 'Select Filename')
+        #self.functionFilter =  dict(name = 'function', value = '', comboBoxTitle = 'Select Function')
+        #self.severityFilter =  dict(name = 'severityFilter', value = '', comboBoxTitle = 'Select Severity')
+        #self.vIdFilter      =  dict(name = 'vIdFilter', value = '', comboBoxTitle = 'Select Violation Id')
+        #self.detByFilter    =  dict(name = 'detByFilter', value = '', comboBoxTitle = 'Select Detected By')
+        #self.statusFilter   =  dict(name = 'statusFilter', value = '', comboBoxTitle = 'Select Status')
 
         """ Keep list of filters to iterate for building sql statement """
-        self.filterList = [self.fnameFilter,
-                           self.functionFilter,
-                           self.severityFilter,
-                           self.vIdFilter,
-                           self.detByFilter,
-                           self.statusFilter]
+        #self.filterList = [self.fnameFilter,
+        #                   self.functionFilter,
+        #                   self.severityFilter,
+        #                   self.vIdFilter,
+        #                   self.detByFilter,
+        #                   self.statusFilter]
 
         #------------------------------------------------------------------------------
         # Handle Tabs of TabWidget
@@ -234,6 +243,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.v = None
 
                 self.programOpenedU4c = False
+                self.analysisActive = False
 
                 # clear out the display fields
                 self.DisplayViolationsData()
@@ -284,7 +294,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.tabWidget.setCurrentIndex(0)
                 self.CrErrPopup('Please enter a valid Username and Project File.')
 
-            if newTab == 1:
+            if newTab == 1 and not self.analysisActive:
                 # see if understand is open and open it if not
                 op = subprocess.check_output( 'tasklist')
                 opStr = op.decode()
@@ -380,16 +390,21 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     #-----------------------------------------------------------------------------------------------
     def RunAnalysis(self):
-        """ Run the analysis """
-        analyzer = Analyzer(self.pFullFilename)
+        """ Run the analysis in a thread so we can display its status
+        """
+        if not self.analysisActive:
+            self.analysisActive = True
+            analyzer = Analyzer(self.pFullFilename)
 
-        if analyzer.isValid:
-            self.analyzerThread = util.ThreadSignal( analyzer.Analyze, analyzer)
-            self.analyzerThread.Go()
+            if analyzer.isValid:
+                self.analyzerThread = util.ThreadSignal( analyzer.Analyze, analyzer)
+                self.analyzerThread.Go()
 
-            self.timer = QtCore.QTimer(self)
-            self.connect(self.timer, QtCore.SIGNAL("timeout()"), self.AnalysisUpdate)
-            self.timer.start(500)
+                self.timer = QtCore.QTimer(self)
+                self.connect(self.timer, QtCore.SIGNAL("timeout()"), self.AnalysisUpdate)
+                self.timer.start(500)
+            else:
+                self.analysisActive = False
 
     #-----------------------------------------------------------------------------------------------
     def AnalysisUpdate( self):
@@ -399,7 +414,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.toolOutput.setText(sts)
 
         else:
-            sts += '\nProcessing Complete.'
+            sts += '\n\nDone.'
             self.toolOutput.setText(sts)
 
             # kill the timer
@@ -410,6 +425,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             # populate the display data
             self.FillFilters( 0, '', True)
             self.DisplayViolationStatistics()
+
+            self.analysisActive = False
 
     #-----------------------------------------------------------------------------------------------
     def FillFilters( self, index, name='', reset=False):
