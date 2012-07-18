@@ -513,25 +513,29 @@ class U4c( ToolManager):
         size, fmt = self.projFile.naming[PF.eNameVar]
         varRe = re.compile( fmt)
         theItems = self.udb.db.lookup( re.compile(r'.*'), 'Object')
-        self.NamingChecker( varRe, size, theItems, 'Var', 'Variable', self.GetFuncVarName)
+        self.NamingChecker( step, totalTasks, varRe, size, theItems,
+                            'Var', 'Variable', self.GetFuncVarName)
 
         size, fmt = self.projFile.naming[PF.eNameFunc]
         funcRe  = re.compile( fmt)
         theItems = self.udb.db.lookup( re.compile(r'.*'), 'Function')
-        self.NamingChecker( funcRe, size, theItems, 'Func', 'Function', self.GetFuncFuncName)
+        self.NamingChecker( step+0.25, totalTasks, funcRe, size, theItems,
+                            'Func', 'Function', self.GetFuncFuncName)
 
         size, fmt = self.projFile.naming[PF.eNameDef]
         macRe  = re.compile( fmt)
         theItems = self.udb.db.lookup( re.compile(r'.*'), 'Macro')
-        self.NamingChecker( macRe, size, theItems, 'Def', 'Define', self.GetFuncVarName)
+        self.NamingChecker( step+0.25, totalTasks, macRe, size, theItems,
+                            'Def', 'Define', self.GetFuncVarName)
 
         size, fmt = self.projFile.naming[PF.eNameEnum]
         enumRe  = re.compile( fmt)
         theItems = self.udb.db.lookup( re.compile(r'.*'), 'Enumerator')
-        self.NamingChecker( enumRe, size, theItems, 'Enum', 'Enum', self.GetFuncVarName)
+        self.NamingChecker( step+0.25, totalTasks, enumRe, size, theItems,
+                            'Enum', 'Enum', self.GetFuncVarName)
 
     #-----------------------------------------------------------------------------------------------
-    def NamingChecker( self, theRe, maxLength, theItems, name, longname, getFunc):
+    def NamingChecker( self, step, totalTasks, theRe, maxLength, theItems, name, longname, getFunc):
         """ Verify all variable names - global, local, static global/local
         match the naming regex
         """
@@ -545,7 +549,8 @@ class U4c( ToolManager):
         libItem = 0
         pctCtr = 0
 
-        self.SetStatusMsg(msg = 'Check %s Naming %d' % (longname, totalItems))
+        msg = 'Check %s Naming for %d items [Step %.2f of %d]'%(longname, totalItems, step, totalTasks)
+        self.SetStatusMsg(msg = msg)
         for item in theItems:
             pctCtr += 1
             pct = (float(pctCtr)/totalItems) * 100

@@ -113,8 +113,7 @@ class Analyzer:
                     print((' '*100)+'\r', end='') #clear the line
                     print(self.status+'\r', end='')
 
-            end = datetime.datetime.today()
-
+        end = datetime.datetime.today()
         self.status += '\n\nAnalysis Completed in %s' % (end - start)
 
         m1 = pcl.ShowRunStats()
