@@ -110,7 +110,7 @@ class PcLintSetup( ToolSetup):
         options  = '%s\n' % (ePcLintStdOptions)
 
         # Specify all the include dirs
-        options += '%s\n' % '\n'.join( ['-i%s' % i for i in srcIncludeDirs+includeDirs])
+        options += '%s\n' % '\n'.join( ['-i"%s"' % i for i in srcIncludeDirs+includeDirs])
 
         # specify the user defined options
         options += '\n// User Options\n%s\n' % ( userOptions)
@@ -121,7 +121,8 @@ class PcLintSetup( ToolSetup):
 
         # create the required files
         self.CreateFile( eBatchName, batTmpl % (toolExe, pcLintRoot, eResultFile))
-        self.CreateFile( 'srcFiles.lnt', '\n'.join(srcCodeFiles))
+        srcFileData = ['"%s"' % i for i in srcCodeFiles]
+        self.CreateFile( 'srcFiles.lnt', '\n'.join(srcFileData))
         self.CreateFile( 'options.lnt', options)
 
         self.fileCount = len( srcCodeFiles)

@@ -35,6 +35,8 @@ from utils import DateTime, util
 from utils.DB.database import Query, GetAll, GetCursor
 from utils.DB.sqlLite.database import DB_SQLite
 
+from tools.u4c.u4c import U4c
+
 from ViolationDb import eDbName, eDbRoot
 
 import ProjFile as PF
@@ -231,6 +233,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.violationsData = []
                 self.v = None
 
+                self.programOpenedU4c = False
+
                 # clear out the display fields
                 self.DisplayViolationsData()
 
@@ -279,6 +283,27 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             if self.db == None or self.userName == '':
                 self.tabWidget.setCurrentIndex(0)
                 self.CrErrPopup('Please enter a valid Username and Project File.')
+
+            if newTab == 1:
+                # see if understand is open and open it if not
+                op = subprocess.check_output( 'tasklist')
+                opStr = op.decode()
+                # create a U4c object ot get project Db info
+                u4co = U4c(self.projFile)
+                if opStr.find('understand') == -1:
+                    # get path to understand from project
+                    undPath = self.projFile.paths[PF.ePathU4c]
+                    u4cPath, prog = os.path.split(undPath)
+                    understand = os.path.join(u4cPath, 'understand.exe')
+                    cmd = '%s -db "%s"' % (understand, u4co.dbName)
+                    subprocess.Popen( cmd)
+                    self.programOpenedU4c = True
+                else:
+                    if not self.programOpenedU4c:
+                        msg  = 'Understand is currently running.\n'
+                        msg += 'For Code Viewing the following project should be open.\n'
+                        msg += '<%s>' % u4co.dbName
+                        QMessageBox.information(self, 'Understand Open', msg)
 
         # Coming back to the Config tab update the Stats as they may have analyzed something
         elif newTab == 0 and self.curTab != 0:
@@ -560,7 +585,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             fpfn = self.projFile.FullPathName( filename)
             if fpfn:
                 if len(fpfn) == 1:
-                    viewerCommand = viewerCommand.replace( '<fullPathFileName>', fpfn[0])
+                    viewerCommand = viewerCommand.replace( '<fullPathFileName>', '"%s"' % fpfn[0])
 
                     linenumber = self.v.lineNumber
                     if linenumber >= 0:

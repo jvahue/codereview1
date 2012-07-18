@@ -60,13 +60,15 @@ class Analyzer:
         """
         status = True
         start = DateTime.DateTime.today()
-        self.status ='Start Analysis %s' % start
+        self.status ='Start Analysis %s - Create Tool Projects' % start
 
         # create the tool analysis files
         pcs = PcLint.PcLintSetup( self.projFile)
         u4s = u4c.U4cSetup( self.projFile)
         pcs.CreateProject()
         u4s.CreateProject()
+
+        self.status ='Tool Project Creation Complete - Start Analysis %s' % start
 
         # create the tool analyzers
         pcl = PcLint.PcLint( self.projFile)
@@ -118,7 +120,7 @@ class Analyzer:
             m1 = pcl.ShowRunStats()
             m2 = u4co.ShowRunStats()
             msg = '\n'.join(m1 + m2)
-            self.status += msg
+            self.status = msg + '\n' + self.status
             print(self.status)
 
         # give the FE time to display final status
