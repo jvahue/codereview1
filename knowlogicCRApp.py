@@ -42,7 +42,7 @@ import ProjFile as PF
 #---------------------------------------------------------------------------------------------------
 # Data
 #---------------------------------------------------------------------------------------------------
-eDefaultProjectFileName = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ\G4.crp'
+eKsCrIni = 'KsCr.ini'
 
 #---------------------------------------------------------------------------------------------------
 # Functions
@@ -172,10 +172,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         #------------------------------------------------------------------------------
         # Manage the Analysis Tab Widgets
         #------------------------------------------------------------------------------
-        
-        self.comboBoxAnalysisTextOptions.setCurrentIndex(0)
-        self.comboBoxAnalysisTextOptions.addItems(self.GetAnalysisTextOptions())
-        self.comboBoxAnalysisTextOptions.currentIndexChanged.connect(self.AnalysisTextOptionsComboBoxIndexChanged)
+
+        self.comboBoxAnalysisTextOptions.currentIndexChanged.connect(self.SelectAnalysisText)
 
         self.pushButton_MarkReviewed.clicked.connect(lambda x='Reviewed',
                                                      fx=self.SaveAnalysis: fx(x))
@@ -190,23 +188,36 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.pushButton_GenerateReport.clicked.connect(self.GenerateReport)
 
     #-----------------------------------------------------------------------------------------------
-    def ResetProject( self, projFileName = None):
+    def ResetProject( self, projFileName = ''):
         """ A new project file has been selected - reset all the info in the display
         """
         self.filterUpdateInProgress = False
         self.currentFilters = []
 
-        if projFileName is None:
-            projFileName = eDefaultProjectFileName
+        if not projFileName and os.path.isfile( eKsCrIni):
+            # recall the last open project file
+            f = open(eKsCrIni, 'r')
+            projFileName = f.readline().strip()
+            f.close()
 
         if os.path.isfile( projFileName):
             self.pFullFilename = projFileName
             self.projFile = PF.ProjectFile( projFileName)
 
             if self.projFile.isValid:
+                # save the current project file for next startup
+                f = open(eKsCrIni, 'w')
+                f.write( projFileName)
+                f.close()
+
                 self.dbFname = eDbName
                 self.dbFullFilename = os.path.join( self.projFile.paths[PF.ePathProject],
                                                     eDbRoot, eDbName)
+
+                # Get the canned comment data
+                self.comboBoxAnalysisTextOptions.clear()
+                self.comboBoxAnalysisTextOptions.addItems(self.GetAnalysisTextOptions())
+                self.comboBoxAnalysisTextOptions.setCurrentIndex(0)
 
                 #------------------------------------------------------------------------------
                 # Establish a DataBase connection
@@ -219,6 +230,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
                 self.violationsData = []
                 self.v = None
+
+                # clear out the display fields
+                self.DisplayViolationsData()
 
                 # display the project file name
                 self.projectFileNameEditor.setText(projFileName)
@@ -236,7 +250,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.db = DB_SQLite()
             self.db.Connect(self.dbFullFilename)
 
-            self.FillFilters( 0, '')
+            self.FillFilters( 0, '', True)
             self.DisplayViolationStatistics()
 
     #-----------------------------------------------------------------------------------------------
@@ -256,19 +270,21 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     #-----------------------------------------------------------------------------------------------
     def CurrentTabChanged(self):
-        """ When moving onto any tab check conditions and perform actions
+        """ When changing tabs perform clean up/set up conditions
         """
+        newTab = self.tabWidget.currentIndex()
+
         # Make sure we have a username and project file before moving off config tab
-        if self.tabWidget.currentIndex() != 0:
+        if newTab != 0:
             if self.db == None or self.userName == '':
                 self.tabWidget.setCurrentIndex(0)
                 self.CrErrPopup('Please enter a valid Username and Project File.')
 
         # Coming back to the Config tab update the Stats as they may have analyzed something
-        elif self.tabWidget.currentIndex() == 0 and self.curTab != 0:
+        elif newTab == 0 and self.curTab != 0:
             self.DisplayViolationStatistics()
 
-        self.curTab = self.tabWidget.currentIndex()
+        self.curTab = newTab
 
     #-----------------------------------------------------------------------------------------------
     def lineEditUserNameChanged(self):
@@ -380,6 +396,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """
         if not self.filterUpdateInProgress:
             self.filterUpdateInProgress = True
+
+            if reset:
+                self.currentFilters = []
+                self.dispositioned.setCheckState( QtCore.Qt.Unchecked)
+                for dd in self.filterInfo:
+                    gui = getattr( self, 'comboBox_%s' % dd)
+                    gui.clear()
 
             noFilterRe = re.compile('Select <[A-Za-z]+> \[[0-9]+\]')
 
@@ -517,7 +540,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.plainTextEdit_Analysis.setPlainText(self.v.analysis)
 
         else:
-            self.groupBox_Violations.setTitle("Currently Selected Violation %d of %d" % (at,total))
+            self.groupBox_Violations.setTitle("Currently Selected Violation 0 of 0")
             self.textBrowser_Filename.clear()
             self.textBrowser_Function.clear()
             self.textBrowser_Description.clear()
@@ -556,65 +579,85 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     #-----------------------------------------------------------------------------------------------
     def GetAnalysisTextOptions(self):
         """ Return list of canned analysis text to display in the combobox for user selection """
-        
-        analysisTextList = []
+
         analysisTextList = ['Analysis Text Selection']
-        analysisTextList.extend(self.projFile. analysisComments)
-        
+        analysisTextList.extend(self.projFile.analysisComments)
+
         return analysisTextList
-    
+
     #-----------------------------------------------------------------------------------------------
-    def AnalysisTextOptionsComboBoxIndexChanged(self):
+    def SelectAnalysisText(self):
         """ Update the Analysis Text Browser with the user's choice from the combobox """
-        analysisChoice = self.comboBoxAnalysisTextOptions.currentText() 
+        analysisChoice = self.comboBoxAnalysisTextOptions.currentText()
+
+        analysisChoice = analysisChoice.replace(r'\n', '\n')
+
         if analysisChoice != 'Analysis Text Selection':
             """ Append the canned comment to the analysis text rather than clear() it first.
                 This would allow for the case where they want to enter other information first """
-            self.plainTextEdit_Analysis.append(analysisChoice) 
-       
+            self.plainTextEdit_Analysis.append(analysisChoice)
 
     #-----------------------------------------------------------------------------------------------
     def SaveAnalysis(self, status):
-        """ Save analysis data entered and mark status as reviewed or accepted based status passed in """
+        """ Save analysis data entered and mark status as reviewed or accepted based status
+            passed in
+        """
+        reportBlank = True
         if self.v:
             analysisText = self.plainTextEdit_Analysis.toPlainText()
+            if not analysisText.strip():
+                # see if a canned comment is selected
+                self.SelectAnalysisText()
+                analysisText = self.plainTextEdit_Analysis.toPlainText()
+                if analysisText:
+                    msg = 'We have auto-populated the analysis comment.\nDo you want to keep it?'
+                    rtn = QMessageBox.question( self, 'Auto-Complete',
+                                                msg, QMessageBox.Yes, QMessageBox.No)
+                    if rtn != QMessageBox.Yes:
+                        analysisText = ''
+                        self.plainTextEdit_Analysis.clear()
+                        reportBlank = False
 
-            updateCmd = """UPDATE Violations
-                               SET status = ?, analysis = ?, who = ?, reviewDate = ?
-                             WHERE filename = ?
-                               AND function = ?
-                               AND severity = ?
-                               AND violationId = ?
-                               AND description = ?
-                               AND details = ?
-                               AND lineNumber = ? """
+            if analysisText:
+                updateCmd = """UPDATE Violations
+                                   SET status = ?, analysis = ?, who = ?, reviewDate = ?
+                                 WHERE filename = ?
+                                   AND function = ?
+                                   AND severity = ?
+                                   AND violationId = ?
+                                   AND description = ?
+                                   AND details = ?
+                                   AND lineNumber = ? """
 
-            self.db.Execute(updateCmd,
-                            status,
-                            analysisText,
-                            self.userName,
-                            datetime.datetime.now(),
-                            self.v.filename,
-                            self.v.function,
-                            self.v.severity,
-                            self.v.violationId,
-                            self.v.description,
-                            self.v.details,
-                            self.v.lineNumber)
+                self.db.Execute(updateCmd,
+                                status,
+                                analysisText,
+                                self.userName,
+                                datetime.datetime.now(),
+                                self.v.filename,
+                                self.v.function,
+                                self.v.severity,
+                                self.v.violationId,
+                                self.v.description,
+                                self.v.details,
+                                self.v.lineNumber)
 
-            self.db.Commit()
+                self.db.Commit()
 
-            # remember where we are to the next issue
-            at = self.horizontalScrollBar.value()
+                # remember where we are to the next issue
+                at = self.horizontalScrollBar.value()
 
-            # refresh the data in our cache
-            self.ApplyFilters()
+                # refresh the data in our cache
+                self.ApplyFilters()
 
-            # now go there
-            if self.dispositioned.isChecked():
-                self.horizontalScrollBar.setValue(at+1)
+                # now go there
+                if self.dispositioned.isChecked():
+                    self.horizontalScrollBar.setValue(at+1)
+                else:
+                    self.horizontalScrollBar.setValue(at)
             else:
-                self.horizontalScrollBar.setValue(at)
+                if reportBlank:
+                    QMessageBox.information( self, "Comment", 'You need to specify a comment')
 
     #-----------------------------------------------------------------------------------------------
     def DisplaySrcFileBrowser(self):
