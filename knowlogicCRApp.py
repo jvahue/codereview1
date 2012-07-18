@@ -170,8 +170,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.pushButton_GotoCode.clicked.connect(self.GotoCode)
 
         #------------------------------------------------------------------------------
-        # Manage the analysis push buttons
+        # Manage the Analysis Tab Widgets
         #------------------------------------------------------------------------------
+        
+        self.comboBoxAnalysisTextOptions.setCurrentIndex(0)
+        self.comboBoxAnalysisTextOptions.addItems(self.GetAnalysisTextOptions())
+        self.comboBoxAnalysisTextOptions.currentIndexChanged.connect(self.AnalysisTextOptionsComboBoxIndexChanged)
+
         self.pushButton_MarkReviewed.clicked.connect(lambda x='Reviewed',
                                                      fx=self.SaveAnalysis: fx(x))
         self.pushButton_MarkAccepted.clicked.connect(lambda x='Accepted',
@@ -547,6 +552,26 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         else:
             msg = 'No matching violations.'
             self.CrErrPopup( msg)
+
+    #-----------------------------------------------------------------------------------------------
+    def GetAnalysisTextOptions(self):
+        """ Return list of canned analysis text to display in the combobox for user selection """
+        
+        analysisTextList = []
+        analysisTextList = ['Analysis Text Selection']
+        analysisTextList.extend(self.projFile. analysisComments)
+        
+        return analysisTextList
+    
+    #-----------------------------------------------------------------------------------------------
+    def AnalysisTextOptionsComboBoxIndexChanged(self):
+        """ Update the Analysis Text Browser with the user's choice from the combobox """
+        analysisChoice = self.comboBoxAnalysisTextOptions.currentText() 
+        if analysisChoice != 'Analysis Text Selection':
+            """ Append the canned comment to the analysis text rather than clear() it first.
+                This would allow for the case where they want to enter other information first """
+            self.plainTextEdit_Analysis.append(analysisChoice) 
+       
 
     #-----------------------------------------------------------------------------------------------
     def SaveAnalysis(self, status):

@@ -435,7 +435,7 @@
             <property name="minimumSize">
              <size>
               <width>809</width>
-              <height>211</height>
+              <height>150</height>
              </size>
             </property>
             <property name="title">
@@ -586,94 +586,93 @@
             <property name="title">
              <string>Enter Analysis</string>
             </property>
-            <layout class="QHBoxLayout" name="horizontalLayout_12">
+            <layout class="QHBoxLayout" name="horizontalLayout_9">
              <item>
-              <layout class="QHBoxLayout" name="horizontalLayout_20">
+              <layout class="QVBoxLayout" name="verticalLayout_3">
                <item>
-                <layout class="QVBoxLayout" name="verticalLayout_4">
+                <widget class="QComboBox" name="comboBoxAnalysisTextOptions"/>
+               </item>
+               <item>
+                <widget class="QTextEdit" name="plainTextEdit_Analysis"/>
+               </item>
+               <item>
+                <layout class="QHBoxLayout" name="horizontalLayout_16">
+                 <property name="topMargin">
+                  <number>0</number>
+                 </property>
                  <item>
-                  <widget class="QTextEdit" name="plainTextEdit_Analysis"/>
+                  <widget class="QLabel" name="label_3">
+                   <property name="text">
+                    <string>Previous Reviewer</string>
+                   </property>
+                  </widget>
                  </item>
                  <item>
-                  <layout class="QHBoxLayout" name="horizontalLayout_16">
-                   <property name="topMargin">
-                    <number>0</number>
+                  <widget class="QLineEdit" name="textBrowser_PrevReviewer">
+                   <property name="minimumSize">
+                    <size>
+                     <width>30</width>
+                     <height>0</height>
+                    </size>
                    </property>
-                   <item>
-                    <widget class="QLabel" name="label_3">
-                     <property name="text">
-                      <string>Previous Reviewer</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QLineEdit" name="textBrowser_PrevReviewer">
-                     <property name="minimumSize">
-                      <size>
-                       <width>30</width>
-                       <height>0</height>
-                      </size>
-                     </property>
-                     <property name="readOnly">
-                      <bool>true</bool>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QLabel" name="label_PrevDate">
-                     <property name="text">
-                      <string>Previous Date</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QLineEdit" name="textBrowser_PrevDate">
-                     <property name="minimumSize">
-                      <size>
-                       <width>20</width>
-                       <height>0</height>
-                      </size>
-                     </property>
-                     <property name="readOnly">
-                      <bool>true</bool>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QLabel" name="label_PrevStatus">
-                     <property name="text">
-                      <string>Previous Status</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QLineEdit" name="textBrowser_PrevStatus">
-                     <property name="minimumSize">
-                      <size>
-                       <width>20</width>
-                       <height>0</height>
-                      </size>
-                     </property>
-                     <property name="readOnly">
-                      <bool>true</bool>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QPushButton" name="pushButton_MarkReviewed">
-                     <property name="text">
-                      <string>Mark Reviewed</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QPushButton" name="pushButton_MarkAccepted">
-                     <property name="text">
-                      <string>Mark Accepted</string>
-                     </property>
-                    </widget>
-                   </item>
-                  </layout>
+                   <property name="readOnly">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="label_PrevDate">
+                   <property name="text">
+                    <string>Previous Date</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLineEdit" name="textBrowser_PrevDate">
+                   <property name="minimumSize">
+                    <size>
+                     <width>20</width>
+                     <height>0</height>
+                    </size>
+                   </property>
+                   <property name="readOnly">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="label_PrevStatus">
+                   <property name="text">
+                    <string>Previous Status</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLineEdit" name="textBrowser_PrevStatus">
+                   <property name="minimumSize">
+                    <size>
+                     <width>20</width>
+                     <height>0</height>
+                    </size>
+                   </property>
+                   <property name="readOnly">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="pushButton_MarkReviewed">
+                   <property name="text">
+                    <string>Mark Reviewed</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="pushButton_MarkAccepted">
+                   <property name="text">
+                    <string>Mark Accepted</string>
+                   </property>
+                  </widget>
                  </item>
                 </layout>
                </item>

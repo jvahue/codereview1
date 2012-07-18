@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'crmainwindow.ui'
+# Form implementation generated from reading ui file 'C:\PWES\FASTTesting\CodeReview1\crmainwindow.ui'
 #
-# Created: Tue Jul 17 08:56:17 2012
-#      by: pyside-uic 0.2.13 running on PySide 1.1.0
+# Created: Tue Jul 17 22:55:21 2012
+#      by: pyside-uic 0.2.14 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -231,7 +231,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_23.addLayout(self.horizontalLayout_3)
         self.verticalLayout_10.addWidget(self.groupBox_Filters)
         self.groupBox_Violations = QtGui.QGroupBox(self.tab_Analysis)
-        self.groupBox_Violations.setMinimumSize(QtCore.QSize(809, 211))
+        self.groupBox_Violations.setMinimumSize(QtCore.QSize(809, 150))
         self.groupBox_Violations.setObjectName("groupBox_Violations")
         self.horizontalLayout_22 = QtGui.QHBoxLayout(self.groupBox_Violations)
         self.horizontalLayout_22.setObjectName("horizontalLayout_22")
@@ -307,15 +307,16 @@ class Ui_MainWindow(object):
         self.groupBox_Analysis = QtGui.QGroupBox(self.tab_Analysis)
         self.groupBox_Analysis.setMinimumSize(QtCore.QSize(811, 129))
         self.groupBox_Analysis.setObjectName("groupBox_Analysis")
-        self.horizontalLayout_12 = QtGui.QHBoxLayout(self.groupBox_Analysis)
-        self.horizontalLayout_12.setObjectName("horizontalLayout_12")
-        self.horizontalLayout_20 = QtGui.QHBoxLayout()
-        self.horizontalLayout_20.setObjectName("horizontalLayout_20")
-        self.verticalLayout_4 = QtGui.QVBoxLayout()
-        self.verticalLayout_4.setObjectName("verticalLayout_4")
+        self.horizontalLayout_9 = QtGui.QHBoxLayout(self.groupBox_Analysis)
+        self.horizontalLayout_9.setObjectName("horizontalLayout_9")
+        self.verticalLayout_3 = QtGui.QVBoxLayout()
+        self.verticalLayout_3.setObjectName("verticalLayout_3")
+        self.comboBoxAnalysisTextOptions = QtGui.QComboBox(self.groupBox_Analysis)
+        self.comboBoxAnalysisTextOptions.setObjectName("comboBoxAnalysisTextOptions")
+        self.verticalLayout_3.addWidget(self.comboBoxAnalysisTextOptions)
         self.plainTextEdit_Analysis = QtGui.QTextEdit(self.groupBox_Analysis)
         self.plainTextEdit_Analysis.setObjectName("plainTextEdit_Analysis")
-        self.verticalLayout_4.addWidget(self.plainTextEdit_Analysis)
+        self.verticalLayout_3.addWidget(self.plainTextEdit_Analysis)
         self.horizontalLayout_16 = QtGui.QHBoxLayout()
         self.horizontalLayout_16.setContentsMargins(-1, 0, -1, -1)
         self.horizontalLayout_16.setObjectName("horizontalLayout_16")
@@ -349,9 +350,8 @@ class Ui_MainWindow(object):
         self.pushButton_MarkAccepted = QtGui.QPushButton(self.groupBox_Analysis)
         self.pushButton_MarkAccepted.setObjectName("pushButton_MarkAccepted")
         self.horizontalLayout_16.addWidget(self.pushButton_MarkAccepted)
-        self.verticalLayout_4.addLayout(self.horizontalLayout_16)
-        self.horizontalLayout_20.addLayout(self.verticalLayout_4)
-        self.horizontalLayout_12.addLayout(self.horizontalLayout_20)
+        self.verticalLayout_3.addLayout(self.horizontalLayout_16)
+        self.horizontalLayout_9.addLayout(self.verticalLayout_3)
         self.verticalLayout_10.addWidget(self.groupBox_Analysis)
         self.tabWidget.addTab(self.tab_Analysis, "")
         self.tab_Reports = QtGui.QWidget()
