@@ -186,6 +186,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         #------------------------------------------------------------------------------
 
         self.comboBoxAnalysisTextOptions.currentIndexChanged.connect(self.SelectAnalysisText)
+        
+        self.pushButtonAddCanned.clicked.connect(self.SelectAnalysisText)
 
         self.pushButton_MarkReviewed.clicked.connect(lambda x='Reviewed',
                                                      fx=self.SaveAnalysis: fx(x))
@@ -411,7 +413,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def AbortAnalysis(self):
         """ Abort the analysis process
         """
-        # TODO: implement ThreadSignal Exit() in util class to perform _thread.exit() 
+        # TODO: implement ThreadSignal Exit() in util to perform _thread.exit() 
         #self.analyzerThread.Exit()
         
     #-----------------------------------------------------------------------------------------------
