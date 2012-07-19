@@ -150,6 +150,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.lineEdit_userName.editingFinished.connect(self.lineEditUserNameChanged)
         self.pushButton_pFileBrowse.clicked.connect(self.SelectProjectFile)
         self.pushButton_RunAnalysis.clicked.connect(self.RunAnalysis)
+        self.pushButtonAbortAnalysis.clicked.connect(self.AbortAnalysis)
         #self.pushButton_Statistics.clicked.connect(self.DisplayViolationStatistics)
 
         #------------------------------------------------------------------------------
@@ -406,6 +407,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             else:
                 self.analysisActive = False
 
+    #-----------------------------------------------------------------------------------------------
+    def AbortAnalysis(self):
+        """ Abort the analysis process
+        """
+        # TODO: implement ThreadSignal Exit() in util class to perform _thread.exit() 
+        #self.analyzerThread.Exit()
+        
     #-----------------------------------------------------------------------------------------------
     def AnalysisUpdate( self):
         sts = self.analyzerThread.classRef.status
