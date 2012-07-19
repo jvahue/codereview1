@@ -153,6 +153,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.pushButtonAbortAnalysis.clicked.connect(self.AbortAnalysis)
         #self.pushButton_Statistics.clicked.connect(self.DisplayViolationStatistics)
 
+        self.projectFileNameEditor.currentIndexChanged.connect(self.NewProjFile)
+
         #------------------------------------------------------------------------------
         # Set up the filter comboboxes and the Apply Filter pushbutton
         #------------------------------------------------------------------------------
@@ -169,14 +171,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                                                              fx=self.FillFilters: fx(a,x))
         self.comboBox_Status.currentIndexChanged.connect(lambda a,x='Status',
                                                          fx=self.FillFilters: fx(a,x))
-        
-        self.lineEditDescFilter.editingFinished.connect(self.lineEditDescFilterChanged)
 
-        self.lineEditDetailsFilter.editingFinished.connect(self.lineEditDetailsFilterChanged)
-        
+        self.lineEditDescFilter.editingFinished.connect(self.FillFilters)
+
+        self.lineEditDetailsFilter.editingFinished.connect(self.FillFilters)
+
         self.dispositioned.stateChanged.connect( lambda a,x='',
                                                  fx=self.FillFilters: fx(a,x))
-        
+
         self.pushButton_ApplyFilters.clicked.connect(self.ApplyFilters)
 
         #------------------------------------------------------------------------------
@@ -192,7 +194,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         #------------------------------------------------------------------------------
 
         self.comboBoxAnalysisTextOptions.currentIndexChanged.connect(self.SelectAnalysisText)
-        
+
         self.pushButtonAddCanned.clicked.connect(self.SelectAnalysisText)
 
         self.pushButton_MarkReviewed.clicked.connect(lambda x='Reviewed',
@@ -208,17 +210,27 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.pushButton_GenerateReport.clicked.connect(self.GenerateReport)
 
     #-----------------------------------------------------------------------------------------------
+    def NewProjFile( self, at):
+        projFileName = self.projectFileNameEditor.currentText()
+        if at > 0:
+            self.ResetProject( projFileName)
+
+    #-----------------------------------------------------------------------------------------------
     def ResetProject( self, projFileName = ''):
         """ A new project file has been selected - reset all the info in the display
         """
         self.filterUpdateInProgress = False
         self.currentFilters = []
 
-        if not projFileName and os.path.isfile( eKsCrIni):
+        projFileNames = []
+        if os.path.isfile( eKsCrIni):
             # recall the last open project file
             f = open(eKsCrIni, 'r')
-            projFileName = f.readline().strip()
+            projFileNames = [i.strip() for i in f.readlines()]
             f.close()
+
+        if not projFileName and projFileNames:
+            projFileName = projFileNames[0]
 
         if os.path.isfile( projFileName):
             self.pFullFilename = projFileName
@@ -227,8 +239,19 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             if self.projFile.isValid:
                 # save the current project file for next startup
                 f = open(eKsCrIni, 'w')
-                f.write( projFileName)
+
+                # put it in the list at the top
+                if projFileName in projFileNames:
+                    projFileNames.remove( projFileName)
+
+                projFileNames = [projFileName] + projFileNames
+                [f.write( i+'\n') for i in projFileNames]
                 f.close()
+
+                # display the reordered list
+                self.projectFileNameEditor.clear()
+                self.projectFileNameEditor.addItems( projFileNames)
+                self.projectFileNameEditor.setCurrentIndex(0)
 
                 self.dbFname = eDbName
                 self.dbFullFilename = os.path.join( self.projFile.paths[PF.ePathProject],
@@ -257,8 +280,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 # clear out the display fields
                 self.DisplayViolationsData()
 
-                # display the project file name
-                self.projectFileNameEditor.setText(projFileName)
             else:
                 msg = '\n'.join( self.projFile.errors)
                 self.CrErrPopup( msg)
@@ -281,7 +302,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """ The crErrPopup provides a popup dialog to be used for simple
             notifications to the user through the GUI """
         msgBox = QMessageBox()
-        msgBox.setWindowTitle("Knowlogic Code Review Application Message")
+        msgBox.setWindowTitle("Knowlogic Code Review")
         msgBox.setText(errText)
         msgBox.exec_()
 
@@ -299,17 +320,41 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # Make sure we have a username and project file before moving off config tab
         if newTab != 0:
-            if self.db == None or self.userName == '':
+            if self.db is None or self.userName == '':
                 self.tabWidget.setCurrentIndex(0)
-                self.CrErrPopup('Please enter a valid Username and Project File.')
+                if self.userName:
+                    errs = []
+                else:
+                    errs = ['Username']
+                if self.db is None:
+                    errs.append( 'Project File')
 
-            if newTab == 1 and not self.analysisActive:
+                self.CrErrPopup('Please enter a valid %s' % ' and '.join(errs))
+
+            if newTab == 1 and not self.programOpenedU4c and not self.analysisActive:
                 # see if understand is open and open it if not
                 op = subprocess.check_output( 'tasklist')
                 opStr = op.decode()
+
                 # create a U4c object ot get project Db info
                 u4co = U4c(self.projFile)
+
                 if opStr.find('understand') == -1:
+                    openIt = True
+                else:
+                    msg  = 'Understand is currently running.\n'
+                    msg += 'For Code Viewing the following project should be open.\n'
+                    msg += '<%s>.\nWould you like this to happen.' % u4co.dbName
+                    rtn = QMessageBox.question( self, 'Understand Open',
+                                                msg, QMessageBox.Yes, QMessageBox.No)
+                    if rtn == QMessageBox.Yes:
+                        proc = subprocess.Popen( 'taskkill /im understand.exe /f')
+                        proc.wait()
+                        openIt = True
+                    else:
+                        openIt = False
+
+                if openIt:
                     # get path to understand from project
                     undPath = self.projFile.paths[PF.ePathU4c]
                     u4cPath, prog = os.path.split(undPath)
@@ -317,12 +362,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     cmd = '%s -db "%s"' % (understand, u4co.dbName)
                     subprocess.Popen( cmd)
                     self.programOpenedU4c = True
-                else:
-                    if not self.programOpenedU4c:
-                        msg  = 'Understand is currently running.\n'
-                        msg += 'For Code Viewing the following project should be open.\n'
-                        msg += '<%s>' % u4co.dbName
-                        QMessageBox.information(self, 'Understand Open', msg)
 
         # Coming back to the Config tab update the Stats as they may have analyzed something
         elif newTab == 0 and self.curTab != 0:
@@ -413,15 +452,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.connect(self.timer, QtCore.SIGNAL("timeout()"), self.AnalysisUpdate)
                 self.timer.start(500)
             else:
+                self.CrErrPopup(analyzer.status)
                 self.analysisActive = False
 
     #-----------------------------------------------------------------------------------------------
     def AbortAnalysis(self):
         """ Abort the analysis process
         """
-        # TODO: implement ThreadSignal Exit() in util to perform _thread.exit() 
-        #self.analyzerThread.Exit()
-        
+        self.analyzerThread.classRef.abortRequest = True
+
     #-----------------------------------------------------------------------------------------------
     def AnalysisUpdate( self):
         sts = self.analyzerThread.classRef.status
@@ -445,7 +484,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.analysisActive = False
 
     #-----------------------------------------------------------------------------------------------
-    def FillFilters( self, index, name='', reset=False):
+    def FillFilters( self, index=-1, name='', reset=False):
         """ This function fills in all of the filter selection dropdowns based on the
             settings in the other filter dropdowns.
 
@@ -464,7 +503,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             noFilterRe = re.compile('Select <[A-Za-z]+> \[[0-9]+\]')
 
-            # don't refill the one that changed
+            # don't refill the ones that have changed
             if name:
                 if name not in self.currentFilters:
                     self.currentFilters.append(name)
@@ -498,7 +537,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             # done with the filter update
             self.filterUpdateInProgress = False
-            
+
     #-----------------------------------------------------------------------------------------------
     def lineEditDescFilterChanged(self):
         descFilter = self.lineEditDescFilter.text()
@@ -563,6 +602,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     # ok we want an empty string
                     filterText = "%s = ''" % (self.filterInfo[dd])
                     constraints.append( filterText)
+
+        # check for user strings in desc/detail
+        desc = self.lineEditDescFilter.text()
+        detl = self.lineEditDetailsFilter.text()
+        if desc.strip():
+            constraints.append( "description like '%%%s%%'" % desc)
+        if detl.strip():
+            constraints.append( "details like '%%%s%%'" % detl)
 
         if constraints:
             queryConstraint = '\nand '.join( constraints)

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>855</width>
-    <height>772</height>
+    <height>682</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,36 +18,61 @@
     <item>
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
-       <widget class="QLabel" name="label">
-        <property name="font">
-         <font>
-          <family>Cambria</family>
-          <pointsize>16</pointsize>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
+       <layout class="QHBoxLayout" name="horizontalLayout_18">
+        <property name="topMargin">
+         <number>0</number>
         </property>
-        <property name="text">
-         <string>Knowlogic Software</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLabel" name="label_2">
-        <property name="font">
-         <font>
-          <family>Cambria</family>
-          <pointsize>12</pointsize>
-          <italic>true</italic>
-         </font>
-        </property>
-        <property name="text">
-         <string>Code Review Tool</string>
-        </property>
-       </widget>
+        <item>
+         <widget class="QLabel" name="label">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+            <horstretch>1</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="font">
+           <font>
+            <family>Cambria</family>
+            <pointsize>16</pointsize>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string>Knowlogic Software</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_2">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="font">
+           <font>
+            <family>Cambria</family>
+            <pointsize>12</pointsize>
+            <italic>true</italic>
+           </font>
+          </property>
+          <property name="text">
+           <string>Code Review Tool</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
       <item>
        <widget class="QTabWidget" name="tabWidget">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="currentIndex">
          <number>0</number>
         </property>
@@ -75,6 +100,55 @@
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_6">
              <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_5">
+               <property name="sizeConstraint">
+                <enum>QLayout::SetNoConstraint</enum>
+               </property>
+               <item>
+                <widget class="QLabel" name="label_5">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>Project File</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QComboBox" name="projectFileNameEditor">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                   <horstretch>1</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="pushButton_pFileBrowse">
+                 <property name="maximumSize">
+                  <size>
+                   <width>16777152</width>
+                   <height>16777215</height>
+                  </size>
+                 </property>
+                 <property name="text">
+                  <string>Browse...</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+             <item>
               <layout class="QHBoxLayout" name="horizontalLayout_4">
                <item>
                 <widget class="QLabel" name="label_7">
@@ -85,6 +159,12 @@
                </item>
                <item>
                 <widget class="QLineEdit" name="lineEdit_userName">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
                  <property name="maximumSize">
                   <size>
                    <width>133</width>
@@ -109,27 +189,6 @@
               </layout>
              </item>
              <item>
-              <layout class="QHBoxLayout" name="horizontalLayout_5">
-               <item>
-                <widget class="QLabel" name="label_5">
-                 <property name="text">
-                  <string>Project File</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QLineEdit" name="projectFileNameEditor"/>
-               </item>
-               <item>
-                <widget class="QPushButton" name="pushButton_pFileBrowse">
-                 <property name="text">
-                  <string>Browse...</string>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </item>
-             <item>
               <layout class="QHBoxLayout" name="horizontalLayout_6">
                <item>
                 <widget class="QTextEdit" name="toolOutput">
@@ -140,19 +199,6 @@
                </item>
                <item>
                 <layout class="QVBoxLayout" name="verticalLayout_5">
-                 <item>
-                  <spacer name="verticalSpacer_2">
-                   <property name="orientation">
-                    <enum>Qt::Vertical</enum>
-                   </property>
-                   <property name="sizeHint" stdset="0">
-                    <size>
-                     <width>20</width>
-                     <height>58</height>
-                    </size>
-                   </property>
-                  </spacer>
-                 </item>
                  <item>
                   <layout class="QVBoxLayout" name="verticalLayout_4">
                    <item>
@@ -517,14 +563,7 @@
              </item>
             </layout>
             <zorder></zorder>
-            <zorder>lineEditDescFilter</zorder>
-            <zorder>lineEditDetailsFilter</zorder>
-            <zorder>label_18</zorder>
-            <zorder>label_19</zorder>
-            <zorder>label_19</zorder>
-            <zorder>horizontalSpacer</zorder>
             <zorder></zorder>
-            <zorder>horizontalSpacer</zorder>
            </widget>
           </item>
           <item>
@@ -804,24 +843,30 @@
              <layout class="QHBoxLayout" name="horizontalLayout_7">
               <item>
                <widget class="QLabel" name="label_srcCode">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                  <horstretch>1</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="layoutDirection">
+                 <enum>Qt::LeftToRight</enum>
+                </property>
                 <property name="text">
-                 <string>Source Code Filename:</string>
+                 <string>Filename</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                 </property>
                </widget>
               </item>
               <item>
-               <widget class="QTextBrowser" name="textBrowser_ReportFile">
-                <property name="minimumSize">
-                 <size>
-                  <width>0</width>
-                  <height>32</height>
-                 </size>
-                </property>
-                <property name="maximumSize">
-                 <size>
-                  <width>16777215</width>
-                  <height>32</height>
-                 </size>
+               <widget class="QLineEdit" name="reportFileName">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                  <horstretch>8</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
                 </property>
                </widget>
               </item>
@@ -838,24 +883,24 @@
              <layout class="QHBoxLayout" name="horizontalLayout_8">
               <item>
                <widget class="QLabel" name="label_reportDir">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                  <horstretch>1</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
                 <property name="text">
-                 <string>Report Directory:</string>
+                 <string>Report Directory</string>
                 </property>
                </widget>
               </item>
               <item>
-               <widget class="QTextBrowser" name="textBrowser_ReportDir">
-                <property name="minimumSize">
-                 <size>
-                  <width>0</width>
-                  <height>32</height>
-                 </size>
-                </property>
-                <property name="maximumSize">
-                 <size>
-                  <width>16777215</width>
-                  <height>32</height>
-                 </size>
+               <widget class="QLineEdit" name="reportDirectory">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                  <horstretch>8</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
                 </property>
                </widget>
               </item>

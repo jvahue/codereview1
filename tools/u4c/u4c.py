@@ -190,7 +190,7 @@ class U4c( ToolManager):
         analyzing = False
         self.SetStatusMsg( msg = 'Parsing Source Files')
         while self.AnalyzeActive():
-            for line in self.job.stdout:
+            for line in self.toolProcess.stdout:
                 line = line.decode(encoding='windows-1252').strip()
                 self.Log( '<%s>' % line)
                 self.LogFlush()

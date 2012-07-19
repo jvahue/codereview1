@@ -42,13 +42,16 @@ from tools.u4c import u4c
 class Analyzer:
     def __init__( self, projFile):
         """ Initializ an analyzer object """
+        self.abortRequest = False
+
         if os.path.isfile( projFile):
             self.projFile = ProjFile.ProjectFile( projFile)
             if self.projFile.isValid:
                 self.status = 'Ready'
                 self.isValid = True
             else:
-                self.status = 'Error'
+                errs = '\n'.join( self.projFile.errors)
+                self.status = 'Error in project file: \n%s' % (errs)
                 self.isValid = False
         else:
             self.status = 'Project file does not exist!'
@@ -82,6 +85,9 @@ class Analyzer:
                 u4cThread.Go()
                 pclThread.Go()
                 while u4cThread.active or pclThread.active:
+                    pcl.abortRequest = self.abortRequest
+                    u4co.classRef.abortRequest = self.abortRequest
+
                     time.sleep(1)
                     timeNow = DateTime.DateTime.today()
                     timeNow.ShowMs(False)

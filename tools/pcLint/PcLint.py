@@ -196,7 +196,7 @@ class PcLint( ToolManager):
         self.SetStatusMsg( msg = 'Analyzing Files')
         output = ''
         while self.AnalyzeActive():
-            for line in self.job.stdout:
+            for line in self.toolProcess.stdout:
                 line = line.decode(encoding='windows-1252')
                 self.Log( line)
                 self.LogFlush()

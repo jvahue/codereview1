@@ -80,7 +80,7 @@ class ToolManager:
         self.toolName = toolName
 
         self.jobCmd = ''
-        self.job = None
+        self.toolProcess = None
 
         self.vDb = None
 
@@ -91,6 +91,8 @@ class ToolManager:
         self.insertUpErr = 0
         self.insertDeleted = 0
         self.unanalyzed = 0
+
+        self.abortRequest = False
 
         # open a log file for the tool
         logName = os.path.join( toolDir, '%s.log' % toolName)
@@ -104,7 +106,7 @@ class ToolManager:
           1. Update the tool output
           2. Generate Reivew data
         """
-        self.job = subprocess.Popen( self.jobCmd, bufsize=-1, cwd=self.projToolRoot,
+        self.toolProcess = subprocess.Popen( self.jobCmd, bufsize=-1, cwd=self.projToolRoot,
                                      stderr=subprocess.STDOUT,
                                      stdout=subprocess.PIPE)
 
@@ -115,8 +117,8 @@ class ToolManager:
         """
         status = False
         time.sleep( 0.001)
-        if self.job is not None:
-            if self.job.poll() is None:
+        if self.toolProcess is not None:
+            if self.toolProcess.poll() is None:
                 status = True
 
         return status
