@@ -169,8 +169,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                                                              fx=self.FillFilters: fx(a,x))
         self.comboBox_Status.currentIndexChanged.connect(lambda a,x='Status',
                                                          fx=self.FillFilters: fx(a,x))
+        
+        self.lineEditDescFilter.editingFinished.connect(self.lineEditDescFilterChanged)
+
+        self.lineEditDetailsFilter.editingFinished.connect(self.lineEditDetailsFilterChanged)
+        
         self.dispositioned.stateChanged.connect( lambda a,x='',
                                                  fx=self.FillFilters: fx(a,x))
+        
         self.pushButton_ApplyFilters.clicked.connect(self.ApplyFilters)
 
         #------------------------------------------------------------------------------
@@ -492,6 +498,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             # done with the filter update
             self.filterUpdateInProgress = False
+            
+    #-----------------------------------------------------------------------------------------------
+    def lineEditDescFilterChanged(self):
+        descFilter = self.lineEditDescFilter.text()
+        # TODO : Handle the description filter
+
+    #-----------------------------------------------------------------------------------------------
+    def lineEditDetailsFilterChanged(self):
+        detailsFilter = self.lineEditDetailsFilter.text()
+        # TODO : Handle the details filter
 
     #-----------------------------------------------------------------------------------------------
     def ApplyFilters(self):
