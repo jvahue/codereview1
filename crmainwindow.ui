@@ -396,95 +396,149 @@
          <attribute name="title">
           <string>Analysis</string>
          </attribute>
-         <layout class="QVBoxLayout" name="verticalLayout_10">
+         <layout class="QVBoxLayout" name="verticalLayout_14">
           <item>
            <widget class="QGroupBox" name="groupBox_Filters">
             <property name="minimumSize">
              <size>
-              <width>809</width>
-              <height>91</height>
+              <width>811</width>
+              <height>141</height>
              </size>
             </property>
             <property name="title">
              <string>Select Filters</string>
             </property>
-            <layout class="QVBoxLayout" name="verticalLayout_23">
+            <layout class="QVBoxLayout" name="verticalLayout_2">
              <item>
-              <layout class="QHBoxLayout" name="horizontalLayout_3">
-               <property name="topMargin">
-                <number>0</number>
-               </property>
+              <layout class="QVBoxLayout" name="verticalLayout_10">
                <item>
-                <layout class="QVBoxLayout" name="verticalLayout_2">
+                <layout class="QHBoxLayout" name="horizontalLayout">
+                 <property name="topMargin">
+                  <number>0</number>
+                 </property>
                  <item>
-                  <layout class="QHBoxLayout" name="horizontalLayout">
-                   <property name="topMargin">
-                    <number>0</number>
-                   </property>
+                  <widget class="QComboBox" name="comboBox_Filename"/>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="comboBox_Function"/>
+                 </item>
+                </layout>
+               </item>
+               <item>
+                <layout class="QHBoxLayout" name="horizontalLayout_15">
+                 <item>
+                  <layout class="QHBoxLayout" name="horizontalLayout_12">
                    <item>
-                    <widget class="QComboBox" name="comboBox_Filename"/>
+                    <widget class="QLabel" name="label_18">
+                     <property name="text">
+                      <string>Description Filter:</string>
+                     </property>
+                    </widget>
                    </item>
                    <item>
-                    <widget class="QComboBox" name="comboBox_Function"/>
+                    <widget class="QLineEdit" name="lineEditDescFilter"/>
                    </item>
                   </layout>
                  </item>
                  <item>
-                  <layout class="QHBoxLayout" name="horizontalLayout_2">
+                  <layout class="QHBoxLayout" name="horizontalLayout_3">
                    <item>
-                    <widget class="QComboBox" name="comboBox_Severity"/>
-                   </item>
-                   <item>
-                    <widget class="QComboBox" name="comboBox_Id"/>
-                   </item>
-                   <item>
-                    <widget class="QComboBox" name="comboBox_DetectedBy"/>
-                   </item>
-                   <item>
-                    <widget class="QComboBox" name="comboBox_Status"/>
-                   </item>
-                   <item>
-                    <widget class="QCheckBox" name="dispositioned">
+                    <widget class="QLabel" name="label_19">
                      <property name="text">
-                      <string>Include Dispositioned</string>
+                      <string>Details Filter :</string>
                      </property>
                     </widget>
+                   </item>
+                   <item>
+                    <widget class="QLineEdit" name="lineEditDetailsFilter"/>
                    </item>
                   </layout>
                  </item>
                 </layout>
                </item>
                <item>
-                <widget class="QPushButton" name="pushButton_ApplyFilters">
-                 <property name="maximumSize">
+                <layout class="QHBoxLayout" name="horizontalLayout_2">
+                 <item>
+                  <widget class="QComboBox" name="comboBox_Severity"/>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="comboBox_Id"/>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="comboBox_DetectedBy"/>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="comboBox_Status"/>
+                 </item>
+                </layout>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_17">
+               <item>
+                <spacer name="horizontalSpacer">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
                   <size>
-                   <width>75</width>
-                   <height>23</height>
+                   <width>218</width>
+                   <height>20</height>
                   </size>
                  </property>
-                 <property name="text">
-                  <string>Apply Filters</string>
-                 </property>
-                </widget>
+                </spacer>
+               </item>
+               <item>
+                <layout class="QHBoxLayout" name="horizontalLayout_14">
+                 <item>
+                  <widget class="QCheckBox" name="dispositioned">
+                   <property name="text">
+                    <string>Include Dispositioned</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="pushButton_ApplyFilters">
+                   <property name="maximumSize">
+                    <size>
+                     <width>75</width>
+                     <height>23</height>
+                    </size>
+                   </property>
+                   <property name="text">
+                    <string>Apply Filters</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
                </item>
               </layout>
              </item>
             </layout>
             <zorder></zorder>
+            <zorder>lineEditDescFilter</zorder>
+            <zorder>lineEditDetailsFilter</zorder>
+            <zorder>label_18</zorder>
+            <zorder>label_19</zorder>
+            <zorder>label_19</zorder>
+            <zorder>horizontalSpacer</zorder>
+            <zorder></zorder>
+            <zorder>horizontalSpacer</zorder>
            </widget>
           </item>
           <item>
            <widget class="QGroupBox" name="groupBox_Violations">
             <property name="minimumSize">
              <size>
-              <width>809</width>
-              <height>150</height>
+              <width>811</width>
+              <height>200</height>
              </size>
             </property>
             <property name="title">
              <string>View Violations</string>
             </property>
-            <layout class="QHBoxLayout" name="horizontalLayout_22">
+            <layout class="QVBoxLayout" name="verticalLayout_16">
              <item>
               <layout class="QVBoxLayout" name="verticalLayout_8">
                <item>
@@ -623,7 +677,7 @@
             <property name="minimumSize">
              <size>
               <width>811</width>
-              <height>129</height>
+              <height>171</height>
              </size>
             </property>
             <property name="title">
@@ -860,16 +914,6 @@
      </layout>
     </item>
    </layout>
-  </widget>
-  <widget class="QMenuBar" name="menuBar">
-   <property name="geometry">
-    <rect>
-     <x>0</x>
-     <y>0</y>
-     <width>855</width>
-     <height>21</height>
-    </rect>
-   </property>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
    <attribute name="toolBarArea">
