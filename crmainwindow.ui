@@ -73,85 +73,128 @@
             <property name="title">
              <string>Code Review Administration</string>
             </property>
-            <layout class="QVBoxLayout" name="verticalLayout_16">
+            <layout class="QVBoxLayout" name="verticalLayout_6">
              <item>
-              <layout class="QVBoxLayout" name="verticalLayout_6">
+              <layout class="QHBoxLayout" name="horizontalLayout_4">
                <item>
-                <layout class="QHBoxLayout" name="horizontalLayout_4">
+                <widget class="QLabel" name="label_7">
+                 <property name="text">
+                  <string>User Name</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLineEdit" name="lineEdit_userName">
+                 <property name="maximumSize">
+                  <size>
+                   <width>133</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="horizontalSpacer_2">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>388</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_5">
+               <item>
+                <widget class="QLabel" name="label_5">
+                 <property name="text">
+                  <string>Project File</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLineEdit" name="projectFileNameEditor"/>
+               </item>
+               <item>
+                <widget class="QPushButton" name="pushButton_pFileBrowse">
+                 <property name="text">
+                  <string>Browse...</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_6">
+               <item>
+                <widget class="QTextEdit" name="toolOutput">
+                 <property name="readOnly">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <layout class="QVBoxLayout" name="verticalLayout_5">
                  <item>
-                  <widget class="QLabel" name="label_7">
-                   <property name="text">
-                    <string>User Name</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QLineEdit" name="lineEdit_userName">
-                   <property name="maximumSize">
-                    <size>
-                     <width>133</width>
-                     <height>20</height>
-                    </size>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <spacer name="horizontalSpacer_2">
+                  <spacer name="verticalSpacer_2">
                    <property name="orientation">
-                    <enum>Qt::Horizontal</enum>
+                    <enum>Qt::Vertical</enum>
                    </property>
                    <property name="sizeHint" stdset="0">
                     <size>
-                     <width>388</width>
-                     <height>20</height>
+                     <width>20</width>
+                     <height>58</height>
                     </size>
                    </property>
                   </spacer>
                  </item>
-                </layout>
-               </item>
-               <item>
-                <layout class="QHBoxLayout" name="horizontalLayout_5">
                  <item>
-                  <widget class="QLabel" name="label_5">
-                   <property name="text">
-                    <string>Project File</string>
+                  <layout class="QVBoxLayout" name="verticalLayout_4">
+                   <item>
+                    <widget class="QPushButton" name="pushButton_RunAnalysis">
+                     <property name="maximumSize">
+                      <size>
+                       <width>81</width>
+                       <height>31</height>
+                      </size>
+                     </property>
+                     <property name="text">
+                      <string>Run Analysis</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QPushButton" name="pushButtonAbortAnalysis">
+                     <property name="maximumSize">
+                      <size>
+                       <width>81</width>
+                       <height>31</height>
+                      </size>
+                     </property>
+                     <property name="text">
+                      <string>Abort Analysis</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </item>
+                 <item>
+                  <spacer name="verticalSpacer_3">
+                   <property name="orientation">
+                    <enum>Qt::Vertical</enum>
                    </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QLineEdit" name="projectFileNameEditor"/>
-                 </item>
-                 <item>
-                  <widget class="QPushButton" name="pushButton_pFileBrowse">
-                   <property name="text">
-                    <string>Browse...</string>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
-               </item>
-               <item>
-                <layout class="QHBoxLayout" name="horizontalLayout_6">
-                 <item>
-                  <widget class="QTextEdit" name="toolOutput">
-                   <property name="readOnly">
-                    <bool>true</bool>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QPushButton" name="pushButton_RunAnalysis">
-                   <property name="maximumSize">
+                   <property name="sizeHint" stdset="0">
                     <size>
-                     <width>81</width>
-                     <height>31</height>
+                     <width>20</width>
+                     <height>48</height>
                     </size>
                    </property>
-                   <property name="text">
-                    <string>Run Analysis</string>
-                   </property>
-                  </widget>
+                  </spacer>
                  </item>
                 </layout>
                </item>
@@ -586,95 +629,108 @@
             <property name="title">
              <string>Enter Analysis</string>
             </property>
-            <layout class="QHBoxLayout" name="horizontalLayout_9">
+            <layout class="QVBoxLayout" name="verticalLayout_3">
              <item>
-              <layout class="QVBoxLayout" name="verticalLayout_3">
+              <layout class="QHBoxLayout" name="horizontalLayout_9">
                <item>
                 <widget class="QComboBox" name="comboBoxAnalysisTextOptions"/>
                </item>
                <item>
-                <widget class="QTextEdit" name="plainTextEdit_Analysis"/>
+                <widget class="QPushButton" name="pushButtonAddCanned">
+                 <property name="maximumSize">
+                  <size>
+                   <width>75</width>
+                   <height>23</height>
+                  </size>
+                 </property>
+                 <property name="text">
+                  <string>Add</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <widget class="QTextEdit" name="plainTextEdit_Analysis"/>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_16">
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <item>
+                <widget class="QLabel" name="label_3">
+                 <property name="text">
+                  <string>Previous Reviewer</string>
+                 </property>
+                </widget>
                </item>
                <item>
-                <layout class="QHBoxLayout" name="horizontalLayout_16">
-                 <property name="topMargin">
-                  <number>0</number>
+                <widget class="QLineEdit" name="textBrowser_PrevReviewer">
+                 <property name="minimumSize">
+                  <size>
+                   <width>30</width>
+                   <height>0</height>
+                  </size>
                  </property>
-                 <item>
-                  <widget class="QLabel" name="label_3">
-                   <property name="text">
-                    <string>Previous Reviewer</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QLineEdit" name="textBrowser_PrevReviewer">
-                   <property name="minimumSize">
-                    <size>
-                     <width>30</width>
-                     <height>0</height>
-                    </size>
-                   </property>
-                   <property name="readOnly">
-                    <bool>true</bool>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QLabel" name="label_PrevDate">
-                   <property name="text">
-                    <string>Previous Date</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QLineEdit" name="textBrowser_PrevDate">
-                   <property name="minimumSize">
-                    <size>
-                     <width>20</width>
-                     <height>0</height>
-                    </size>
-                   </property>
-                   <property name="readOnly">
-                    <bool>true</bool>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QLabel" name="label_PrevStatus">
-                   <property name="text">
-                    <string>Previous Status</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QLineEdit" name="textBrowser_PrevStatus">
-                   <property name="minimumSize">
-                    <size>
-                     <width>20</width>
-                     <height>0</height>
-                    </size>
-                   </property>
-                   <property name="readOnly">
-                    <bool>true</bool>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QPushButton" name="pushButton_MarkReviewed">
-                   <property name="text">
-                    <string>Mark Reviewed</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QPushButton" name="pushButton_MarkAccepted">
-                   <property name="text">
-                    <string>Mark Accepted</string>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
+                 <property name="readOnly">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLabel" name="label_PrevDate">
+                 <property name="text">
+                  <string>Previous Date</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLineEdit" name="textBrowser_PrevDate">
+                 <property name="minimumSize">
+                  <size>
+                   <width>20</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="readOnly">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLabel" name="label_PrevStatus">
+                 <property name="text">
+                  <string>Previous Status</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLineEdit" name="textBrowser_PrevStatus">
+                 <property name="minimumSize">
+                  <size>
+                   <width>20</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="readOnly">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="pushButton_MarkReviewed">
+                 <property name="text">
+                  <string>Mark Reviewed</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="pushButton_MarkAccepted">
+                 <property name="text">
+                  <string>Mark Accepted</string>
+                 </property>
+                </widget>
                </item>
               </layout>
              </item>
