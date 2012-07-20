@@ -311,6 +311,8 @@ class ProjectFile:
     def ReadFormats( self):
         for i in self.formats:
             if i != eFmtRegex:
+                # todo make sure the first line in the func/file_h/file_c descriptions does not
+                # have a span :xx: in it, that is invalid
                 self.formats[i] = self.GetMultiLines( 'Format_%s' % i)
             else:
                 self.formats[i] = self.ReadDict( 'Format_%s' % i)

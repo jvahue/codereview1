@@ -33,18 +33,34 @@ from utils.util import Holder
 #---------------------------------------------------------------------------------------------------
 # Data
 #---------------------------------------------------------------------------------------------------
+eAnyText = '.*?'
+ePosDef = r'(:[0-9]+:|:D:)$'
 
 #---------------------------------------------------------------------------------------------------
 # Functions
 #---------------------------------------------------------------------------------------------------
 class Item( Holder):
-    def __init__( self, raw, desc):
-        self.raw = raw
-        self.desc = desc
-        self.index = -1
-        self.span = -1
+    """ This holds the info about an item (or a group of items that go together).  It allows for
+        checking the existence of the item in the line buffer.
+    """
+    def __init__( self, raw, desc, dependsOn = None):
+        self.raw = [raw]
+        self.desc = [desc]
+        self.offset = [0]
+        self.span = 1    # how many lines does this item span
+        self.index = -1  # what line in the file did we find this
         self.keywords = OrderedDict()
+        self.dependsOn = dependsOn
 
+    #-----------------------------------------------------------------------------------------------
+    def AddGroupItem( self, raw, desc, span):
+        self.raw.append( raw)
+        self.desc.append(desc)
+        self.span += span
+        offset = span - 1
+        self.offset.append( offset)
+
+    #-----------------------------------------------------------------------------------------------
     def Reset( self):
         self.index = -1
         for k in self.keywords:
@@ -52,6 +68,67 @@ class Item( Holder):
             h.line0 = -1
             h.lines = []
 
+    #-----------------------------------------------------------------------------------------------
+    def Keywords( self):
+        keyRe = re.compile( r'<[A-Z][A-Za-z0-9_]+>')
+
+        newDesc = []
+        for i in self.desc:
+            key = keyRe.findall( i)
+            for keyword in key:
+                # remove keyword from desc Item - needed when something expected after the keyword
+                i = i.replace( keyword, eAnyText).strip()
+
+                if keyword not in self.keywords:
+                    self.keywords[keyword] = Holder( line0 = -1, lines=[])
+            newDesc.append(i)
+
+        self.desc = newDesc
+
+    #-----------------------------------------------------------------------------------------------
+    def IsEmptyDesc( self):
+        """ see if all the descriptions are equal to eAnyText """
+        isEmpty = True
+        for i in self.desc:
+            if i != eAnyText:
+                isEmpty = False
+                break
+        return isEmpty
+
+    #-----------------------------------------------------------------------------------------------
+    def JoinRaw( self):
+        return '\n'.join( self.raw)
+
+    #-----------------------------------------------------------------------------------------------
+    def MatchBuffer( self, lineCount, maxSpan, lineBuffer):
+        """ start at the top of the buffer and see if we match all we need """
+        if self.index == -1 and len(lineBuffer) >= self.span:
+            lbx = 0
+            isMatch = True
+            for ix, desc in enumerate(self.desc):
+                lbx += self.offset[ix]
+                bufLine = lineBuffer[ix+lbx].strip()
+
+                try:
+                    descLineRe = re.compile( desc, re.DOTALL)
+                except:
+                    raise
+                m = descLineRe.search( bufLine)
+                if not m:
+                    isMatch = False
+                    break
+
+            if isMatch:
+                if self.dependsOn is None or self.dependsOn.index != -1:
+                    self.index = (lineCount - maxSpan) + 1
+                else:
+                    isMatch = False
+        else:
+            isMatch = False
+
+        return isMatch
+
+#---------------------------------------------------------------------------------------------------
 class FormatChecker:
     def __init__( self, detector, updateTime, desc, rawDesc):
         """ desc - the string of lines describing the format
@@ -59,7 +136,7 @@ class FormatChecker:
             in the actual file, this allows defining grouping
             NEW: groups are looked for together as a block or group or flock or chunck or ...
         """
-        eAnyText = '.*?'
+        posDefRe = re.compile( ePosDef)
 
         self.detector = detector
         self.updateTime = updateTime
@@ -67,42 +144,41 @@ class FormatChecker:
         dl = desc.split('\n')
         self.descLines = [i.strip() for i in dl if i.strip()]
         dl = rawDesc.split('\n')
-        self.rawDescLines = [i.strip() for i in dl if i.strip()]
+        self.rawDescLines = [i for i in dl if i.strip()]
 
         self.items = []
         for ix, i in enumerate(self.descLines):
-            item = Item( self.rawDescLines[ix], self.descLines[ix])
-            self.items.append(item)
+            posDef = posDefRe.findall( i.strip())
+            if posDef:
+                posDef = posDef[0]
+                if posDef == ':D:':
+                    descLine = self.descLines[ix].replace( posDef, '').strip()
+                    item = Item( self.rawDescLines[ix], descLine, self.items[-1])
+                    self.items.append(item)
+                else:
+                    span = int(posDef.replace(':', ''))
+                    item = self.items[-1]
+                    descLine = self.descLines[ix].replace( posDef, '').strip()
+                    item.AddGroupItem( self.rawDescLines[ix], descLine, span)
+            else:
+                item = Item( self.rawDescLines[ix], self.descLines[ix])
+                self.items.append(item)
+
+        # find out how big our line buffer needs to be
+        maxSpan = [i.span for i in self.items]
+        maxSpan.sort()
+        self.maxSpan = maxSpan[-1]
+        self.lineBuffer = []
 
         self.lineCount = 0
 
-        posRe = re.compile( r':[0-9]+:')
-        keyRe = re.compile( r'<[A-Z][A-Za-z0-9_]+>')
-
         # find lineSpan limits for a line of keywords in the description items
-        for ix,item in enumerate(self.items):
-            span = -1
-            # check for positional information
-            isPos = posRe.findall( item.desc)
-            if isPos:
-                # get index
-                span = int(isPos[0].replace( ':',''))
-                # remove it
-                item.desc = item.desc.replace( isPos[0], '').strip()
-            item.span = span
+        for item in self.items:
+            item.Keywords()
 
-            # check for keywords
-            key = keyRe.findall( item.desc)
-            for keyword in key:
-                # remove keyword from desc Item - needed when something expected after the keyword
-                item.desc = item.desc.replace( keyword, eAnyText).strip()
-
-                if keyword not in item.keywords:
-                    item.keywords[keyword] = Holder( line0 = -1, lines=[])
-
-        # move their keywords to the item before them
+        # move empty item's keywords to the item before them, and dependers too
         for ix, item in enumerate( self.items):
-            if item.desc == eAnyText:
+            if item.IsEmptyDesc():
                 if ix == 0:
                     # move keywords forward special case
                     self.items[1].keywords.update( item.keywords)
@@ -111,7 +187,7 @@ class FormatChecker:
                     self.items[ix-1].keywords.update( item.keywords)
 
         # clear out the empty descriptors
-        self.items = [i for i in self.items if i.desc and i.desc != eAnyText]
+        self.items = [i for i in self.items if not i.IsEmptyDesc()]
 
     #-----------------------------------------------------------------------------------------------
     def GetKeywordItems( self, keyword):
@@ -136,38 +212,56 @@ class FormatChecker:
             format as it does it.
         """
         if lx == 0:
-            self.CheckInit()
+            self.Reset()
 
-        lx += 1 # start numberinf from 1 vs. 0
+        lx += 1 # start numbering from 1 vs. 0
         if lx > self.lineCount:
             self.lineCount = lx
 
         lineStrip = line.strip()
-        if lineStrip:
-            for ix, item in enumerate(self.items):
-                # have we seen this line already?
-                if item.index == -1:
-                    try:
-                        descLineRe = re.compile( item.desc, re.DOTALL)
-                    except:
-                        raise
-                    m = descLineRe.search( lineStrip)
-                    if m:
-                        item.index = lx
-                        self.InitKeyword( item, lx, line)
-                        break
-            else:
-                # collecting info for an open keyword
-                self.SaveKeyWordData( line)
+        self.lineBuffer.append(lineStrip)
+        if len(self.lineBuffer) == self.maxSpan or self.bufferSizeMet:
+            self.bufferSizeMet = True
+            self.BufferCheck(lx, line)
 
     #-----------------------------------------------------------------------------------------------
-    def CheckInit( self):
+    def BufferCheck( self, lx, line):
+        # now that we have the line buffer filled
+        # lets scan through our items for matchs
+        for ix, item in enumerate(self.items):
+            if item.MatchBuffer( lx, self.maxSpan, self.lineBuffer):
+                # only assign this to one item and start at the top
+                self.InitKeyword( item, lx-self.maxSpan, line)
+                break
+        else:
+            # collecting info for an open keyword
+            self.SaveKeyWordData( line)
+
+        # toss out the oldest
+        self.lineBuffer = self.lineBuffer[1:]
+    #-----------------------------------------------------------------------------------------------
+    def FinishBuffer( self):
+        """ This funciton makes sure the line buffer is empty to ensure all lines in the text
+            have been check for a match
+        """
+        bLen = len(self.lineBuffer)
+
+        while self.lineBuffer:
+            self.BufferCheck(self.lineCount+1, '')
+            self.lineCount += 1
+
+        self.lineCount -= bLen
+
+    #-----------------------------------------------------------------------------------------------
+    def Reset( self):
         """ Start a new check session """
         # keep the location each item is found at
         for i in self.items:
             i.Reset()
 
         self.activeItem = None
+        self.lineCount = 0
+        self.bufferSizeMet = False
 
     #-----------------------------------------------------------------------------------------------
     def InitKeyword( self, item, lx, line):
@@ -177,7 +271,7 @@ class FormatChecker:
 
         for keyword in item.keywords:
             item.keywords[keyword].line0 = lx
-            item.keywords[keyword].lines = [line]
+            item.keywords[keyword].lines = self.lineBuffer[:item.span]
             self.activeItem = item
 
     #-----------------------------------------------------------------------------------------------
@@ -193,33 +287,6 @@ class FormatChecker:
             All items present
             Item Sequence is as expected
         """
-        # verify all the items offsets were met
-        for ix, item in enumerate( self.items):
-            offset = item.span
-            index = item.index
-            x1 = ix - 1
-            # if we have positional info and we found the line
-            if offset != -1 and index != -1:
-                if (self.items[x1].index + offset) != index:
-                    # positional error
-                    severity = 'Error'
-                    violationId = errMsg + '-Position'
-                    linePos = index
-                    delta = abs(index - self.items[x1].index)
-                    desc = '%s <%s> [%d]\nposition relative to\n<%s> [%d]' % (checkDesc,
-                                                                              item.raw,
-                                                                              ix,self.items[x1].raw, x1)
-                    msgStr = "A: <%s>[%d]\nis not %d line%s after\nB: <%s>[%d]\nLine Delta(A:%d/B:%d): %d"
-                    details = msgStr % (
-                        item.raw, ix,
-                        offset,
-                        '' if offset == 1 else 's',
-                        self.items[x1].raw, x1,
-                        index, self.items[x1].index,
-                        delta)
-                    db.Insert(rpfn, func, severity, violationId, desc,
-                              details, linePos, self.detector, self.updateTime)
-
         # verify all the items where present and in the right order
         found = []
         for ix,item in enumerate(self.items):
@@ -229,8 +296,9 @@ class FormatChecker:
                 severity = 'Error'
                 violationId = errMsg + '-MissingField'
                 lineMis = lineNum
-                desc = '%s <%s>[%d] missing in\n<%s>' % (checkDesc, item.raw, ix, func )
-                details = '<%s>[%d] not found in %d possible lines' % (item.raw, ix, self.lineCount)
+                rawText = item.JoinRaw()
+                desc = '%s\n%s[%d]\nmissing in %s' % (checkDesc, rawText, ix, func )
+                details = '%s[%d]\nnot found in %d possible lines' % (rawText, ix, self.lineCount)
                 db.Insert(rpfn, func, severity, violationId, desc,
                           details, lineMis, self.detector, self.updateTime)
 
@@ -258,12 +326,13 @@ class FormatChecker:
                 actPc = '%d/%d' % (apx, len(ordSave))
 
                 # header field order
-                severity = 'Error'
+                severity = 'Warning'
                 violationId = errMsg + '-Seq'
                 lineSeq = item.index
-                desc = '%s Sequence Error\n<%s>[%d]' % (checkDesc, item.raw, ix)
-                msgStr = '<%s>[%d]\nexpected position %s found in position %s (line %d)'
-                details = msgStr % (item.raw, ix, expPc, actPc, item.index)
+                rawText = item.JoinRaw()
+                desc = '%s Sequence Error\n%s[%d]' % (checkDesc, rawText, ix)
+                msgStr = '%s[%d]\nexpected position %s found in position %s (line %d)'
+                details = msgStr % (rawText, ix, expPc, actPc, item.index)
                 db.Insert(rpfn, func, severity, violationId, desc,
                           details, lineSeq, self.detector, self.updateTime)
             else:
@@ -280,7 +349,7 @@ if __name__ == '__main__':
     pf = PF.ProjectFile(projFile)
     vDb = ViolationDb.ViolationDb( pf.paths[PF.ePathProject])
 
-    fpfn = pf.FullPathName( 'AircraftConfigMgr.c')
+    fpfn = pf.FullPathName( 'Cycle.c')
     if fpfn:
         fpfn = fpfn[0]
 
@@ -296,7 +365,12 @@ if __name__ == '__main__':
         updateTime = datetime.datetime.today()
 
         fc = FormatChecker( 'test', updateTime, fileDescLines, rawDescLines)
-        fc.Check( lines)
+        for x,l in enumerate(lines):
+            fc.CheckLine(x,l)
+
+        fc.FinishBuffer()
+
+        #fc.Check( lines)
 
         rpfn, title = pf.RelativePathName( fpfn)
 

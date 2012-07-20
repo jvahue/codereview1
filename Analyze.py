@@ -74,11 +74,13 @@ class Analyzer:
         self.status ='Tool Project Creation Complete - Start Analysis %s' % start
 
         # create the tool analyzers
-        pcl = PcLint.PcLint( self.projFile)
-        u4co = u4c.U4c( self.projFile)
+        pcl = PcLint.PcLint( self.projFile, True)
+        u4co = u4c.U4c( self.projFile, True)
 
         if fullAnalysis:
-            if u4co.IsReadyToAnalyze():
+            # check if we can open the DB and stop U4c if running
+            r1 = u4co.IsReadyToAnalyze(True)
+            if not r1 or u4co.IsReadyToAnalyze():
                 u4cThread = ThreadSignal( u4co.RunToolAsProcess, u4co)
                 pclThread = ThreadSignal( pcl.RunToolAsProcess, pcl)
 
@@ -86,13 +88,14 @@ class Analyzer:
                 pclThread.Go()
                 while u4cThread.active or pclThread.active:
                     pcl.abortRequest = self.abortRequest
-                    u4co.classRef.abortRequest = self.abortRequest
+                    u4co.abortRequest = self.abortRequest
 
                     time.sleep(1)
                     timeNow = DateTime.DateTime.today()
                     timeNow.ShowMs(False)
-                    self.status = '%s: PcLint: %s%% - U4C: %s%%              ' % (
-                        timeNow, pcl.statusMsg, u4co.statusMsg)
+                    abortMsg = '[ABORT PENDING]' if self.abortRequest else ''
+                    self.status = '%s: PcLint: %s%% - U4C: %s%% %s              ' % (
+                        timeNow, pcl.statusMsg, u4co.statusMsg, abortMsg)
                     if verbose:
                         print((' '*100)+'\r', end='') # clear the line
                         print(self.status+'\r', end='')
@@ -113,14 +116,16 @@ class Analyzer:
                 time.sleep(1)
                 timeNow = DateTime.DateTime.today()
                 timeNow.ShowMs(False)
-                self.status = '%s: PcLint: %s%% - U4C: %s%%              ' % (
-                    timeNow, pcl.statusMsg, u4co.statusMsg)
+                abortMsg = '[ABORT PENDING]' if self.abortRequest else ''
+                self.status = '%s: PcLint: %s%% - U4C: %s%% %s              ' % (
+                    timeNow, pcl.statusMsg, u4co.statusMsg, abortMsg)
                 if verbose:
                     print((' '*100)+'\r', end='') #clear the line
                     print(self.status+'\r', end='')
 
         end = datetime.datetime.today()
-        self.status += '\n\nAnalysis Completed in %s' % (end - start)
+        abortMsg = ' aborted. ' if self.abortRequest else ' '
+        self.status += '\n\nAnalysis%sCompleted in %s' % (abortMsg, end - start)
 
         m1 = pcl.ShowRunStats()
         m2 = u4co.ShowRunStats()

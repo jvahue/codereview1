@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>855</width>
+    <width>954</width>
     <height>682</height>
    </rect>
   </property>
@@ -54,12 +54,17 @@
           <property name="font">
            <font>
             <family>Cambria</family>
-            <pointsize>12</pointsize>
-            <italic>true</italic>
+            <pointsize>14</pointsize>
+            <weight>75</weight>
+            <italic>false</italic>
+            <bold>true</bold>
            </font>
           </property>
           <property name="text">
            <string>Code Review Tool</string>
+          </property>
+          <property name="margin">
+           <number>2</number>
           </property>
          </widget>
         </item>
@@ -192,6 +197,15 @@
               <layout class="QHBoxLayout" name="horizontalLayout_6">
                <item>
                 <widget class="QTextEdit" name="toolOutput">
+                 <property name="font">
+                  <font>
+                   <family>Arial</family>
+                   <pointsize>9</pointsize>
+                   <weight>50</weight>
+                   <italic>false</italic>
+                   <bold>false</bold>
+                  </font>
+                 </property>
                  <property name="readOnly">
                   <bool>true</bool>
                  </property>
@@ -200,34 +214,21 @@
                <item>
                 <layout class="QVBoxLayout" name="verticalLayout_5">
                  <item>
-                  <layout class="QVBoxLayout" name="verticalLayout_4">
-                   <item>
-                    <widget class="QPushButton" name="pushButton_RunAnalysis">
-                     <property name="maximumSize">
-                      <size>
-                       <width>81</width>
-                       <height>31</height>
-                      </size>
-                     </property>
-                     <property name="text">
-                      <string>Run Analysis</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QPushButton" name="pushButtonAbortAnalysis">
-                     <property name="maximumSize">
-                      <size>
-                       <width>81</width>
-                       <height>31</height>
-                      </size>
-                     </property>
-                     <property name="text">
-                      <string>Abort Analysis</string>
-                     </property>
-                    </widget>
-                   </item>
-                  </layout>
+                  <layout class="QVBoxLayout" name="verticalLayout_4"/>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="pushButton_RunAnalysis">
+                   <property name="text">
+                    <string>Run Analysis</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="pushButtonAbortAnalysis">
+                   <property name="text">
+                    <string>Abort Analysis</string>
+                   </property>
+                  </widget>
                  </item>
                  <item>
                   <spacer name="verticalSpacer_3">
@@ -241,6 +242,27 @@
                     </size>
                    </property>
                   </spacer>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="showPcLintLog">
+                   <property name="text">
+                    <string>Show PC-Lint Log</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="showKsLog">
+                   <property name="text">
+                    <string>Show Knowlogic Log</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="showToolOutput">
+                   <property name="text">
+                    <string>Show Analysis Output</string>
+                   </property>
+                  </widget>
                  </item>
                 </layout>
                </item>
@@ -668,6 +690,11 @@
                 <layout class="QVBoxLayout" name="verticalLayout_7">
                  <item>
                   <widget class="QTextEdit" name="textBrowser_Description">
+                   <property name="font">
+                    <font>
+                     <family>Courier New</family>
+                    </font>
+                   </property>
                    <property name="readOnly">
                     <bool>true</bool>
                    </property>
@@ -675,6 +702,11 @@
                  </item>
                  <item>
                   <widget class="QTextEdit" name="textBrowser_Details">
+                   <property name="font">
+                    <font>
+                     <family>Courier New</family>
+                    </font>
+                   </property>
                    <property name="readOnly">
                     <bool>true</bool>
                    </property>

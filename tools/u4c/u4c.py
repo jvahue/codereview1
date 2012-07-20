@@ -17,11 +17,14 @@ import copy
 import datetime
 import os
 import re
+import subprocess
 
 #---------------------------------------------------------------------------------------------------
 # Third Party Modules
 #---------------------------------------------------------------------------------------------------
 import understand
+
+from PySide.QtCore import *
 
 #---------------------------------------------------------------------------------------------------
 # Knowlogic Modules
@@ -136,7 +139,7 @@ class U4cSetup( ToolSetup):
 
 #---------------------------------------------------------------------------------------------------
 class U4c( ToolManager):
-    def __init__(self, projFile, verbose=False):
+    def __init__(self, projFile, isToolRun=False):
         assert( isinstance( projFile, PF.ProjectFile))
 
         self.projFile = projFile
@@ -144,11 +147,9 @@ class U4c( ToolManager):
 
         self.projToolRoot = os.path.join( self.projRoot, eToolRoot)
 
-        ToolManager.__init__(self, projFile, eDbDetectId, self.projToolRoot)
+        ToolManager.__init__(self, projFile, eDbDetectId, self.projToolRoot, isToolRun)
 
         self.dbName = os.path.join( self.projToolRoot, eDbName)
-
-        self.verbose = verbose
 
         # this holds all the file/function info data
         self.fileFuncInfo = {}
@@ -156,7 +157,7 @@ class U4c( ToolManager):
         self.fileKeywordData = {}
 
     #-----------------------------------------------------------------------------------------------
-    def IsReadyToAnalyze(self):
+    def IsReadyToAnalyze(self, kill=False):
         """ we are about to create the db and put stuff in it. Make sure it is not locked by some
             with U4c GUI open
         """
@@ -168,8 +169,15 @@ class U4c( ToolManager):
             status = True
         except OSError:
             status = False
+            if kill:
+                self.KillU4c()
 
         return status
+
+    #-----------------------------------------------------------------------------------------------
+    def KillU4c(self):
+        proc = subprocess.Popen( 'taskkill /im understand.exe /f')
+        proc.wait()
 
     #-----------------------------------------------------------------------------------------------
     def RunToolAsProcess(self):
@@ -213,9 +221,13 @@ class U4c( ToolManager):
 
         self.LoadViolations()
 
-        if line == "Analyze Completed (Errors:0 Warnings:0)":
+        parseOk = line == "Analyze Completed (Errors:0 Warnings:0)"
+        openOk = self.udb.isOpen
+
+        if parseOk and openOk:
             self.SetStatusMsg(100, 'Processing Complete')
-        else:
+        elif openOk:
+            # if we could not open it the reason is in the status so leave it.
             self.SetStatusMsg(100, 'Processing Error Occurred - see Log File')
 
     #-----------------------------------------------------------------------------------------------
@@ -239,36 +251,45 @@ class U4c( ToolManager):
 
         self.SetStatusMsg( msg = 'Open %s DB' % eDbDetectId)
         self.Sleep()
-        print('Open seeza me')
+
         self.udb = udb.U4cDb( self.dbName)
-        print('Opened by seeza me')
+        if not self.udb.isOpen:
+            self.KillU4c()
+            self.udb = udb.U4cDb( self.dbName)
 
-        self.SetStatusMsg( msg = 'Acquire DB Lock')
-        try:
-            self.projFile.dbLock.acquire()
+        if self.udb.isOpen:
+            self.SetStatusMsg( msg = 'Acquire DB Lock')
+            try:
+                self.projFile.dbLock.acquire()
 
-            tasks = (
-                self.CheckMetrics,
-                self.CheckNaming,
-                self.CheckLanguageRestrictions,
-                self.CheckFormats,
-                self.CheckBaseTypes
-                )
+                tasks = (
+                    self.CheckMetrics,
+                    self.CheckNaming,
+                    self.CheckLanguageRestrictions,
+                    self.CheckFormats,
+                    self.CheckBaseTypes
+                    )
 
-            step = 1
-            totalTasks = len( tasks)
-            for t in tasks:
-                t(step,totalTasks)
-                step += 1
+                step = 1
+                totalTasks = len( tasks)
+                for t in tasks:
+                    t(step,totalTasks)
+                    step += 1
 
-            self.insertDeleted = self.vDb.MarkNotReported( self.toolName, self.updateTime)
-            self.unanalyzed = self.vDb.Unanalyzed( self.toolName)
+                    if self.abortRequest:
+                        break
 
-        except:
-            raise
-        finally:
-            self.projFile.dbLock.release()
-            pass
+                if not self.abortRequest:
+                    self.insertDeleted = self.vDb.MarkNotReported( self.toolName, self.updateTime)
+                    self.unanalyzed = self.vDb.Unanalyzed( self.toolName)
+
+            except:
+                raise
+            finally:
+                self.projFile.dbLock.release()
+                pass
+        else:
+            self.SetStatusMsg( 100, msg = 'Processing Error (see Log)\nU4C DB Open Error: %s' % self.udb.status)
 
     #-----------------------------------------------------------------------------------------------
     def CheckMetrics(self,step,totalTasks):
@@ -280,6 +301,9 @@ class U4c( ToolManager):
         pctCtr = 0
         totalFiles = len(self.srcFiles)
         for fpfn in self.srcFiles:
+            if self.abortRequest:
+                break
+
             pctCtr += 1
             self.SetStatusMsg( (pctCtr/float(totalFiles)*100))
 
@@ -310,7 +334,6 @@ class U4c( ToolManager):
 
             # check the file structure against the specified layout
             #self.CheckFileFormat( fpfn, lines)
-
             # check the function metrics
             self.CheckFunctionMetrics( rpfn, funcInfo)
 
@@ -455,7 +478,7 @@ class U4c( ToolManager):
                         for ds,de in data:
                             if u4cLine >= ds and u4cLine <= de:
                                 func = data[(ds,de)]
-                    severity = 'Warning'
+                    severity = 'Error'
                     violationId = 'Misc-TAB'
                     desc = 'Line contains TAB(s) %s line %d' % (fn, lx)
                     details = '%s' % (txt.strip())
@@ -465,7 +488,7 @@ class U4c( ToolManager):
         #------------------------------------------------- report and file format errors
         # save this info incase we need to do some work for the three eLocal/Gloabl above
         self.fileKeywordData[rpfn] = copy.deepcopy(fc.items)
-        fc.ReportErrors( self.vDb, rpfn, -1, 'File Format', 'N/A', 'FileFmt')
+        fc.ReportErrors( self.vDb, rpfn, -1, 'File Format', rpfn, 'FileFmt')
 
         # check for the filename being were it is supposed to be
         keyItems = fc.GetKeywordItems( eFileName)
@@ -489,7 +512,8 @@ class U4c( ToolManager):
             for item in keyItems:
                 keyInfo = item.keywords[eTheDescription]
                 text = '\n'.join(keyInfo.lines)
-                replaceTxt = item.raw.replace( eTheDescription, '').strip()
+                rawText = item.JoinRaw()
+                replaceTxt = rawText.replace( eTheDescription, '').strip()
                 text = text.replace( replaceTxt, '').strip()
                 if not text:
                     # no mention of file name
@@ -552,6 +576,9 @@ class U4c( ToolManager):
         msg = 'Check %s Naming for %d items [Step %.2f of %d]'%(longname, totalItems, step, totalTasks)
         self.SetStatusMsg(msg = msg)
         for item in theItems:
+            if self.abortRequest:
+                break
+
             pctCtr += 1
             pct = (float(pctCtr)/totalItems) * 100
             self.SetStatusMsg( pct)
@@ -645,6 +672,9 @@ class U4c( ToolManager):
 
         # excluded functions
         for item in xFuncs:
+            if self.abortRequest:
+                break
+
             pctCtr += 1
             pct = (float(pctCtr)/totalItems) * 100.0
             self.SetStatusMsg( pct)
@@ -734,6 +764,9 @@ class U4c( ToolManager):
         pctCtr = 0
         totalFiles = len(self.srcFiles)
         for i in self.srcFiles:
+            if self.abortRequest:
+                break
+
             pctCtr += 1
             self.SetStatusMsg( (pctCtr/float(totalFiles)*100))
 
@@ -760,7 +793,7 @@ class U4c( ToolManager):
                     fc.ReportErrors( self.vDb, rpfn, lineNum, 'Function Header',
                                      func, 'FuncHdr')
                 else:
-                    # No functin header
+                    # No function header
                     severity = 'Error'
                     violationId = 'FuncHdr-Missing'
                     desc = 'Function Header %s is missing' % (func)
@@ -809,7 +842,8 @@ class U4c( ToolManager):
                 keyItems = fc.GetKeywordItems(eReturnType)
                 for item in keyItems:
                     searchIn = '\n'.join(item.keywords[eReturnType].lines)
-                    rtnLineDesc = item.raw.replace(eReturnType, '')
+                    rawText = item.JoinRaw()
+                    rtnLineDesc = rawText.replace(eReturnType, '')
                     searchIn = searchIn.replace( rtnLineDesc, '').strip()
                     if not searchIn and fi[udb.eFiReturnType] != 'void':
                         severity = 'Error'
@@ -838,6 +872,9 @@ class U4c( ToolManager):
         self.SetStatusMsg(msg = 'Check Base Types [Step %d of %d]'%(step,totalTasks))
         letter0 = None
         for obj in allObjs:
+            if self.abortRequest:
+                break
+
             pctCtr += 1
             pct = (float(pctCtr)/totalObjs) * 100
             self.SetStatusMsg( pct)

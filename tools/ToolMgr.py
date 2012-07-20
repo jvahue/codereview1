@@ -72,7 +72,7 @@ class ToolManager:
     I/F defintion for all tool managers
     """
     #-----------------------------------------------------------------------------------------------
-    def __init__(self, projFile, toolName, toolDir):
+    def __init__(self, projFile, toolName, toolDir, isToolRun=False):
         """ Initialize the base class """
         assert(isinstance( projFile, PF.ProjectFile))
 
@@ -95,8 +95,11 @@ class ToolManager:
         self.abortRequest = False
 
         # open a log file for the tool
-        logName = os.path.join( toolDir, '%s.log' % toolName)
-        self.log = open( logName, 'w')
+        self.logName = os.path.join( toolDir, '%s.log' % toolName)
+        if isToolRun:
+            self.log = open( self.logName, 'w')
+        else:
+            self.log = None
 
         self.SetStatusMsg( msg = 'Inactive')
 
@@ -127,32 +130,35 @@ class ToolManager:
     def LoadViolations(self):
         """ Load the DB with violations
         """
-        # create a connections to the Violation DB
-        self.vDb = VDB.ViolationDb( self.projFile.paths[PF.ePathProject])
-        self.vDb.DebugState( 1)
+        if not self.abortRequest:
+            # create a connections to the Violation DB
+            self.vDb = VDB.ViolationDb( self.projFile.paths[PF.ePathProject])
+            self.vDb.DebugState( 1)
 
-        try:
-            # the actual work of loading the DB
-            self.SpecializedLoad()
-        except:
+            try:
+                # the actual work of loading the DB
+                self.SpecializedLoad()
+            except:
+                self.vDb.Close()
+                raise
+
+            self.GetUpdateStats()
+
+            # we have to close the DB in the thread it was opened in
             self.vDb.Close()
-            raise
-
-        self.GetUpdateStats()
-
-        # we have to close the DB in the thread it was opened in
-        self.vDb.Close()
 
     #-----------------------------------------------------------------------------------------------
     def Log(self, msg):
-        timeNow = DateTime.DateTime.today()
-        if msg[-1] != '\n':
-            msg += '\n'
-        self.log.write( '%s: %s' % (timeNow, msg))
+        if self.log:
+            timeNow = DateTime.DateTime.today()
+            if msg[-1] != '\n':
+                msg += '\n'
+            self.log.write( '%s: %s' % (timeNow, msg))
 
     #-----------------------------------------------------------------------------------------------
     def LogFlush(self):
-        self.log.flush()
+        if self.log:
+            self.log.flush()
 
     #-----------------------------------------------------------------------------------------------
     def SpecializedLoad(self):
@@ -197,6 +203,10 @@ class ToolManager:
         self.insertSelErr = self.vDb.insertSelErr
         self.insertInErr = self.vDb.insertInErr
         self.insertUpErr = self.vDb.insertUpErr
+
+    #-----------------------------------------------------------------------------------------------
+    def GetLogName(self):
+        return self.logName
 
     #-----------------------------------------------------------------------------------------------
     def ShowRunStats(self):

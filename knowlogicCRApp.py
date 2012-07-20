@@ -27,16 +27,16 @@ import sqlite3
 #---------------------------------------------------------------------------------------------------
 # Knowlogic Modules
 #---------------------------------------------------------------------------------------------------
-from Analyze import Analyzer
-from crappcustomiddialog import Ui_CRAppCustomIdDialog
-from crmainwindow import Ui_MainWindow
-
 from utils import DateTime, util
 from utils.DB.database import Query, GetAll, GetCursor
 from utils.DB.sqlLite.database import DB_SQLite
 
+from tools.pcLint.PcLint import PcLint
 from tools.u4c.u4c import U4c
 
+from Analyze import Analyzer
+from crappcustomiddialog import Ui_CRAppCustomIdDialog
+from crmainwindow import Ui_MainWindow
 from ViolationDb import eDbName, eDbRoot
 
 import ProjFile as PF
@@ -45,6 +45,9 @@ import ProjFile as PF
 # Data
 #---------------------------------------------------------------------------------------------------
 eKsCrIni = 'KsCr.ini'
+eLogPc = 'PcLint'
+eLogKs = 'Knowlogic'
+eLogTool = 'Tool Output'
 
 #---------------------------------------------------------------------------------------------------
 # Functions
@@ -122,22 +125,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.programOpenedU4c = False
         self.analysisActive = False
 
+        self.projFile = None
+        self.toolRunOutput = ''
+
         self.ResetProject()
-
-        #self.fnameFilter    =  dict(name = 'fName', value = '', comboBoxTitle = 'Select Filename')
-        #self.functionFilter =  dict(name = 'function', value = '', comboBoxTitle = 'Select Function')
-        #self.severityFilter =  dict(name = 'severityFilter', value = '', comboBoxTitle = 'Select Severity')
-        #self.vIdFilter      =  dict(name = 'vIdFilter', value = '', comboBoxTitle = 'Select Violation Id')
-        #self.detByFilter    =  dict(name = 'detByFilter', value = '', comboBoxTitle = 'Select Detected By')
-        #self.statusFilter   =  dict(name = 'statusFilter', value = '', comboBoxTitle = 'Select Status')
-
-        """ Keep list of filters to iterate for building sql statement """
-        #self.filterList = [self.fnameFilter,
-        #                   self.functionFilter,
-        #                   self.severityFilter,
-        #                   self.vIdFilter,
-        #                   self.detByFilter,
-        #                   self.statusFilter]
 
         #------------------------------------------------------------------------------
         # Handle Tabs of TabWidget
@@ -147,13 +138,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         #------------------------------------------------------------------------------
         # Handle Config Tab Data
         #------------------------------------------------------------------------------
-        self.lineEdit_userName.editingFinished.connect(self.lineEditUserNameChanged)
+        self.projectFileNameEditor.currentIndexChanged.connect(self.NewProjFile)
         self.pushButton_pFileBrowse.clicked.connect(self.SelectProjectFile)
+
+        self.lineEdit_userName.editingFinished.connect(self.lineEditUserNameChanged)
+
         self.pushButton_RunAnalysis.clicked.connect(self.RunAnalysis)
         self.pushButtonAbortAnalysis.clicked.connect(self.AbortAnalysis)
-        #self.pushButton_Statistics.clicked.connect(self.DisplayViolationStatistics)
-
-        self.projectFileNameEditor.currentIndexChanged.connect(self.NewProjFile)
+        self.showPcLintLog.clicked.connect(lambda x=eLogPc,fx=self.ShowLog: fx(x))
+        self.showKsLog.clicked.connect(lambda x=eLogKs,fx=self.ShowLog: fx(x))
+        self.showToolOutput.clicked.connect(lambda x=eLogTool,fx=self.ShowLog: fx(x))
 
         #------------------------------------------------------------------------------
         # Set up the filter comboboxes and the Apply Filter pushbutton
@@ -281,6 +275,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.DisplayViolationsData()
 
             else:
+                self.projFile = None
                 msg = '\n'.join( self.projFile.errors)
                 self.CrErrPopup( msg)
 
@@ -305,12 +300,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         msgBox.setWindowTitle("Knowlogic Code Review")
         msgBox.setText(errText)
         msgBox.exec_()
-
-    #-----------------------------------------------------------------------------------------------
-    def DisplayCRAppCustomIdDialog(self):
-        dlg = CRAppCustomIdDialog()
-        dlg.setWindowTitle("Knowlogic Custom Filter")
-        return(dlg)
 
     #-----------------------------------------------------------------------------------------------
     def CurrentTabChanged(self):
@@ -348,8 +337,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     rtn = QMessageBox.question( self, 'Understand Open',
                                                 msg, QMessageBox.Yes, QMessageBox.No)
                     if rtn == QMessageBox.Yes:
-                        proc = subprocess.Popen( 'taskkill /im understand.exe /f')
-                        proc.wait()
+                        u4co.IsReadyToAnalyze( True)
                         openIt = True
                     else:
                         openIt = False
@@ -442,6 +430,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """
         if not self.analysisActive:
             self.analysisActive = True
+
+            # refresh the project file incase they changed anything
+            # TODO: remove this when we have Cfg file editing
+            self.ResetProject( self.pFullFilename)
+
             analyzer = Analyzer(self.pFullFilename)
 
             if analyzer.isValid:
@@ -451,6 +444,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.timer = QtCore.QTimer(self)
                 self.connect(self.timer, QtCore.SIGNAL("timeout()"), self.AnalysisUpdate)
                 self.timer.start(500)
+                self.toolRunOutput = ''
+                self.startAnalysis = DateTime.DateTime.today()
             else:
                 self.CrErrPopup(analyzer.status)
                 self.analysisActive = False
@@ -468,9 +463,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             # use the project file for status display while it's running
             self.toolOutput.setText(sts)
 
+            nowIs = DateTime.DateTime.today()
+            elapsed = nowIs - self.startAnalysis
+            elapsed.ShowMs( False)
+            self.pushButton_RunAnalysis.setText('%s' % elapsed)
         else:
             sts += '\n\nDone.'
             self.toolOutput.setText(sts)
+            self.pushButton_RunAnalysis.setText('Run Analysis')
+
+            # save this for recall
+            self.toolRunOutput = sts
 
             # kill the timer
             self.timer.stop()
@@ -482,6 +485,28 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.DisplayViolationStatistics()
 
             self.analysisActive = False
+
+    #-----------------------------------------------------------------------------------------------
+    def ShowLog( self, logId):
+        if self.projFile:
+            lines = []
+            logName = ''
+            if logId == eLogPc:
+                pcl = PcLint( self.projFile)
+                logName = pcl.GetLogName()
+            elif logId == eLogKs:
+                u4co = U4c(self.projFile)
+                logName = u4co.GetLogName()
+            elif logId == eLogTool:
+                lines = [i+'\n' for i in self.toolRunOutput.split('\n')]
+
+            if logName and os.path.isfile( logName):
+                f = open(logName, 'r')
+                lines = f.readlines()
+                f.close()
+
+            displayLines = ['%s Output contains %d lines\n' % (logId, len(lines))] + lines
+            self.toolOutput.setText( ''.join( displayLines))
 
     #-----------------------------------------------------------------------------------------------
     def FillFilters( self, index=-1, name='', reset=False):

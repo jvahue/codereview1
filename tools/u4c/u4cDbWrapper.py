@@ -49,17 +49,29 @@ class U4cDb:
     """
     #-----------------------------------------------------------------------------------------------
     def __init__(self, name):
-        try:
-            # open the named DB
-            self.db = understand.open( name)
-            self.status = 'DB Open'
-            self.isOpen = True
-        except understand.UnderstandError as e:
-            self.status = e.msg
-            self.isOpen = False
+        # two tries to open the DB
+        self.db = None
+        tryCount = 0
+        while self.db is None and tryCount < 3:
+            tryCount += 1
+            try:
+                # open the named DB
+                self.db = understand.open( name)
+                self.status = 'DB Open'
+                self.isOpen = True
+            except understand.UnderstandError as e:
+                self.db = None
+                self.status = str(e)
+                self.isOpen = False
 
         # hold function info for all requested functions
         self.fileFuncInfo = {}
+
+    #-----------------------------------------------------------------------------------------------
+    def __del__(self):
+        """ delete the db connection """
+        if self.db:
+            del self.db
 
     #-----------------------------------------------------------------------------------------------
     def FindEnt(self, item):

@@ -164,14 +164,14 @@ class PcLintSetup( ToolSetup):
 
 #---------------------------------------------------------------------------------------------------
 class PcLint( ToolManager):
-    def __init__(self, projFile):
+    def __init__(self, projFile, isToolRun=False):
         assert( isinstance( projFile, PF.ProjectFile))
         self.projFile = projFile
         self.projRoot = projFile.paths['ProjectRoot']
 
         self.projToolRoot = os.path.join( self.projRoot, eToolRoot)
 
-        ToolManager.__init__(self, projFile, eDbDetectId, self.projToolRoot)
+        ToolManager.__init__(self, projFile, eDbDetectId, self.projToolRoot, isToolRun)
 
     #-----------------------------------------------------------------------------------------------
     def RunToolAsProcess(self):
@@ -192,28 +192,28 @@ class PcLint( ToolManager):
         ToolManager.RunToolAsProcess(self)
 
         # monitor PcLint processing
+        moduleList = []
         fileCount = 0
         self.SetStatusMsg( msg = 'Analyzing Files')
-        output = ''
         while self.AnalyzeActive():
             for line in self.toolProcess.stdout:
                 line = line.decode(encoding='windows-1252')
                 self.Log( line)
                 self.LogFlush()
-                output += line
                 if line.find( '--- Module:') != -1:
-                    fileCount += 1
-                    v = ((fileCount/float(ps.fileCount))*100.0)
-                    self.SetStatusMsg( v)
+                    mName = line.replace('--- Module:', '').strip()
+                    if mName not in moduleList:
+                        moduleList.append(mName)
+                        fileCount += 1
+                        v = ((fileCount/float(ps.fileCount))*100.0)
+                        self.SetStatusMsg( v)
 
-        self.SetStatusMsg( 100)
-
-        self.LoadViolations()
-
-        if fileCount != ps.fileCount:
-            self.SetStatusMsg(100, 'Processing Error Occurred - see DB')
-        else:
+        if fileCount == ps.fileCount:
+            self.SetStatusMsg( 100)
+            self.LoadViolations()
             self.SetStatusMsg(100, 'Processing Complete')
+        else:
+            self.SetStatusMsg(100, 'Processing Error (see log)')
 
     #-----------------------------------------------------------------------------------------------
     def SpecializedLoad(self):
@@ -344,6 +344,9 @@ class PcLint( ToolManager):
             commitSize = 10
             nextCommit = commitSize
             for filename,func,line,severity,violationId,desc,details in lintLoader.reducedData:
+                if self.abortRequest:
+                    break
+
                 self.vDb.Insert( filename, func, severity, violationId,
                                  desc, details, line, eDbDetectId, self.updateTime)
                 pctCtr += 1
@@ -353,8 +356,9 @@ class PcLint( ToolManager):
                     self.vDb.Commit()
                     nextCommit += commitSize
 
-            self.insertDeleted = self.vDb.MarkNotReported( self.toolName, self.updateTime)
-            self.unanalyzed = self.vDb.Unanalyzed( self.toolName)
+            if not self.abortRequest:
+                self.insertDeleted = self.vDb.MarkNotReported( self.toolName, self.updateTime)
+                self.unanalyzed = self.vDb.Unanalyzed( self.toolName)
 
         except:
             raise
