@@ -275,8 +275,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.DisplayViolationsData()
 
             else:
-                self.projFile = None
                 msg = '\n'.join( self.projFile.errors)
+                self.projFile = None
                 self.CrErrPopup( msg)
 
     #-----------------------------------------------------------------------------------------------
