@@ -13,6 +13,7 @@ import time
 #---------------------------------------------------------------------------------------------------
 # Third Party Modules
 #---------------------------------------------------------------------------------------------------
+import wingdbstub
 
 #---------------------------------------------------------------------------------------------------
 # Knowlogic Modules
@@ -58,7 +59,7 @@ class Analyzer:
             self.isValid = False
 
     #-----------------------------------------------------------------------------------------------
-    def Analyze( self, fullAnalysis = True, verbose = False):
+    def Analyze( self, fullAnalysis = True, verbose = True):
         """ Analyze the project file with the tools selected
         """
         status = True
@@ -94,7 +95,7 @@ class Analyzer:
                     timeNow = DateTime.DateTime.today()
                     timeNow.ShowMs(False)
                     abortMsg = '[ABORT PENDING]' if self.abortRequest else ''
-                    self.status = '%s: PcLint: %s%% - U4C: %s%% %s              ' % (
+                    self.status = '^%s: PcLint: %s%% - U4C: %s%% %s              ' % (
                         timeNow, pcl.statusMsg, u4co.statusMsg, abortMsg)
                     if verbose:
                         print((' '*100)+'\r', end='') # clear the line
@@ -117,7 +118,7 @@ class Analyzer:
                 timeNow = DateTime.DateTime.today()
                 timeNow.ShowMs(False)
                 abortMsg = '[ABORT PENDING]' if self.abortRequest else ''
-                self.status = '%s: PcLint: %s%% - U4C: %s%% %s              ' % (
+                self.status = '^%s: PcLint: %s%% - U4C: %s%% %s              ' % (
                     timeNow, pcl.statusMsg, u4co.statusMsg, abortMsg)
                 if verbose:
                     print((' '*100)+'\r', end='') #clear the line
@@ -141,28 +142,34 @@ class Analyzer:
 
 #===================================================================================================
 if __name__ == '__main__':
-    #jvDesk
-    #projFile = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ\G4.crp'
-    #projFile = r'C:\Knowlogic\tools\CR-Projs\Rypos\Rypos.crp'
+    import sys
+    if len(sys.argv) == 2:
+        projFile = sys.argv[1]
+        fullAnalysis = True
+    else:
+        #jvDesk
+        #projFile = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ\G4.crp'
+        #projFile = r'C:\Knowlogic\tools\CR-Projs\Rypos\Rypos.crp'
 
-    # PWC desk
-    projFile = r'L:\FAST II\control processor\CodeReview\G4.crp'
+        # PWC desk
+        projFile = r'L:\FAST II\control processor\CodeReview\G4.crp'
 
-    # jvLaptop
-    #projFile = r'D:\Knowlogic\Tools\CR-Projs\zzzCodereviewPROJ\G4.crp'
+        # jvLaptop
+        #projFile = r'D:\Knowlogic\Tools\CR-Projs\zzzCodereviewPROJ\G4.crp'
 
-    projFile = input( 'Enter the project File: ')
-    if projFile[0] == '"' and projFile[-1] == '"':
-        projFile = projFile[1:-1]
+        projFile = input( 'Enter the project File: ')
+        if projFile[0] == '"' and projFile[-1] == '"':
+            projFile = projFile[1:-1]
 
-    analyzer = Analyzer(projFile)
-
-    if analyzer.isValid:
         fullAnalysis = input( 'Do you want to analyze the source code (Y/n): ')
         if fullAnalysis and fullAnalysis.lower()[0] == 'n':
             fullAnalysis = False
         else:
             fullAnalysis = True
+
+    analyzer = Analyzer(projFile)
+
+    if analyzer.isValid:
         analyzer.Analyze(fullAnalysis)
     else:
         print( 'Errors:\n%s' % '\n'.join(analyzer.projFile.errors))

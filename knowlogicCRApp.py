@@ -438,6 +438,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             analyzer = Analyzer(self.pFullFilename)
 
             if analyzer.isValid:
+
                 self.analyzerThread = util.ThreadSignal( analyzer.Analyze, analyzer)
                 self.analyzerThread.Go()
 
@@ -485,6 +486,85 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.DisplayViolationStatistics()
 
             self.analysisActive = False
+
+    #-----------------------------------------------------------------------------------------------
+    def RunAnalysis1(self):
+        if not self.analysisActive:
+            self.analysisActive = True
+            self.toolOutputText = []
+            cwd = os.getcwd()
+            cmdPath = os.path.join( cwd, 'Analyze.py')
+            cmd = 'c:\python32\python.exe %s "%s"' % (cmdPath, self.pFullFilename)
+            rootDir = self.projFile.paths[PF.ePathProject]
+            self.analysisProcess = subprocess.Popen( cmd,
+                                                     bufsize=-1,
+                                                     cwd=rootDir,
+                                                     stderr=subprocess.STDOUT,
+                                                     stdout=subprocess.PIPE)
+
+            self.timer = QtCore.QTimer(self)
+            self.connect(self.timer, QtCore.SIGNAL("timeout()"), self.AnalysisUpdate)
+            self.timer.start(500)
+            self.toolRunOutput = ''
+            self.startAnalysis = DateTime.DateTime.today()
+
+    #-----------------------------------------------------------------------------------------------
+    def AnalysisUpdate1( self):
+        for line in self.analysisProcess.stdout:
+            line = line.decode(encoding='windows-1252').strip()
+            print(line)
+
+        if self.AnalyzeActive():
+            for line in self.analysisProcess.stdout:
+                line = line.decode(encoding='windows-1252').strip()
+                if line.find( '^') == 0:
+                    self.toolOutputText = self.toolOutputText[:-1]
+
+                self.toolOutputText.append( line)
+
+                self.toolOutput.setText('\n'.join(self.toolOutputText))
+
+                nowIs = DateTime.DateTime.today()
+                elapsed = nowIs - self.startAnalysis
+                elapsed.ShowMs( False)
+                self.pushButton_RunAnalysis.setText('%s' % elapsed)
+
+        else:
+            self.toolOutputText.append(  '\n\nDone.')
+            sts = '\n'.join(self.toolOutputText)
+            self.toolOutput.setText(sts)
+            self.pushButton_RunAnalysis.setText('Run Analysis')
+
+            # save this for recall
+            self.toolRunOutput = sts
+
+            # kill the timer
+            self.timer.stop()
+
+            self.OpenDb()
+
+            # populate the display data
+            self.FillFilters( 0, '', True)
+            self.DisplayViolationStatistics()
+
+            self.analysisActive = False
+
+    #-----------------------------------------------------------------------------------------------
+    def AnalyzeActive(self):
+        """ is a review actively running
+        Note the sleep is to ensure if threads are getting active status they give up control
+        """
+        status = False
+        if self.analysisProcess is not None:
+            print('Analysis Process exists')
+            if self.analysisProcess.poll() is None:
+                status = True
+            else:
+                print( 'Analysis done')
+        else:
+            print('No analysis process')
+
+        return status
 
     #-----------------------------------------------------------------------------------------------
     def ShowLog( self, logId):
