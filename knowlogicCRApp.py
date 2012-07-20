@@ -429,13 +429,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """ Run the analysis in a thread so we can display its status
         """
         if not self.analysisActive:
-            self.analysisActive = True
-
             # refresh the project file incase they changed anything
             # TODO: remove this when we have Cfg file editing
             self.ResetProject( self.pFullFilename)
-
             analyzer = Analyzer(self.pFullFilename)
+            self.analysisActive = True # MUST come after ResetProject
 
             if analyzer.isValid:
                 self.analyzerThread = util.ThreadSignal( analyzer.Analyze, analyzer)

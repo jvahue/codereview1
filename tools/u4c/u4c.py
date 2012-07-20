@@ -485,6 +485,9 @@ class U4c( ToolManager):
                     self.vDb.Insert( rpfn, func, severity, violationId, desc,
                                      details, u4cLine, eDbDetectId, self.updateTime)
 
+        # check any lines remaining in the line buffer
+        fc.FinishBuffer()
+
         #------------------------------------------------- report and file format errors
         # save this info incase we need to do some work for the three eLocal/Gloabl above
         self.fileKeywordData[rpfn] = copy.deepcopy(fc.items)
