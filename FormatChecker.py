@@ -345,11 +345,11 @@ if __name__ == '__main__':
     import os
     import ViolationDb
 
-    projFile = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ\G4.crp'
+    projFile = r'C:\Users\P916214\Documents\Knowlogic\CodeReviewProj\FAST\G4.crp'
     pf = PF.ProjectFile(projFile)
     vDb = ViolationDb.ViolationDb( pf.paths[PF.ePathProject])
 
-    fpfn = pf.FullPathName( 'Cycle.c')
+    fpfn = pf.FullPathName( 'Event.c')
     if fpfn:
         fpfn = fpfn[0]
 
