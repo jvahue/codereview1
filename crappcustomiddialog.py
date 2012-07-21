@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'crappcustomiddialog.ui'
 #
-# Created: Fri Jul 20 20:54:52 2012
+# Created: Sat Jul 21 01:56:33 2012
 #      by: pyside-uic 0.2.13 running on PySide 1.1.0
 #
 # WARNING! All changes made in this file will be lost!

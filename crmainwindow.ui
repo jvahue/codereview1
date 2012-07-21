@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>954</width>
-    <height>705</height>
+    <width>855</width>
+    <height>655</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -39,7 +39,11 @@
            </font>
           </property>
           <property name="text">
-           <string>Knowlogic Software</string>
+           <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Cambria'; font-size:16pt; font-weight:600; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; color:#55007f;&quot;&gt;Knowlogic Software&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
          </widget>
         </item>
@@ -61,7 +65,11 @@
            </font>
           </property>
           <property name="text">
-           <string>Code Review Tool</string>
+           <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Cambria'; font-size:14pt; font-weight:600; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; color:#55007f;&quot;&gt;Code Review Tool&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="margin">
            <number>2</number>
@@ -178,6 +186,9 @@
                    <width>133</width>
                    <height>20</height>
                   </size>
+                 </property>
+                 <property name="focusPolicy">
+                  <enum>Qt::WheelFocus</enum>
                  </property>
                 </widget>
                </item>
@@ -643,12 +654,18 @@
                  <item>
                   <widget class="QLabel" name="label_Filename">
                    <property name="text">
-                    <string>Filename:</string>
+                    <string>File:</string>
                    </property>
                   </widget>
                  </item>
                  <item>
                   <widget class="QLineEdit" name="textBrowser_Filename">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                     <horstretch>11</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
                    <property name="readOnly">
                     <bool>true</bool>
                    </property>
@@ -663,8 +680,31 @@
                  </item>
                  <item>
                   <widget class="QLineEdit" name="textBrowser_Function">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                     <horstretch>6</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
                    <property name="readOnly">
                     <bool>true</bool>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="label_24">
+                   <property name="text">
+                    <string>Line:</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLineEdit" name="lineNumber">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                     <horstretch>2</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
                    </property>
                   </widget>
                  </item>
@@ -678,7 +718,7 @@
                  <item>
                   <widget class="QLabel" name="label_6">
                    <property name="text">
-                    <string>Error Severity:</string>
+                    <string>Severity:</string>
                    </property>
                   </widget>
                  </item>
@@ -692,7 +732,7 @@
                  <item>
                   <widget class="QLabel" name="label_Id">
                    <property name="text">
-                    <string>Violation Id:</string>
+                    <string>Violation:</string>
                    </property>
                   </widget>
                  </item>
@@ -717,6 +757,16 @@
                    </property>
                   </widget>
                  </item>
+                 <item>
+                  <widget class="QLabel" name="label_25">
+                   <property name="text">
+                    <string>Reported On:</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLineEdit" name="reportedOn"/>
+                 </item>
                 </layout>
                </item>
                <item>
@@ -726,6 +776,7 @@
                    <property name="font">
                     <font>
                      <family>Courier New</family>
+                     <pointsize>9</pointsize>
                     </font>
                    </property>
                    <property name="readOnly">
@@ -738,6 +789,7 @@
                    <property name="font">
                     <font>
                      <family>Courier New</family>
+                     <pointsize>9</pointsize>
                     </font>
                    </property>
                    <property name="readOnly">
@@ -749,6 +801,13 @@
                </item>
                <item>
                 <layout class="QHBoxLayout" name="horizontalLayout_13">
+                 <item>
+                  <widget class="QPushButton" name="pcLintPdf">
+                   <property name="text">
+                    <string>PC-Lint Manual</string>
+                   </property>
+                  </widget>
+                 </item>
                  <item>
                   <widget class="QScrollBar" name="horizontalScrollBar">
                    <property name="sizePolicy">
@@ -765,7 +824,7 @@
                  <item>
                   <widget class="QCheckBox" name="syncCode">
                    <property name="text">
-                    <string>Auto-Goto</string>
+                    <string>Auto-GoTo</string>
                    </property>
                   </widget>
                  </item>
@@ -832,7 +891,7 @@
                <item>
                 <widget class="QLabel" name="label_3">
                  <property name="text">
-                  <string>Previous Reviewer</string>
+                  <string>Previous Reviewer:</string>
                  </property>
                 </widget>
                </item>
@@ -852,7 +911,7 @@
                <item>
                 <widget class="QLabel" name="label_PrevDate">
                  <property name="text">
-                  <string>Previous Date</string>
+                  <string>Previous Date:</string>
                  </property>
                 </widget>
                </item>
@@ -872,7 +931,7 @@
                <item>
                 <widget class="QLabel" name="label_PrevStatus">
                  <property name="text">
-                  <string>Previous Status</string>
+                  <string>Previous Status:</string>
                  </property>
                 </widget>
                </item>
@@ -914,100 +973,113 @@
          <attribute name="title">
           <string>Project</string>
          </attribute>
-         <widget class="QWidget" name="">
-          <property name="geometry">
-           <rect>
-            <x>11</x>
-            <y>10</y>
-            <width>901</width>
-            <height>551</height>
-           </rect>
-          </property>
-          <layout class="QVBoxLayout" name="verticalLayout_17">
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_19">
-             <item>
-              <widget class="QLabel" name="label_23">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                 <horstretch>1</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="frameShadow">
-                <enum>QFrame::Raised</enum>
-               </property>
-               <property name="text">
-                <string>Project File Sections</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QComboBox" name="projFileSections">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                 <horstretch>7</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QCheckBox" name="enableProjEdit">
-               <property name="text">
-                <string>Enable Editing</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="saveConfig">
-               <property name="text">
-                <string>Save</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item>
-            <widget class="QPlainTextEdit" name="projFileEditor">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-               <horstretch>0</horstretch>
-               <verstretch>4</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="font">
-              <font>
-               <family>Courier New</family>
-               <pointsize>9</pointsize>
-              </font>
-             </property>
-             <property name="cursor" stdset="0">
-              <cursorShape>ArrowCursor</cursorShape>
-             </property>
-             <property name="readOnly">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QTextEdit" name="sectionTip">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-               <horstretch>0</horstretch>
-               <verstretch>1</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="textInteractionFlags">
-              <set>Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
+         <layout class="QVBoxLayout" name="verticalLayout_17">
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_19">
+            <item>
+             <widget class="QLabel" name="label_23">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <horstretch>1</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="frameShadow">
+               <enum>QFrame::Raised</enum>
+              </property>
+              <property name="text">
+               <string>Project File Sections</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="projFileSections">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                <horstretch>7</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="enableProjEdit">
+              <property name="text">
+               <string>Enable Editing</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="saveConfig">
+              <property name="text">
+               <string>Save</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_20">
+            <property name="spacing">
+             <number>5</number>
+            </property>
+            <item>
+             <widget class="QTreeView" name="treeView">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                <horstretch>2</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPlainTextEdit" name="projFileEditor">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                <horstretch>6</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="font">
+               <font>
+                <family>Courier New</family>
+                <pointsize>9</pointsize>
+               </font>
+              </property>
+              <property name="cursor" stdset="0">
+               <cursorShape>ArrowCursor</cursorShape>
+              </property>
+              <property name="readOnly">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QTextEdit" name="sectionTip">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>40</height>
+             </size>
+            </property>
+            <property name="textInteractionFlags">
+             <set>Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </widget>
         <widget class="QWidget" name="tab_Reports">
          <property name="toolTip">
@@ -1145,7 +1217,7 @@
     <enum>TopToolBarArea</enum>
    </attribute>
    <attribute name="toolBarBreak">
-    <bool>true</bool>
+    <bool>false</bool>
    </attribute>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
@@ -1158,6 +1230,74 @@
    <header>qtexteditclick.h</header>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>lineEdit_userName</tabstop>
+  <tabstop>tabWidget</tabstop>
+  <tabstop>projectFileNameEditor</tabstop>
+  <tabstop>pushButton_pFileBrowse</tabstop>
+  <tabstop>toolOutput</tabstop>
+  <tabstop>pushButton_RunAnalysis</tabstop>
+  <tabstop>pushButtonAbortAnalysis</tabstop>
+  <tabstop>showPcLintLog</tabstop>
+  <tabstop>showKsLog</tabstop>
+  <tabstop>showToolOutput</tabstop>
+  <tabstop>reviewedViolations</tabstop>
+  <tabstop>totalViolations</tabstop>
+  <tabstop>acceptedViolations</tabstop>
+  <tabstop>removedViolations</tabstop>
+  <tabstop>ksTotal</tabstop>
+  <tabstop>ksReviewed</tabstop>
+  <tabstop>ksAccepted</tabstop>
+  <tabstop>ksRemoved</tabstop>
+  <tabstop>pcReviewed</tabstop>
+  <tabstop>pcTotal</tabstop>
+  <tabstop>pcAccepted</tabstop>
+  <tabstop>pcRemoved</tabstop>
+  <tabstop>activeViolations</tabstop>
+  <tabstop>ksActive</tabstop>
+  <tabstop>pcActive</tabstop>
+  <tabstop>comboBox_Filename</tabstop>
+  <tabstop>comboBox_Function</tabstop>
+  <tabstop>lineEditDescFilter</tabstop>
+  <tabstop>lineEditDetailsFilter</tabstop>
+  <tabstop>comboBox_Severity</tabstop>
+  <tabstop>comboBox_Id</tabstop>
+  <tabstop>comboBox_DetectedBy</tabstop>
+  <tabstop>comboBox_Status</tabstop>
+  <tabstop>dispositioned</tabstop>
+  <tabstop>pushButton_ApplyFilters</tabstop>
+  <tabstop>textBrowser_Filename</tabstop>
+  <tabstop>textBrowser_Function</tabstop>
+  <tabstop>textBrowser_Severity</tabstop>
+  <tabstop>textBrowser_Id</tabstop>
+  <tabstop>textBrowser_DetectedBy</tabstop>
+  <tabstop>textBrowser_Description</tabstop>
+  <tabstop>textBrowser_Details</tabstop>
+  <tabstop>syncCode</tabstop>
+  <tabstop>pushButton_GotoCode</tabstop>
+  <tabstop>comboBoxAnalysisTextOptions</tabstop>
+  <tabstop>pushButtonAddCanned</tabstop>
+  <tabstop>plainTextEdit_Analysis</tabstop>
+  <tabstop>textBrowser_PrevReviewer</tabstop>
+  <tabstop>textBrowser_PrevDate</tabstop>
+  <tabstop>textBrowser_PrevStatus</tabstop>
+  <tabstop>pushButton_MarkReviewed</tabstop>
+  <tabstop>pushButton_MarkAccepted</tabstop>
+  <tabstop>projFileSections</tabstop>
+  <tabstop>enableProjEdit</tabstop>
+  <tabstop>saveConfig</tabstop>
+  <tabstop>projFileEditor</tabstop>
+  <tabstop>sectionTip</tabstop>
+  <tabstop>reportFileName</tabstop>
+  <tabstop>pushButton_BrowseSrcCode</tabstop>
+  <tabstop>reportDirectory</tabstop>
+  <tabstop>pushButton_BrowseReport</tabstop>
+  <tabstop>pushButton_GenerateReport</tabstop>
+  <tabstop>pcLintPdf</tabstop>
+  <tabstop>treeView</tabstop>
+  <tabstop>reportedOn</tabstop>
+  <tabstop>lineNumber</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

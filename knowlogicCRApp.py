@@ -152,6 +152,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.pushButton_pFileBrowse.clicked.connect(self.SelectProjectFile)
 
         self.lineEdit_userName.editingFinished.connect(self.lineEditUserNameChanged)
+        self.lineEdit_userName.setFocus()
 
         self.pushButton_RunAnalysis.clicked.connect(self.RunAnalysis)
         self.pushButtonAbortAnalysis.clicked.connect(self.AbortAnalysis)
@@ -194,6 +195,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.horizontalScrollBar.setMinimum(0)
         self.horizontalScrollBar.setMaximum(0)
         self.horizontalScrollBar.valueChanged.connect(self.DisplayViolationsData)
+
+        self.pcLintPdf.clicked.connect( self.StartFile)
         self.pushButton_GotoCode.clicked.connect(self.GotoCode)
 
         #------------------------------------------------------------------------------
@@ -215,6 +218,76 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.pushButton_BrowseSrcCode.clicked.connect(self.DisplaySrcFileBrowser)
         self.pushButton_BrowseReport.clicked.connect(self.DisplayReportFileBrowser)
         self.pushButton_GenerateReport.clicked.connect(self.GenerateReport)
+
+    #-----------------------------------------------------------------------------------------------
+    def CurrentTabChanged(self):
+        """ When changing tabs perform clean up/set up conditions
+        """
+        newTab = self.tabWidget.currentIndex()
+
+        # Make sure we have a username and project file before moving off config tab
+        if newTab != eTabAdmin:
+            #-----------------------------------------------------------------------
+            # NOTE: this is very simple logic.  You MUST have a project file and a
+            #       user name to get off the first tab.
+            #-----------------------------------------------------------------------
+            # see if we can move off the admin page
+            if self.db is None or self.userName.strip() == '':
+                self.tabWidget.setCurrentIndex(0)
+                if self.userName:
+                    errs = []
+                else:
+                    errs = ['Username']
+                if self.db is None:
+                    errs.append( 'Project File')
+
+                self.CrErrPopup('Please enter a valid %s' % ' and '.join(errs))
+
+            if newTab == eTabAnalysis and not self.programOpenedU4c and not self.analysisActive:
+                # see if understand is open and open it if not
+                op = subprocess.check_output( 'tasklist')
+                opStr = op.decode()
+
+                # create a U4c object ot get project Db info
+                u4co = U4c(self.projFile)
+
+                if opStr.find('understand') == -1:
+                    openIt = True
+                else:
+                    msg  = 'Understand is currently running.\n'
+                    msg += 'For Code Viewing the following project should be open.\n'
+                    msg += '<%s>.\nWould you like this to happen.' % u4co.dbName
+                    rtn = QMessageBox.question( self, 'Understand Open',
+                                                msg, QMessageBox.Yes, QMessageBox.No)
+                    if rtn == QMessageBox.Yes:
+                        u4co.KillU4c()
+                        openIt = True
+                    else:
+                        self.programOpenedU4c = True
+                        openIt = False
+
+                if openIt:
+                    # get path to understand from project
+                    undPath = self.projFile.paths[PF.ePathU4c]
+                    u4cPath, prog = os.path.split(undPath)
+                    understand = os.path.join(u4cPath, 'understand.exe')
+                    cmd = '%s -db "%s"' % (understand, u4co.dbName)
+                    subprocess.Popen( cmd)
+                    self.programOpenedU4c = True
+
+            elif newTab == eTabProject:
+                # open the select project file for display/editing
+                f = open( self.pFullFilename, 'r')
+                content = f.read()
+                f.close()
+                self.projFileEditor.insertPlainText( content)
+
+
+        # Coming back to the Config tab update the Stats as they may have analyzed something
+        elif newTab == eTabAdmin and self.curTab != eTabAdmin:
+            self.DisplayViolationStatistics()
+
+        self.curTab = newTab
 
     #-----------------------------------------------------------------------------------------------
     def NewProjFile( self, at):
@@ -306,90 +379,195 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.DisplayViolationStatistics()
 
     #-----------------------------------------------------------------------------------------------
-    def CrErrPopup(self, errText):
-        """ The crErrPopup provides a popup dialog to be used for simple
-            notifications to the user through the GUI """
-        msgBox = QMessageBox()
-        msgBox.setWindowTitle("Knowlogic Code Review")
-        msgBox.setText(errText)
-        msgBox.exec_()
-
-    #-----------------------------------------------------------------------------------------------
-    def CurrentTabChanged(self):
-        """ When changing tabs perform clean up/set up conditions
-        """
-        newTab = self.tabWidget.currentIndex()
-
-        # Make sure we have a username and project file before moving off config tab
-        if newTab != eTabAdmin:
-            # see if we can move off the admin page
-            if self.db is None or self.userName == '':
-                self.tabWidget.setCurrentIndex(0)
-                if self.userName:
-                    errs = []
-                else:
-                    errs = ['Username']
-                if self.db is None:
-                    errs.append( 'Project File')
-
-                self.CrErrPopup('Please enter a valid %s' % ' and '.join(errs))
-
-            if newTab == eTabAnalysis and not self.programOpenedU4c and not self.analysisActive:
-                # see if understand is open and open it if not
-                op = subprocess.check_output( 'tasklist')
-                opStr = op.decode()
-
-                # create a U4c object ot get project Db info
-                u4co = U4c(self.projFile)
-
-                if opStr.find('understand') == -1:
-                    openIt = True
-                else:
-                    msg  = 'Understand is currently running.\n'
-                    msg += 'For Code Viewing the following project should be open.\n'
-                    msg += '<%s>.\nWould you like this to happen.' % u4co.dbName
-                    rtn = QMessageBox.question( self, 'Understand Open',
-                                                msg, QMessageBox.Yes, QMessageBox.No)
-                    if rtn == QMessageBox.Yes:
-                        u4co.KillU4c()
-                        openIt = True
-                    else:
-                        self.programOpenedU4c = True
-                        openIt = False
-
-                if openIt:
-                    # get path to understand from project
-                    undPath = self.projFile.paths[PF.ePathU4c]
-                    u4cPath, prog = os.path.split(undPath)
-                    understand = os.path.join(u4cPath, 'understand.exe')
-                    cmd = '%s -db "%s"' % (understand, u4co.dbName)
-                    subprocess.Popen( cmd)
-                    self.programOpenedU4c = True
-
-            elif newTab == eTabProject:
-                # open the select project file for display/editing
-                f = open( self.pFullFilename, 'r')
-                content = f.read()
-                f.close()
-                self.projFileEditor.insertPlainText( content)
-
-
-        # Coming back to the Config tab update the Stats as they may have analyzed something
-        elif newTab == eTabAdmin and self.curTab != eTabAdmin:
-            self.DisplayViolationStatistics()
-
-        self.curTab = newTab
-
-    #-----------------------------------------------------------------------------------------------
-    def lineEditUserNameChanged(self):
-        self.userName = self.lineEdit_userName.text()
-
-    #-----------------------------------------------------------------------------------------------
     def SelectProjectFile(self):
         """ Display a file browser for the user to select the project file """
         pFile, selFilter = QFileDialog.getOpenFileName(self, "Select Project File")
         if pFile:
             self.ResetProject( pFile)
+
+    #-----------------------------------------------------------------------------------------------
+    # Filter Handling
+    #-----------------------------------------------------------------------------------------------
+    def FillFilters( self, index=-1, name='', reset=False):
+        """ This function fills in all of the filter selection dropdowns based on the
+            settings in the other filter dropdowns.
+
+            filterUpdateInProgress - stop re-entrant calls when we update the filter lists items
+                                     as it appears the selection changed
+        """
+        if not self.filterUpdateInProgress:
+            self.filterUpdateInProgress = True
+
+            if reset:
+                self.currentFilters = []
+                self.dispositioned.setCheckState( QtCore.Qt.Unchecked)
+                for dd in self.filterInfo:
+                    gui = getattr( self, 'comboBox_%s' % dd)
+                    gui.clear()
+
+            noFilterRe = re.compile('Select <[A-Za-z]+> \[[0-9]+\]')
+
+            # don't refill the ones that have changed
+            if name:
+                if name not in self.currentFilters:
+                    self.currentFilters.append(name)
+                if index <= 0:
+                    self.currentFilters.remove( name)
+
+            whereClause = self.BuildSqlStatement()
+
+            # now loop through each filter applying the constraint
+            for dd in self.filterInfo:
+                if dd not in self.currentFilters:
+                    gui = getattr( self, 'comboBox_%s' % dd)
+                    s = """select distinct(%s)
+                           from violations
+                           %s
+                           order by %s""" % ( self.filterInfo[dd], whereClause, self.filterInfo[dd])
+                    q = self.db.Query(s)
+
+                    # special handling for filenames to remove the (W)
+                    if dd == 'Filename':
+                        comboList = [i.data for i in q if i.data.find('(W)') == -1]
+                    else:
+                        comboList = [i.data for i in q]
+
+                    # put some stuff up front
+                    comboList = ['Select <%s> [%d]' % (dd, len(comboList))] + comboList
+
+                    gui.clear()
+                    gui.addItems( comboList)
+                    gui.setCurrentIndex(0)
+
+            # done with the filter update
+            self.filterUpdateInProgress = False
+
+    #-----------------------------------------------------------------------------------------------
+    def BuildSqlStatement(self):
+        noFilterRe = re.compile('Select <[A-Za-z]+>')
+
+        whereClause = ''
+        constraints = ['reviewDate is NULL']
+
+        if self.dispositioned.isChecked():
+            constraints = []
+
+        # get the value of all filter and make a constraint on all the queries
+        for dd in self.filterInfo:
+            gui = getattr( self, 'comboBox_%s' % dd)
+            if gui.count() > 0:
+                text = gui.currentText()
+                filterOff = noFilterRe.search( text)
+                if filterOff is None:
+                    # ok we have something to filter on
+                    filterText = "%s like '%%%s%%'" % (self.filterInfo[dd], text)
+                    constraints.append( filterText)
+                elif text == '':
+                    # ok we want an empty string
+                    filterText = "%s = ''" % (self.filterInfo[dd])
+                    constraints.append( filterText)
+
+        # check for user strings in desc/detail
+        desc = self.lineEditDescFilter.text()
+        detl = self.lineEditDetailsFilter.text()
+        if desc.strip():
+            constraints.append( "description like '%%%s%%'" % desc)
+        if detl.strip():
+            constraints.append( "details like '%%%s%%'" % detl)
+
+        if constraints:
+            queryConstraint = '\nand '.join( constraints)
+            whereClause = 'where %s' % queryConstraint
+
+        return whereClause
+
+    #-----------------------------------------------------------------------------------------------
+    def ApplyFilters(self):
+        """ Display the violations information based on selected filters """
+
+        """ Query the database using filters selected """
+        s = """
+            SELECT filename, function, severity, violationId, description, details,
+                   lineNumber, detectedBy, firstReport, lastReport, status, analysis,
+                   who, reviewDate
+            FROM Violations
+            %s
+            order by filename, detectedBy, violationId, function, severity
+            """
+        whereClause = self.BuildSqlStatement()
+        sql = s % whereClause
+
+        self.violationsData = []
+        self.violationsData = self.db.Query( sql)
+
+        """ Display Violations Data """
+        if self.violationsData:
+            self.horizontalScrollBar.setMinimum(0)
+            self.horizontalScrollBar.setMaximum((len(self.violationsData)-1))
+            self.horizontalScrollBar.setValue(0)
+        else:
+            self.horizontalScrollBar.setMinimum(0)
+            self.horizontalScrollBar.setMaximum(0)
+
+        self.DisplayViolationsData()
+
+    #-----------------------------------------------------------------------------------------------
+    def DisplayViolationsData(self):
+        """ Display violations data """
+        at = self.horizontalScrollBar.value()
+        at += 1
+        total = len(self.violationsData)
+
+        if self.violationsData:
+            """ Violation 'number' is one greater than scrollbar index which starts at 0 """
+            self.groupBox_Violations.setTitle("Currently Selected Violation %d of %d" % (at,total))
+
+            """ Populate the fields in the violations groupbox """
+            self.v = self.violationsData[self.horizontalScrollBar.value()]
+            self.textBrowser_Filename.setText(self.v.filename)
+            self.textBrowser_Function.setText(self.v.function)
+            self.textBrowser_Description.setText(self.v.description)
+            self.textBrowser_Details.setText(self.v.details)
+            self.textBrowser_Severity.setText(self.v.severity)
+            self.textBrowser_Id.setText(self.v.violationId)
+            self.textBrowser_DetectedBy.setText(self.v.detectedBy)
+            self.lineNumber.setText(str(self.v.lineNumber))
+            rd = '%s' % self.v.firstReport
+            dt = DateTime.DateTime.today()
+            dt = dt.Set(rd)
+            dt.ShowMs( False)
+            self.reportedOn.setText(str(dt))
+
+            """ Populate the fields in the Analysis groupbox """
+            if self.v.reviewDate:
+                self.textBrowser_PrevReviewer.setText(self.v.who)
+                rd = '%s' % self.v.reviewDate
+                dt = DateTime.DateTime.today()
+                dt = dt.Set(rd)
+                dt.ShowMs( False)
+                self.textBrowser_PrevDate.setText(str(dt))
+                self.textBrowser_PrevStatus.setText(self.v.status)
+            else:
+                self.textBrowser_PrevReviewer.clear()
+                self.textBrowser_PrevDate.clear()
+                self.textBrowser_PrevStatus.clear()
+
+            self.plainTextEdit_Analysis.setPlainText(self.v.analysis)
+
+            # are we autosyncing the code with the scroll bar?
+            if self.syncCode.isChecked():
+                self.GotoCode()
+
+        else:
+            self.groupBox_Violations.setTitle("Currently Selected Violation 0 of 0")
+            self.textBrowser_Filename.clear()
+            self.textBrowser_Function.clear()
+            self.textBrowser_Description.clear()
+            self.textBrowser_Details.clear()
+            self.textBrowser_Severity.clear()
+            self.textBrowser_Id.clear()
+            self.textBrowser_DetectedBy.clear()
+            self.v = None
 
     #-----------------------------------------------------------------------------------------------
     def DisplayViolationStatistics(self):
@@ -451,12 +629,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.pcActive.setText(str(total[0].data-noRep[0].data))
 
     #-----------------------------------------------------------------------------------------------
-    def AbortAnalysis(self):
-        """ Abort the analysis process
-        """
-        if self.analysisProcess:
-            self.analysisProcess.kill()
-
+    # Tool Analysis
     #-----------------------------------------------------------------------------------------------
     def RunAnalysis(self):
         if not self.analysisActive:
@@ -465,7 +638,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.toolOutputText = []
             cwd = os.getcwd()
             cmdPath = os.path.join( cwd, 'Analyze.py')
-            cmd = 'c:\python32\python.exe %s "%s"' % (cmdPath, self.pFullFilename)
+            cmd = 'c:\python32\python.exe "%s" "%s"' % (cmdPath, self.pFullFilename)
             rootDir = self.projFile.paths[PF.ePathProject]
             self.analysisProcess = subprocess.Popen( cmd,
                                                      cwd=rootDir,
@@ -537,243 +710,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         return status
 
     #-----------------------------------------------------------------------------------------------
-    def ShowLog( self, logId):
-        if self.projFile:
-            lines = []
-            logName = ''
-            if logId == eLogPc:
-                pcl = PcLint( self.projFile)
-                logName = pcl.GetLogName()
-            elif logId == eLogKs:
-                u4co = U4c(self.projFile)
-                logName = u4co.GetLogName()
-            elif logId == eLogTool:
-                lines = [i+'\n' for i in self.toolRunOutput.split('\n')]
-
-            if logName and os.path.isfile( logName):
-                f = open(logName, 'r')
-                lines = f.readlines()
-                f.close()
-
-            displayLines = ['%s Output contains %d lines\n' % (logId, len(lines))] + lines
-            self.toolOutput.setText( ''.join( displayLines))
-
-    #-----------------------------------------------------------------------------------------------
-    def FillFilters( self, index=-1, name='', reset=False):
-        """ This function fills in all of the filter selection dropdowns based on the
-            settings in the other filter dropdowns.
-
-            filterUpdateInProgress - stop re-entrant calls when we update the filter lists items
-                                     as it appears the selection changed
+    def AbortAnalysis(self):
+        """ Abort the analysis process
         """
-        if not self.filterUpdateInProgress:
-            self.filterUpdateInProgress = True
-
-            if reset:
-                self.currentFilters = []
-                self.dispositioned.setCheckState( QtCore.Qt.Unchecked)
-                for dd in self.filterInfo:
-                    gui = getattr( self, 'comboBox_%s' % dd)
-                    gui.clear()
-
-            noFilterRe = re.compile('Select <[A-Za-z]+> \[[0-9]+\]')
-
-            # don't refill the ones that have changed
-            if name:
-                if name not in self.currentFilters:
-                    self.currentFilters.append(name)
-                if index <= 0:
-                    self.currentFilters.remove( name)
-
-            whereClause = self.BuildSqlStatement()
-
-            # now loop through each filter applying the constraint
-            for dd in self.filterInfo:
-                if dd not in self.currentFilters:
-                    gui = getattr( self, 'comboBox_%s' % dd)
-                    s = """select distinct(%s)
-                           from violations
-                           %s
-                           order by %s""" % ( self.filterInfo[dd], whereClause, self.filterInfo[dd])
-                    q = self.db.Query(s)
-
-                    # special handling for filenames to remove the (W)
-                    if dd == 'Filename':
-                        comboList = [i.data for i in q if i.data.find('(W)') == -1]
-                    else:
-                        comboList = [i.data for i in q]
-
-                    # put some stuff up front
-                    comboList = ['Select <%s> [%d]' % (dd, len(comboList))] + comboList
-
-                    gui.clear()
-                    gui.addItems( comboList)
-                    gui.setCurrentIndex(0)
-
-            # done with the filter update
-            self.filterUpdateInProgress = False
+        if self.analysisProcess:
+            self.analysisProcess.kill()
 
     #-----------------------------------------------------------------------------------------------
-    def lineEditDescFilterChanged(self):
-        descFilter = self.lineEditDescFilter.text()
-        # TODO : Handle the description filter
-
-    #-----------------------------------------------------------------------------------------------
-    def lineEditDetailsFilterChanged(self):
-        detailsFilter = self.lineEditDetailsFilter.text()
-        # TODO : Handle the details filter
-
-    #-----------------------------------------------------------------------------------------------
-    def ApplyFilters(self):
-        """ Display the violations information based on selected filters """
-
-        """ Query the database using filters selected """
-        s = """
-            SELECT filename, function, severity, violationId, description, details,
-                   lineNumber, detectedBy, firstReport, lastReport, status, analysis,
-                   who, reviewDate
-            FROM Violations
-            %s
-            order by filename, detectedBy, violationId, function, severity
-            """
-        whereClause = self.BuildSqlStatement()
-        sql = s % whereClause
-
-        self.violationsData = []
-        self.violationsData = self.db.Query( sql)
-
-        """ Display Violations Data """
-        if self.violationsData:
-            self.horizontalScrollBar.setMinimum(0)
-            self.horizontalScrollBar.setMaximum((len(self.violationsData)-1))
-            self.horizontalScrollBar.setValue(0)
-        else:
-            self.horizontalScrollBar.setMinimum(0)
-            self.horizontalScrollBar.setMaximum(0)
-
-        self.DisplayViolationsData()
-
-    #-----------------------------------------------------------------------------------------------
-    def BuildSqlStatement(self):
-        noFilterRe = re.compile('Select <[A-Za-z]+>')
-
-        whereClause = ''
-        constraints = ['reviewDate is NULL']
-
-        if self.dispositioned.isChecked():
-            constraints = []
-
-        # get the value of all filter and make a constraint on all the queries
-        for dd in self.filterInfo:
-            gui = getattr( self, 'comboBox_%s' % dd)
-            if gui.count() > 0:
-                text = gui.currentText()
-                filterOff = noFilterRe.search( text)
-                if filterOff is None:
-                    # ok we have something to filter on
-                    filterText = "%s like '%%%s%%'" % (self.filterInfo[dd], text)
-                    constraints.append( filterText)
-                elif text == '':
-                    # ok we want an empty string
-                    filterText = "%s = ''" % (self.filterInfo[dd])
-                    constraints.append( filterText)
-
-        # check for user strings in desc/detail
-        desc = self.lineEditDescFilter.text()
-        detl = self.lineEditDetailsFilter.text()
-        if desc.strip():
-            constraints.append( "description like '%%%s%%'" % desc)
-        if detl.strip():
-            constraints.append( "details like '%%%s%%'" % detl)
-
-        if constraints:
-            queryConstraint = '\nand '.join( constraints)
-            whereClause = 'where %s' % queryConstraint
-
-        return whereClause
-
-    #-----------------------------------------------------------------------------------------------
-    def DisplayViolationsData(self):
-        """ Display violations data """
-        at = self.horizontalScrollBar.value()
-        at += 1
-        total = len(self.violationsData)
-
-        if self.violationsData:
-            """ Violation 'number' is one greater than scrollbar index which starts at 0 """
-            self.groupBox_Violations.setTitle("Currently Selected Violation %d of %d" % (at,total))
-
-            """ Populate the fields in the violations groupbox """
-            self.v = self.violationsData[self.horizontalScrollBar.value()]
-            self.textBrowser_Filename.setText(self.v.filename)
-            self.textBrowser_Function.setText(self.v.function)
-            self.textBrowser_Description.setText(self.v.description)
-            self.textBrowser_Details.setText(self.v.details)
-            self.textBrowser_Severity.setText(self.v.severity)
-            self.textBrowser_Id.setText(self.v.violationId)
-            self.textBrowser_DetectedBy.setText(self.v.detectedBy)
-
-            """ Populate the fields in the Analysis groupbox """
-            if self.v.reviewDate:
-                self.textBrowser_PrevReviewer.setText(self.v.who)
-                rd = '%s' % self.v.reviewDate
-                dt = DateTime.DateTime.today()
-                dt = dt.Set(rd)
-                dt.ShowMs( False)
-                self.textBrowser_PrevDate.setText(str(dt))
-                self.textBrowser_PrevStatus.setText(self.v.status)
-            else:
-                self.textBrowser_PrevReviewer.clear()
-                self.textBrowser_PrevDate.clear()
-                self.textBrowser_PrevStatus.clear()
-
-            self.plainTextEdit_Analysis.setPlainText(self.v.analysis)
-
-            # are we autosyncing the code with the scroll bar?
-            if self.syncCode.isChecked():
-                self.GotoCode()
-
-        else:
-            self.groupBox_Violations.setTitle("Currently Selected Violation 0 of 0")
-            self.textBrowser_Filename.clear()
-            self.textBrowser_Function.clear()
-            self.textBrowser_Description.clear()
-            self.textBrowser_Details.clear()
-            self.textBrowser_Severity.clear()
-            self.textBrowser_Id.clear()
-            self.textBrowser_DetectedBy.clear()
-            self.v = None
-
-    #-----------------------------------------------------------------------------------------------
-    def GotoCode(self):
-        viewerCommand = self.projFile.paths[PF.ePathViewer]
-        # get the filename and line number for this violation
-        if self.v:
-            filename = self.v.filename
-            filename = filename.replace('(W)', '').strip()
-            fpfn = self.projFile.FullPathName( filename)
-            if fpfn:
-                if len(fpfn) == 1:
-                    viewerCommand = viewerCommand.replace( '<fullPathFileName>', '"%s"' % fpfn[0])
-
-                    linenumber = self.v.lineNumber
-                    if linenumber >= 0:
-                        viewerCommand = viewerCommand.replace( '<lineNumber>', str(linenumber))
-                    else:
-                        viewerCommand = viewerCommand.replace( '<lineNumber>', '')
-
-                    subprocess.Popen( viewerCommand)
-            else:
-                msg = 'Ambiguous filename\n%s' % '\n'.join(fpfn)
-                self.CrErrPopup( msg)
-        else:
-            msg = 'No matching violations.'
-            self.CrErrPopup( msg)
-
+    # User Analysis
     #-----------------------------------------------------------------------------------------------
     def GetAnalysisTextOptions(self):
         """ Return list of canned analysis text to display in the combobox for user selection """
-
         analysisTextList = ['Analysis Text Selection']
         analysisTextList.extend(self.projFile.analysisComments)
 
@@ -872,6 +819,93 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     #-----------------------------------------------------------------------------------------------
     def GenerateReport(self):
         self.CrErrPopup('Not yet implemented...')
+
+    #-----------------------------------------------------------------------------------------------
+    # Utils
+    #-----------------------------------------------------------------------------------------------
+    def CrErrPopup(self, errText):
+        """ The crErrPopup provides a popup dialog to be used for simple
+            notifications to the user through the GUI """
+        msgBox = QMessageBox()
+        msgBox.setWindowTitle("Knowlogic Code Review")
+        msgBox.setText(errText)
+        msgBox.exec_()
+
+    #-----------------------------------------------------------------------------------------------
+    def GotoCode(self):
+        viewerCommand = self.projFile.paths[PF.ePathViewer]
+        # get the filename and line number for this violation
+        if self.v:
+            filename = self.v.filename
+            filename = filename.replace('(W)', '').strip()
+            fpfn = self.projFile.FullPathName( filename)
+            if fpfn:
+                if len(fpfn) == 1:
+                    viewerCommand = viewerCommand.replace( '<fullPathFileName>', '"%s"' % fpfn[0])
+
+                    linenumber = self.v.lineNumber
+                    if linenumber >= 0:
+                        viewerCommand = viewerCommand.replace( '<lineNumber>', str(linenumber))
+                    else:
+                        viewerCommand = viewerCommand.replace( '<lineNumber>', '')
+
+                    subprocess.Popen( viewerCommand)
+            else:
+                msg = 'Ambiguous filename\n%s' % '\n'.join(fpfn)
+                self.CrErrPopup( msg)
+        else:
+            msg = 'No matching violations.'
+            self.CrErrPopup( msg)
+
+    #-----------------------------------------------------------------------------------------------
+    def lineEditDescFilterChanged(self):
+        descFilter = self.lineEditDescFilter.text()
+        # TODO : Handle the description filter
+
+    #-----------------------------------------------------------------------------------------------
+    def lineEditDetailsFilterChanged(self):
+        detailsFilter = self.lineEditDetailsFilter.text()
+        # TODO : Handle the details filter
+
+    #-----------------------------------------------------------------------------------------------
+    def lineEditUserNameChanged(self):
+        tmp = self.lineEdit_userName.text().strip()
+        if tmp:
+            self.userName = tmp
+
+    #-----------------------------------------------------------------------------------------------
+    def ShowLog( self, logId):
+        if self.projFile:
+            lines = []
+            logName = ''
+            if logId == eLogPc:
+                pcl = PcLint( self.projFile)
+                logName = pcl.GetLogName()
+            elif logId == eLogKs:
+                u4co = U4c(self.projFile)
+                logName = u4co.GetLogName()
+            elif logId == eLogTool:
+                lines = [i+'\n' for i in self.toolRunOutput.split('\n')]
+
+            if logName and os.path.isfile( logName):
+                f = open(logName, 'r')
+                lines = f.readlines()
+                f.close()
+
+            displayLines = ['%s Output contains %d lines\n' % (logId, len(lines))] + lines
+            self.toolOutput.setText( ''.join( displayLines))
+
+    #-----------------------------------------------------------------------------------------------
+    def StartFile(self):
+        """ open the PC-Lint PDF """
+        # remove the exe
+        f = open('pcLintManual.bat', 'w')
+        path, exe = os.path.split(self.projFile.paths[PF.ePathPcLint])
+        fn = os.path.join( path, 'PC-lint.pdf')
+        cmd = 'start %s\n' % fn
+        f.write( cmd)
+        f.close()
+        t = subprocess.Popen( 'pcLintManual.bat')
 
 
 #------------------------------------------------------------------------------------
