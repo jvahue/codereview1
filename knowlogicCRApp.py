@@ -198,6 +198,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.horizontalScrollBar.valueChanged.connect(self.DisplayViolationsData)
 
         self.pcLintPdf.clicked.connect( self.StartFile)
+        self.syncCode.setChecked(True)
         self.pushButton_GotoCode.clicked.connect(self.GotoCode)
 
         #------------------------------------------------------------------------------
