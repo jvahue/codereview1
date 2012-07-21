@@ -109,9 +109,10 @@ class ToolManager:
           1. Update the tool output
           2. Generate Reivew data
         """
-        self.toolProcess = subprocess.Popen( self.jobCmd, bufsize=-1, cwd=self.projToolRoot,
-                                     stderr=subprocess.STDOUT,
-                                     stdout=subprocess.PIPE)
+        self.toolProcess = subprocess.Popen( self.jobCmd,
+                                             cwd=self.projToolRoot,
+                                             stderr=subprocess.STDOUT,
+                                             stdout=subprocess.PIPE)
 
     #-----------------------------------------------------------------------------------------------
     def AnalyzeActive(self):
@@ -223,6 +224,5 @@ class ToolManager:
         msg = ['\n%s Stats' % self.toolName]
         for i in statNames:
             msg.append('%s: %s' % (i, str(getattr(self, i, -1))))
-        print('\n'.join( msg))
 
         return msg

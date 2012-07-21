@@ -48,23 +48,29 @@ class Analyzer:
         if os.path.isfile( projFile):
             self.projFile = ProjFile.ProjectFile( projFile)
             if self.projFile.isValid:
-                self.status = 'Ready'
+                self.SetStatus( 'Ready')
                 self.isValid = True
             else:
                 errs = '\n'.join( self.projFile.errors)
-                self.status = 'Error in project file: \n%s' % (errs)
+                self.SetStatus( 'Error in project file: \n%s' % (errs))
                 self.isValid = False
         else:
-            self.status = 'Project file does not exist!'
+            self.SetStatus( 'Project file does not exist!')
             self.isValid = False
 
     #-----------------------------------------------------------------------------------------------
-    def Analyze( self, fullAnalysis = True, verbose = True):
+    def SetStatus( self, sts):
+        print( sts)
+        sys.stdout.flush()
+        self.status = sts
+
+    #-----------------------------------------------------------------------------------------------
+    def Analyze( self, fullAnalysis = True):
         """ Analyze the project file with the tools selected
         """
         status = True
         start = DateTime.DateTime.today()
-        self.status ='Start Analysis %s - Create Tool Projects' % start
+        self.SetStatus( 'Start Analysis %s - Create Tool Projects' % start)
 
         # create the tool analysis files
         pcs = PcLint.PcLintSetup( self.projFile)
@@ -72,7 +78,7 @@ class Analyzer:
         pcs.CreateProject()
         u4s.CreateProject()
 
-        self.status ='Tool Project Creation Complete - Start Analysis %s' % start
+        self.SetStatus( 'Tool Project Creation Complete - Start Analysis %s' % start)
 
         # create the tool analyzers
         pcl = PcLint.PcLint( self.projFile, True)
@@ -95,17 +101,12 @@ class Analyzer:
                     timeNow = DateTime.DateTime.today()
                     timeNow.ShowMs(False)
                     abortMsg = '[ABORT PENDING]' if self.abortRequest else ''
-                    self.status = '^%s: PcLint: %s%% - U4C: %s%% %s              ' % (
-                        timeNow, pcl.statusMsg, u4co.statusMsg, abortMsg)
-                    if verbose:
-                        print((' '*100)+'\r', end='') # clear the line
-                        print(self.status+'\r', end='')
+                    self.SetStatus( '^%s: PcLint: %s%% - U4C: %s%% %s' % (timeNow, pcl.statusMsg,
+                                                                          u4co.statusMsg, abortMsg))
             else:
                 msg  = 'U4C DB is currently open.\n'
                 msg += 'Close the Project then select Run Analysis.\n'
-                self.status = msg
-                if verbose:
-                    print(self.status)
+                self.SetStatus( msg)
                 status = False
         else:
             u4cThread = ThreadSignal( u4co.LoadViolations, u4co)
@@ -118,25 +119,19 @@ class Analyzer:
                 timeNow = DateTime.DateTime.today()
                 timeNow.ShowMs(False)
                 abortMsg = '[ABORT PENDING]' if self.abortRequest else ''
-                self.status = '^%s: PcLint: %s%% - U4C: %s%% %s              ' % (
-                    timeNow, pcl.statusMsg, u4co.statusMsg, abortMsg)
-                if verbose:
-                    print((' '*100)+'\r', end='') #clear the line
-                    print(self.status+'\r', end='')
+                self.SetStatus(  '^%s: PcLint: %s%% - U4C: %s%% %s' % (timeNow, pcl.statusMsg,
+                                                                       u4co.statusMsg, abortMsg))
 
         end = datetime.datetime.today()
         abortMsg = ' aborted. ' if self.abortRequest else ' '
-        self.status += '\n\nAnalysis%sCompleted in %s' % (abortMsg, end - start)
+        m0 = '\nAnalysis%sCompleted in %s\n' % (abortMsg, end - start)
 
         m1 = pcl.ShowRunStats()
         m2 = u4co.ShowRunStats()
-        msg = '\n'.join(m1 + m2)
-        self.status = msg + '\n\n' + self.status
 
-        if verbose:
-            print(self.status)
+        msg = m0 + '\n'.join(m1 + m2)
+        self.SetStatus( msg)
 
-        # give the FE time to display final status
         time.sleep(1)
         return status
 
@@ -173,6 +168,4 @@ if __name__ == '__main__':
         analyzer.Analyze(fullAnalysis)
     else:
         print( 'Errors:\n%s' % '\n'.join(analyzer.projFile.errors))
-
-    print( analyzer.status)
 

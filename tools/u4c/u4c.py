@@ -798,7 +798,7 @@ class U4c( ToolManager):
                 else:
                     # No function header
                     severity = 'Error'
-                    violationId = 'FuncHdr-Missing'
+                    violationId = 'FuncHdr-NoHeader'
                     desc = 'Function Header %s is missing' % (func)
                     details = 'N/A'
                     self.vDb.Insert(rpfn, func, severity, violationId, desc,

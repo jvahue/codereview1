@@ -40,6 +40,7 @@ from crmainwindow import Ui_MainWindow
 from ViolationDb import eDbName, eDbRoot
 
 import ProjFile as PF
+from qtexteditclick import QTextEditClick
 
 #---------------------------------------------------------------------------------------------------
 # Data
@@ -48,6 +49,13 @@ eKsCrIni = 'KsCr.ini'
 eLogPc = 'PcLint'
 eLogKs = 'Knowlogic'
 eLogTool = 'Tool Output'
+
+eTabAdmin = 0
+eTabAnalysis = 1
+eTabProject = 2
+eTabReport = 3
+
+eVersion = 'v0.0.1'
 
 #---------------------------------------------------------------------------------------------------
 # Functions
@@ -100,7 +108,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         super(MainWindow, self).__init__()
         self.setupUi(self)
-        self.setWindowTitle("Knowlogic Code Review Application")
+        self.setWindowTitle("Knowlogic Code Review Tool %s" % eVersion)
 
         #------------------------------------------------------------------------------
         # Declare All object attributes
@@ -127,6 +135,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.projFile = None
         self.toolRunOutput = ''
+
+        self.analysisProcess = None
 
         self.ResetProject()
 
@@ -178,6 +188,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         #------------------------------------------------------------------------------
         # Manage the violations horizontal slider scroll bar
         #------------------------------------------------------------------------------
+        self.textBrowser_Description.Connect( self.GotoCode)
+        self.textBrowser_Details.Connect( self.GotoCode)
+
         self.horizontalScrollBar.setMinimum(0)
         self.horizontalScrollBar.setMaximum(0)
         self.horizontalScrollBar.valueChanged.connect(self.DisplayViolationsData)
@@ -308,7 +321,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         newTab = self.tabWidget.currentIndex()
 
         # Make sure we have a username and project file before moving off config tab
-        if newTab != 0:
+        if newTab != eTabAdmin:
+            # see if we can move off the admin page
             if self.db is None or self.userName == '':
                 self.tabWidget.setCurrentIndex(0)
                 if self.userName:
@@ -320,7 +334,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
                 self.CrErrPopup('Please enter a valid %s' % ' and '.join(errs))
 
-            if newTab == 1 and not self.programOpenedU4c and not self.analysisActive:
+            if newTab == eTabAnalysis and not self.programOpenedU4c and not self.analysisActive:
                 # see if understand is open and open it if not
                 op = subprocess.check_output( 'tasklist')
                 opStr = op.decode()
@@ -337,9 +351,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     rtn = QMessageBox.question( self, 'Understand Open',
                                                 msg, QMessageBox.Yes, QMessageBox.No)
                     if rtn == QMessageBox.Yes:
-                        u4co.IsReadyToAnalyze( True)
+                        u4co.KillU4c()
                         openIt = True
                     else:
+                        self.programOpenedU4c = True
                         openIt = False
 
                 if openIt:
@@ -351,8 +366,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     subprocess.Popen( cmd)
                     self.programOpenedU4c = True
 
+            elif newTab == eTabProject:
+                # open the select project file for display/editing
+                f = open( self.pFullFilename, 'r')
+                content = f.read()
+                f.close()
+                self.projFileEditor.insertPlainText( content)
+
+
         # Coming back to the Config tab update the Stats as they may have analyzed something
-        elif newTab == 0 and self.curTab != 0:
+        elif newTab == eTabAdmin and self.curTab != eTabAdmin:
             self.DisplayViolationStatistics()
 
         self.curTab = newTab
@@ -387,6 +410,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.reviewedViolations.setText(str(reviewed[0]))
             self.acceptedViolations.setText(str(accepted[0]))
             self.removedViolations.setText(str(noRep[0]))
+            self.activeViolations.setText(str(total[0].data-noRep[0].data))
 
             #-------------- KS Totals
             s = "SELECT count(*) from Violations where detectedBy = 'Knowlogic'"
@@ -405,6 +429,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.ksReviewed.setText(str(reviewed[0]))
             self.ksAccepted.setText(str(accepted[0]))
             self.ksRemoved.setText(str(noRep[0]))
+            self.ksActive.setText(str(total[0].data-noRep[0].data))
 
             #-------------- PC-LINT Totals
             s = "SELECT count(*) from Violations where detectedBy = 'PcLint'"
@@ -423,118 +448,70 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.pcReviewed.setText(str(reviewed[0]))
             self.pcAccepted.setText(str(accepted[0]))
             self.pcRemoved.setText(str(noRep[0]))
-
-    #-----------------------------------------------------------------------------------------------
-    def RunAnalysis(self):
-        """ Run the analysis in a thread so we can display its status
-        """
-        if not self.analysisActive:
-            # refresh the project file incase they changed anything
-            # TODO: remove this when we have Cfg file editing
-            self.ResetProject( self.pFullFilename)
-            analyzer = Analyzer(self.pFullFilename)
-            self.analysisActive = True # MUST come after ResetProject
-
-            if analyzer.isValid:
-
-                self.analyzerThread = util.ThreadSignal( analyzer.Analyze, analyzer)
-                self.analyzerThread.Go()
-
-                self.timer = QtCore.QTimer(self)
-                self.connect(self.timer, QtCore.SIGNAL("timeout()"), self.AnalysisUpdate)
-                self.timer.start(500)
-                self.toolRunOutput = ''
-                self.startAnalysis = DateTime.DateTime.today()
-            else:
-                self.CrErrPopup(analyzer.status)
-                self.analysisActive = False
+            self.pcActive.setText(str(total[0].data-noRep[0].data))
 
     #-----------------------------------------------------------------------------------------------
     def AbortAnalysis(self):
         """ Abort the analysis process
         """
-        self.analyzerThread.classRef.abortRequest = True
+        if self.analysisProcess:
+            self.analysisProcess.kill()
 
     #-----------------------------------------------------------------------------------------------
-    def AnalysisUpdate( self):
-        sts = self.analyzerThread.classRef.status
-        if self.analyzerThread.active:
-            # use the project file for status display while it's running
-            self.toolOutput.setText(sts)
-
-            nowIs = DateTime.DateTime.today()
-            elapsed = nowIs - self.startAnalysis
-            elapsed.ShowMs( False)
-            self.pushButton_RunAnalysis.setText('%s' % elapsed)
-        else:
-            sts += '\n\nDone.'
-            self.toolOutput.setText(sts)
-            self.pushButton_RunAnalysis.setText('Run Analysis')
-
-            # save this for recall
-            self.toolRunOutput = sts
-
-            # kill the timer
-            self.timer.stop()
-
-            self.OpenDb()
-
-            # populate the display data
-            self.FillFilters( 0, '', True)
-            self.DisplayViolationStatistics()
-
-            self.analysisActive = False
-
-    #-----------------------------------------------------------------------------------------------
-    def RunAnalysis1(self):
+    def RunAnalysis(self):
         if not self.analysisActive:
             self.analysisActive = True
+            self.toolProgress = ''
             self.toolOutputText = []
             cwd = os.getcwd()
             cmdPath = os.path.join( cwd, 'Analyze.py')
             cmd = 'c:\python32\python.exe %s "%s"' % (cmdPath, self.pFullFilename)
             rootDir = self.projFile.paths[PF.ePathProject]
             self.analysisProcess = subprocess.Popen( cmd,
-                                                     bufsize=-1,
                                                      cwd=rootDir,
                                                      stderr=subprocess.STDOUT,
                                                      stdout=subprocess.PIPE)
 
+            self.toolOutput.clear()
             self.timer = QtCore.QTimer(self)
             self.connect(self.timer, QtCore.SIGNAL("timeout()"), self.AnalysisUpdate)
-            self.timer.start(500)
+            self.timer.start(0.05)
             self.toolRunOutput = ''
             self.startAnalysis = DateTime.DateTime.today()
 
     #-----------------------------------------------------------------------------------------------
-    def AnalysisUpdate1( self):
-        for line in self.analysisProcess.stdout:
-            line = line.decode(encoding='windows-1252').strip()
-            print(line)
+    def AnalysisUpdate( self):
+        #for line in self.analysisProcess.stdout:
+        #    line = line.decode(encoding='windows-1252').strip()
+        #    print(line)
+
+        nowIs = DateTime.DateTime.today()
+        elapsed = nowIs - self.startAnalysis
+        elapsed.ShowMs( False)
+        self.pushButton_RunAnalysis.setText('%s' % elapsed)
 
         if self.AnalyzeActive():
-            for line in self.analysisProcess.stdout:
-                line = line.decode(encoding='windows-1252').strip()
-                if line.find( '^') == 0:
-                    self.toolOutputText = self.toolOutputText[:-1]
-
+            line = self.analysisProcess.stdout.readline()
+            line = line.decode(encoding='windows-1252').strip()
+            if line.find( '^') == 0:
+                self.toolProgress = line[1:] # remove the '^'
+            else:
                 self.toolOutputText.append( line)
 
-                self.toolOutput.setText('\n'.join(self.toolOutputText))
+            text = self.toolProgress + '\n\n'
+            text += '\n'.join(self.toolOutputText)
 
-                nowIs = DateTime.DateTime.today()
-                elapsed = nowIs - self.startAnalysis
-                elapsed.ShowMs( False)
-                self.pushButton_RunAnalysis.setText('%s' % elapsed)
+            self.toolOutput.setText(text)
 
         else:
-            self.toolOutputText.append(  '\n\nDone.')
-            sts = '\n'.join(self.toolOutputText)
-            self.toolOutput.setText(sts)
+            text = self.toolProgress + '\n\n'
+            text += '\n'.join(self.toolOutputText)
+            self.toolOutput.setText(text)
+
             self.pushButton_RunAnalysis.setText('Run Analysis')
 
             # save this for recall
-            self.toolRunOutput = sts
+            self.toolRunOutput = text
 
             # kill the timer
             self.timer.stop()
@@ -554,13 +531,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """
         status = False
         if self.analysisProcess is not None:
-            print('Analysis Process exists')
             if self.analysisProcess.poll() is None:
                 status = True
-            else:
-                print( 'Analysis done')
-        else:
-            print('No analysis process')
 
         return status
 
@@ -756,6 +728,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.textBrowser_PrevStatus.clear()
 
             self.plainTextEdit_Analysis.setPlainText(self.v.analysis)
+
+            # are we autosyncing the code with the scroll bar?
+            if self.syncCode.isChecked():
+                self.GotoCode()
 
         else:
             self.groupBox_Violations.setTitle("Currently Selected Violation 0 of 0")

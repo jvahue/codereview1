@@ -239,6 +239,7 @@ class FormatChecker:
 
         # toss out the oldest
         self.lineBuffer = self.lineBuffer[1:]
+
     #-----------------------------------------------------------------------------------------------
     def FinishBuffer( self):
         """ This funciton makes sure the line buffer is empty to ensure all lines in the text
@@ -294,11 +295,11 @@ class FormatChecker:
                 found.append( item)
             else:
                 severity = 'Error'
-                violationId = errMsg + '-MissingField'
+                violationId = errMsg + '-MissingItem'
                 lineMis = lineNum
                 rawText = item.JoinRaw()
-                desc = '%s\n%s[%d]\nmissing in %s' % (checkDesc, rawText, ix, func )
-                details = '%s[%d]\nnot found in %d possible lines' % (rawText, ix, self.lineCount)
+                desc = '%s\n%s[Item %d]\nmissing in %s' % (checkDesc, rawText, ix, func )
+                details = '%s[Item %d]\nnot found in %d possible lines' % (rawText, ix, self.lineCount)
                 db.Insert(rpfn, func, severity, violationId, desc,
                           details, lineMis, self.detector, self.updateTime)
 
@@ -330,8 +331,8 @@ class FormatChecker:
                 violationId = errMsg + '-Seq'
                 lineSeq = item.index
                 rawText = item.JoinRaw()
-                desc = '%s Sequence Error\n%s[%d]' % (checkDesc, rawText, ix)
-                msgStr = '%s[%d]\nexpected position %s found in position %s (line %d)'
+                desc = '%s Sequence Error\n%s[Item %d]' % (checkDesc, rawText, ix)
+                msgStr = '%s[Item %d]\nexpected position %s found in position %s (line %d)'
                 details = msgStr % (rawText, ix, expPc, actPc, item.index)
                 db.Insert(rpfn, func, severity, violationId, desc,
                           details, lineSeq, self.detector, self.updateTime)
@@ -345,11 +346,12 @@ if __name__ == '__main__':
     import os
     import ViolationDb
 
-    projFile = r'C:\Users\P916214\Documents\Knowlogic\CodeReviewProj\FAST\G4.crp'
+    #projFile = r'C:\Users\P916214\Documents\Knowlogic\CodeReviewProj\FAST\G4.crp'
+    projFile = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ\G4.crp'
     pf = PF.ProjectFile(projFile)
     vDb = ViolationDb.ViolationDb( pf.paths[PF.ePathProject])
 
-    fpfn = pf.FullPathName( 'Event.c')
+    fpfn = pf.FullPathName( 'TrendUserTables.c')
     if fpfn:
         fpfn = fpfn[0]
 
