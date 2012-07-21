@@ -12,9 +12,10 @@
 #---------------------------------------------------------------------------------------------------
 import datetime
 import os
+import re
 import sys
 import subprocess
-import re
+import time
 
 #---------------------------------------------------------------------------------------------------
 # Third Party Modules
@@ -34,7 +35,7 @@ from utils.DB.sqlLite.database import DB_SQLite
 from tools.pcLint.PcLint import PcLint
 from tools.u4c.u4c import U4c
 
-from Analyze import Analyzer
+#from Analyze import Analyzer
 from crappcustomiddialog import Ui_CRAppCustomIdDialog
 from crmainwindow import Ui_MainWindow
 from ViolationDb import eDbName, eDbRoot
@@ -634,23 +635,31 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def RunAnalysis(self):
         if not self.analysisActive:
             self.analysisActive = True
+            self.abortRequested = False
             self.toolProgress = ''
+            self.toolRunOutput = ''
             self.toolOutputText = []
+            self.startAnalysis = DateTime.DateTime.today()
+
             cwd = os.getcwd()
             cmdPath = os.path.join( cwd, 'Analyze.py')
             cmd = 'c:\python32\python.exe "%s" "%s"' % (cmdPath, self.pFullFilename)
             rootDir = self.projFile.paths[PF.ePathProject]
+
             self.analysisProcess = subprocess.Popen( cmd,
                                                      cwd=rootDir,
                                                      stderr=subprocess.STDOUT,
                                                      stdout=subprocess.PIPE)
 
+            # launch our thread to collect results
+            t1 = util.ThreadSignal( self.UpdateToolAnalysis)
+            t1.Go()
+
             self.toolOutput.clear()
             self.timer = QtCore.QTimer(self)
             self.connect(self.timer, QtCore.SIGNAL("timeout()"), self.AnalysisUpdate)
-            self.timer.start(0.05)
-            self.toolRunOutput = ''
-            self.startAnalysis = DateTime.DateTime.today()
+            self.timerDelay = 250
+            self.timer.start( self.timerDelay)
 
     #-----------------------------------------------------------------------------------------------
     def AnalysisUpdate( self):
@@ -661,30 +670,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         nowIs = DateTime.DateTime.today()
         elapsed = nowIs - self.startAnalysis
         elapsed.ShowMs( False)
-        self.pushButton_RunAnalysis.setText('%s' % elapsed)
+        self.pushButton_RunAnalysis.setText('%s' % (elapsed))
 
         if self.AnalyzeActive():
-            line = self.analysisProcess.stdout.readline()
-            line = line.decode(encoding='windows-1252').strip()
-            if line.find( '^') == 0:
-                self.toolProgress = line[1:] # remove the '^'
-            else:
-                self.toolOutputText.append( line)
-
-            text = self.toolProgress + '\n\n'
-            text += '\n'.join(self.toolOutputText)
-
-            self.toolOutput.setText(text)
+            self.toolOutput.setText( self.toolRunOutput)
 
         else:
-            text = self.toolProgress + '\n\n'
-            text += '\n'.join(self.toolOutputText)
-            self.toolOutput.setText(text)
+            self.analysisProcess = None
+            self.BuildToolOutput()
+            self.toolOutput.setText( self.toolRunOutput)
 
             self.pushButton_RunAnalysis.setText('Run Analysis')
-
-            # save this for recall
-            self.toolRunOutput = text
 
             # kill the timer
             self.timer.stop()
@@ -714,7 +710,35 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """ Abort the analysis process
         """
         if self.analysisProcess:
+            self.abortRequested = True
+            time.sleep(0.25)
             self.analysisProcess.kill()
+
+    #-----------------------------------------------------------------------------------------------
+    def UpdateToolAnalysis(self):
+        """ This function is run as a thread to collect Tool Analysis Process outputs """
+        while self.AnalyzeActive():
+            line = self.analysisProcess.stdout.readline()
+            line = line.decode(encoding='windows-1252').strip()
+            if line.find( '^') == 0:
+                self.toolProgress = line[1:] # remove the '^'
+            else:
+                self.toolOutputText.append( line)
+
+            self.BuildToolOutput()
+            time.sleep(0.001)
+
+    #-----------------------------------------------------------------------------------------------
+    def BuildToolOutput( self):
+        text = '\n'.join(self.toolOutputText)
+
+        text = self.toolProgress + '\n\n' + text
+
+        if self.abortRequested:
+            text += '\n\n--- Tool Analysis ABORTED. '
+            text += 'Partial tool analysis results maybe included. ---'
+
+        self.toolRunOutput = text
 
     #-----------------------------------------------------------------------------------------------
     # User Analysis

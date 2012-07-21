@@ -576,7 +576,7 @@ class U4c( ToolManager):
         libItem = 0
         pctCtr = 0
 
-        msg = 'Check %s Naming for %d items [Step %.2f of %d]'%(longname, totalItems, step, totalTasks)
+        msg = '%s(%d) Naming [Step %.2f of %d]'%(longname, totalItems, step, totalTasks)
         self.SetStatusMsg(msg = msg)
         for item in theItems:
             if self.abortRequest:
