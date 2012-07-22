@@ -655,7 +655,7 @@ class ProjectFile:
                 for i in srcRoots:
                     # see if it is in the root dir
                     fpfn = os.path.join( i, title)
-                    if os.path.isfile:
+                    if os.path.isfile(fpfn):
                         fullPathNames.append( fpfn)
                     else:
                         fpfn = os.path.join( i, rpfn)
