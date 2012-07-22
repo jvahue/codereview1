@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>855</width>
-    <height>655</height>
+    <height>658</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -33,7 +33,7 @@
           <property name="font">
            <font>
             <family>Cambria</family>
-            <pointsize>16</pointsize>
+            <pointsize>20</pointsize>
             <weight>75</weight>
             <bold>true</bold>
            </font>
@@ -58,17 +58,18 @@ p, li { white-space: pre-wrap; }
           <property name="font">
            <font>
             <family>Cambria</family>
-            <pointsize>14</pointsize>
+            <pointsize>16</pointsize>
             <weight>75</weight>
-            <italic>false</italic>
+            <italic>true</italic>
             <bold>true</bold>
+            <underline>false</underline>
            </font>
           </property>
           <property name="text">
            <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Cambria'; font-size:14pt; font-weight:600; font-style:normal;&quot;&gt;
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Cambria'; font-size:16pt; font-weight:600; font-style:normal;&quot;&gt;
 &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; color:#55007f;&quot;&gt;Code Review Tool&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="margin">
@@ -213,8 +214,8 @@ p, li { white-space: pre-wrap; }
                 <widget class="QTextEdit" name="toolOutput">
                  <property name="font">
                   <font>
-                   <family>Arial</family>
-                   <pointsize>9</pointsize>
+                   <family>Cambria</family>
+                   <pointsize>16</pointsize>
                    <weight>50</weight>
                    <italic>false</italic>
                    <bold>false</bold>
@@ -1023,13 +1024,10 @@ p, li { white-space: pre-wrap; }
           </item>
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout_20">
-            <property name="spacing">
-             <number>5</number>
-            </property>
             <item>
-             <widget class="QTreeView" name="treeView">
+             <widget class="QListWidget" name="pfSections">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                 <horstretch>2</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
@@ -1037,10 +1035,10 @@ p, li { white-space: pre-wrap; }
              </widget>
             </item>
             <item>
-             <widget class="QPlainTextEdit" name="projFileEditor">
+             <widget class="QTextEdit" name="pfText">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-                <horstretch>6</horstretch>
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <horstretch>8</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
               </property>
@@ -1049,9 +1047,6 @@ p, li { white-space: pre-wrap; }
                 <family>Courier New</family>
                 <pointsize>9</pointsize>
                </font>
-              </property>
-              <property name="cursor" stdset="0">
-               <cursorShape>ArrowCursor</cursorShape>
               </property>
               <property name="readOnly">
                <bool>true</bool>
@@ -1063,7 +1058,7 @@ p, li { white-space: pre-wrap; }
           <item>
            <widget class="QTextEdit" name="sectionTip">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+             <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
@@ -1071,7 +1066,7 @@ p, li { white-space: pre-wrap; }
             <property name="maximumSize">
              <size>
               <width>16777215</width>
-              <height>40</height>
+              <height>75</height>
              </size>
             </property>
             <property name="textInteractionFlags">
@@ -1286,7 +1281,6 @@ p, li { white-space: pre-wrap; }
   <tabstop>projFileSections</tabstop>
   <tabstop>enableProjEdit</tabstop>
   <tabstop>saveConfig</tabstop>
-  <tabstop>projFileEditor</tabstop>
   <tabstop>sectionTip</tabstop>
   <tabstop>reportFileName</tabstop>
   <tabstop>pushButton_BrowseSrcCode</tabstop>
@@ -1294,7 +1288,6 @@ p, li { white-space: pre-wrap; }
   <tabstop>pushButton_BrowseReport</tabstop>
   <tabstop>pushButton_GenerateReport</tabstop>
   <tabstop>pcLintPdf</tabstop>
-  <tabstop>treeView</tabstop>
   <tabstop>reportedOn</tabstop>
   <tabstop>lineNumber</tabstop>
  </tabstops>

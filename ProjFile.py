@@ -138,6 +138,8 @@ class ProjectFile:
         self.projFileName = ffn
         self.projName = os.path.splitext(os.path.split(ffn)[1])[0]
 
+        self.sectionTips = {}
+
         self.paths = OrderedDict()
         self.paths[ePathProject] = os.path.split(ffn)[0]
         self.paths[ePathSrcRoot] = [] # a list of roots
@@ -146,8 +148,27 @@ class ProjectFile:
         self.paths[ePathU4c] = eU4cPath # path to U4c executable
         self.paths[ePathViewer] = None # path/cmdline to run the viewer <filename> <linenumber>
 
+        self.sectionTips[ePathProject] = "A single path specifying the full path to the project"
+
+        self.sectionTips[ePathSrcRoot] = "A List of paths specifying where to find code. "
+        self.sectionTips[ePathSrcRoot] += "Subdirectories below each path are included"
+
+        self.sectionTips[ePathInclude] = "A list of include paths."
+        self.sectionTips[ePathPcLint] = "The path to the PC-Lint installation"
+        self.sectionTips[ePathU4c] = "The path to the Understand installation"
+
+        self.sectionTips[ePathViewer] = "The path and command for your code viewer. "
+        self.sectionTips[ePathViewer] += "If your view supports a filename and line number "
+        self.sectionTips[ePathViewer] += "put the following in the command <filename> <linenumber> "
+        self.sectionTips[ePathViewer] += "these will be converted by the CRT at run time. "
+        self.sectionTips[ePathViewer] += "The follwing will open Understand at the specified line\n\n"
+        self.sectionTips[ePathViewer] += r"<UnderstandPath>\understand.exe -visit <fullPathFileName> <lineNumber>"
+
         self.defines = []     # a list of defines
+        self.sectionTips["Defines"] = "System Wide Defines for C/C++"
+
         self.undefines = []
+        self.sectionTips["Undefines"] = "System Wide UnDefines for C/C++"
 
         self.exclude = OrderedDict()
         self.exclude[eExcludeDirs] = []
@@ -156,11 +177,34 @@ class ProjectFile:
         self.exclude[eExcludeFunc] = []
         self.exclude[eExcludeKeywords] = []
 
+        self.sectionTips[eExcludeDirs] = 'A List of directories to exclude from processing, '
+        self.sectionTips[eExcludeDirs] += "maybe the build result directory or a test code directory."
+        self.sectionTips[eExcludePcLint] = 'A list of files to exclude from PC-Lint analysis. '
+        self.sectionTips[eExcludeU4c] = 'A list of files to exclude from Understand analysis .'
+        self.sectionTips[eExcludeFunc] = 'A list of functions that cannot be used. '
+        self.sectionTips[eExcludeKeywords] = 'A list of keywords that cannot be used.'
+
         self.formats = OrderedDict()
         self.formats[eFmtRegex] = OrderedDict()
         self.formats[eFmtFile_h] = ''
         self.formats[eFmtFile_c] = ''
         self.formats[eFmtFunction] = ''
+
+        self.sectionTips[eFmtRegex] = 'A set of key/value pairs that define a regex substitution '
+        self.sectionTips[eFmtRegex] += 'These keys can be placed in you description of files or '
+        self.sectionTips[eFmtRegex] += 'function headers.\n\n'
+        self.sectionTips[eFmtRegex] += 'For example if you expect a date in a file at a particular location '
+        self.sectionTips[eFmtRegex] += 'you could create <date>=[0-9]{1,2}[/-][0-9]{1,2}[/-][0-9]{1,2} this '
+        self.sectionTips[eFmtRegex] += 'can then be used any place in your description'
+
+        self.sectionTips['Format_File'] = 'A description of a file based on items you want to see in the file, '
+        self.sectionTips['Format_File'] += 'in the order you wanto to see them.  When items have a relative '
+        self.sectionTips['Format_File'] += 'position to other lines in the item put a :n: at the end of the '
+        self.sectionTips['Format_File'] += 'line to show it is supposed to be n lines after the prvious item. '
+        self.sectionTips['Format_File'] += 'If you want to make sure you cannot find an item unless the previous '
+        self.sectionTips['Format_File'] += 'item is found put a :D: at the end of the line.'
+
+        self.sectionTips[eFmtFunction] = 'A description of the format of your function header'
 
         self.metrics = OrderedDict()
         self.metrics[eMetricMcCabe] = 10
@@ -169,6 +213,7 @@ class ProjectFile:
         self.metrics[eMetricFunc] = 250
         self.metrics[eMetricLine] = 95
         self.metrics[eMetricReturns] = 1
+        self.sectionTips['[Metrics]'] = 'The specific limit which cannot be exceeded in your code.'
 
         self.naming = OrderedDict()
         self.naming[eNameFunc] = r'[A-Za-z0-9_]{1,32}'
@@ -177,20 +222,40 @@ class ProjectFile:
         self.naming[eNameConst] = r'[A-Za-z0-9_]{1,32}'
         self.naming[eNameDef] = r'[A-Za-z0-9_]{1,32}'
 
+        self.sectionTips['[Naming]'] = 'Regex for the items defined'
+
         self.baseTypes = []
+        self.sectionTips['[Base_Types]'] = 'The only types for all items to be specified as.'
 
         self.options = OrderedDict()
         self.options[eOptPcLint] = ''
+        self.sectionTips[eOptPcLint] = 'Specify all you PC-Lint options'
 
         self.restricted = OrderedDict()
         self.restricted[eRestrictedFunc] = []
+        self.sectionTips[eRestrictedFunc] = 'Any function that has not been verified for your current installation '
+        self.sectionTips[eRestrictedFunc] += 'and that has undefined behaviour by based on the language defintion.'
 
         self.analysisComments = []
+        self.sectionTips['[Analysis_Comments]'] = 'A list of canned comments to alpply to your analysis of the tool findings.'
 
         self.modified = False
         self.isValid = False
 
         self.errors = []
+
+    #-----------------------------------------------------------------------------------------------
+    def GetTip( self, iniGroup):
+        """ Get the tip associated with the iniGroup
+        """
+        tip = ''
+
+        for i in self.sectionTips:
+            if iniGroup.find(i) != -1:
+                tip = self.sectionTips[i]
+                break
+
+        return tip
 
     #-----------------------------------------------------------------------------------------------
     def GetSrcCodeFiles( self, extensions=['.h','.c'], excludeDirs=[], excludedFiles=[]):
@@ -216,6 +281,7 @@ class ProjectFile:
                                 srcFiles.append( ffn)
 
         return includeDirs, srcFiles
+
 
     #-----------------------------------------------------------------------------------------------
     # Open / Read Operations

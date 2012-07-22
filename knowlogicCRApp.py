@@ -10,6 +10,8 @@
 #---------------------------------------------------------------------------------------------------
 # Python Modules
 #---------------------------------------------------------------------------------------------------
+from collections import OrderedDict
+
 import datetime
 import os
 import re
@@ -21,7 +23,7 @@ import time
 # Third Party Modules
 #---------------------------------------------------------------------------------------------------
 from PySide import QtCore
-from PySide.QtGui import QApplication, QMainWindow, QMessageBox, QTableWidgetItem, QFileDialog, QDialog
+from PySide.QtGui import QApplication, QMainWindow, QMessageBox, QTableWidgetItem, QFileDialog, QDialog, QTextCursor
 
 import sqlite3
 
@@ -125,7 +127,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # declare object attributes
         self.userName = ''
-        self.curTab = 0
+        self.curTab = eTabAdmin
         self.db = None
 
         self.violationsData = []
@@ -215,6 +217,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                                                      fx=self.SaveAnalysis: fx(x))
 
         #------------------------------------------------------------------------------
+        # Handle Project Tab Data
+        #------------------------------------------------------------------------------
+        self.pfSections.clicked.connect( self.PfGoto)
+
+        #------------------------------------------------------------------------------
         # Handle GenerateReport Tab Data
         #------------------------------------------------------------------------------
         self.pushButton_BrowseSrcCode.clicked.connect(self.DisplaySrcFileBrowser)
@@ -245,45 +252,41 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
                 self.CrErrPopup('Please enter a valid %s' % ' and '.join(errs))
 
-            if newTab == eTabAnalysis and not self.programOpenedU4c and not self.analysisActive:
-                # see if understand is open and open it if not
-                op = subprocess.check_output( 'tasklist')
-                opStr = op.decode()
+            if newTab == eTabAnalysis:
+                if not self.programOpenedU4c and not self.analysisActive:
+                    # see if understand is open and open it if not
+                    op = subprocess.check_output( 'tasklist')
+                    opStr = op.decode()
 
-                # create a U4c object ot get project Db info
-                u4co = U4c(self.projFile)
+                    # create a U4c object ot get project Db info
+                    u4co = U4c(self.projFile)
 
-                if opStr.find('understand') == -1:
-                    openIt = True
-                else:
-                    msg  = 'Understand is currently running.\n'
-                    msg += 'For Code Viewing the following project should be open.\n'
-                    msg += '<%s>.\nWould you like this to happen.' % u4co.dbName
-                    rtn = QMessageBox.question( self, 'Understand Open',
-                                                msg, QMessageBox.Yes, QMessageBox.No)
-                    if rtn == QMessageBox.Yes:
-                        u4co.KillU4c()
+                    if opStr.find('understand') == -1:
                         openIt = True
                     else:
-                        self.programOpenedU4c = True
-                        openIt = False
+                        msg  = 'Understand is currently running.\n'
+                        msg += 'For Code Viewing the following project should be open.\n'
+                        msg += '<%s>.\nWould you like this to happen.' % u4co.dbName
+                        rtn = QMessageBox.question( self, 'Understand Open',
+                                                    msg, QMessageBox.Yes, QMessageBox.No)
+                        if rtn == QMessageBox.Yes:
+                            u4co.KillU4c()
+                            openIt = True
+                        else:
+                            self.programOpenedU4c = True
+                            openIt = False
 
-                if openIt:
-                    # get path to understand from project
-                    undPath = self.projFile.paths[PF.ePathU4c]
-                    u4cPath, prog = os.path.split(undPath)
-                    understand = os.path.join(u4cPath, 'understand.exe')
-                    cmd = '%s -db "%s"' % (understand, u4co.dbName)
-                    subprocess.Popen( cmd)
-                    self.programOpenedU4c = True
+                    if openIt:
+                        # get path to understand from project
+                        undPath = self.projFile.paths[PF.ePathU4c]
+                        u4cPath, prog = os.path.split(undPath)
+                        understand = os.path.join(u4cPath, 'understand.exe')
+                        cmd = '%s -db "%s"' % (understand, u4co.dbName)
+                        subprocess.Popen( cmd)
+                        self.programOpenedU4c = True
 
             elif newTab == eTabProject:
-                # open the select project file for display/editing
-                f = open( self.pFullFilename, 'r')
-                content = f.read()
-                f.close()
-                self.projFileEditor.insertPlainText( content)
-
+                self.LoadProjectFile()
 
         # Coming back to the Config tab update the Stats as they may have analyzed something
         elif newTab == eTabAdmin and self.curTab != eTabAdmin:
@@ -932,6 +935,57 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         f.close()
         t = subprocess.Popen( 'pcLintManual.bat')
 
+    #-----------------------------------------------------------------------------------------------
+    def LoadProjectFile(self):
+        """ open the project file and load it into the viewer """
+        self.projFileViewerLoaded = False
+        if not self.projFileViewerLoaded:
+            # open the select project file for display/editing
+            f = open( self.pFullFilename, 'r')
+            data = f.read()
+            lines = data.split('\n')
+            f.close()
+            # scan the lines for all the ini groups
+            self.iniGroups = OrderedDict()
+            for lx, line in enumerate(lines):
+                ls = line.strip()
+                if ls and ls[0] == '[' and ls[-1] == ']':
+                    # find the pos in the text
+                    at = data.find(ls)
+                    self.iniGroups[ls] = at
+
+            iniList = list(self.iniGroups.keys())
+            self.pfSections.clear()
+            self.pfSections.addItems( iniList)
+
+            text = '\n'.join(lines)
+            self.pfText.setText( text)
+
+    #-----------------------------------------------------------------------------------------------
+    def PfGoto( self):
+        text = self.pfSections.currentItem().text()
+        newChar = -1
+        for i in self.iniGroups:
+            if text.find(i) != -1:
+                newChar = self.iniGroups[i]
+                tip = self.projFile.GetTip( text)
+                break
+
+        if newChar != -1:
+            self.sectionTip.setText( tip)
+            # goto that area of the proj file
+            curCursor = self.pfText.textCursor()
+            atChar = curCursor.position()
+
+            #moveOffset = newChar - atChar
+            #if moveOffset >= 0:
+            #    moveMode = QTextCursor.NextCharacter
+            #else:
+            #    moveMode = QTextCursor.PreviousCharacter
+            #    moveOffset *= -1
+
+            curCursor.setPosition( newChar)
+            self.pfText.setTextCursor(curCursor)
 
 #------------------------------------------------------------------------------------
 # Main Program
