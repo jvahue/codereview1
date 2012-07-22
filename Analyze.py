@@ -147,15 +147,15 @@ if __name__ == '__main__':
     else:
         #jvDesk
         #projFile = r'C:\Knowlogic\tools\CR-Projs\zzzCodereviewPROJ\G4.crp'
-        #projFile = r'C:\Knowlogic\tools\CR-Projs\Rypos\Rypos.crp'
+        projFile = r'C:\Knowlogic\tools\CR-Projs\Rypos\Rypos.crp'
 
         # PWC desk
-        projFile = r'L:\FAST II\control processor\CodeReview\G4.crp'
+        #projFile = r'L:\FAST II\control processor\CodeReview\G4.crp'
 
         # jvLaptop
         #projFile = r'D:\Knowlogic\Tools\CR-Projs\zzzCodereviewPROJ\G4.crp'
 
-        projFile = input( 'Enter the project File: ')
+        #projFile = input( 'Enter the project File: ')
         if projFile[0] == '"' and projFile[-1] == '"':
             projFile = projFile[1:-1]
 

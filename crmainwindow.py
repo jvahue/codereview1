@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'crmainwindow.ui'
 #
-# Created: Sat Jul 21 20:17:57 2012
+# Created: Sat Jul 21 22:22:28 2012
 #      by: pyside-uic 0.2.13 running on PySide 1.1.0
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,7 +12,7 @@ from PySide import QtCore, QtGui
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(855, 658)
+        MainWindow.resize(855, 706)
         self.centralWidget = QtGui.QWidget(MainWindow)
         self.centralWidget.setObjectName("centralWidget")
         self.verticalLayout_13 = QtGui.QVBoxLayout(self.centralWidget)
@@ -119,8 +119,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_6.setObjectName("horizontalLayout_6")
         self.toolOutput = QtGui.QTextEdit(self.groupBox_2)
         font = QtGui.QFont()
-        font.setFamily("Cambria")
-        font.setPointSize(16)
+        font.setFamily("Arial")
+        font.setPointSize(9)
         font.setWeight(50)
         font.setItalic(False)
         font.setBold(False)

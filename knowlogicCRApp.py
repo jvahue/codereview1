@@ -497,7 +497,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                    who, reviewDate
             FROM Violations
             %s
-            order by filename, detectedBy, violationId, function, severity
+            order by lineNumber desc, filename, detectedBy, violationId, function, severity
             """
         whereClause = self.BuildSqlStatement()
         sql = s % whereClause
@@ -638,8 +638,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     #-----------------------------------------------------------------------------------------------
     def RunAnalysis(self):
         if not self.analysisActive:
+            # TODO: check if u4c running and ask them to save their work
+            self.ResetProject( self.pFullFilename)
             self.analysisActive = True
             self.abortRequested = False
+            self.programOpenedU4c = False
             self.toolProgress = ''
             self.toolRunOutput = ''
             self.toolOutputText = []

@@ -653,9 +653,14 @@ class ProjectFile:
 
             if path:
                 for i in srcRoots:
-                    fpfn = os.path.join( i, rpfn)
-                    if os.path.isfile( fpfn):
+                    # see if it is in the root dir
+                    fpfn = os.path.join( i, title)
+                    if os.path.isfile:
                         fullPathNames.append( fpfn)
+                    else:
+                        fpfn = os.path.join( i, rpfn)
+                        if os.path.isfile( fpfn):
+                            fullPathNames.append( fpfn)
             else:
                 includes, names = self.GetSrcCodeFiles()
                 for s in srcRoots:

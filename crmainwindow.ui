@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>855</width>
-    <height>658</height>
+    <height>706</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -214,8 +214,8 @@ p, li { white-space: pre-wrap; }
                 <widget class="QTextEdit" name="toolOutput">
                  <property name="font">
                   <font>
-                   <family>Cambria</family>
-                   <pointsize>16</pointsize>
+                   <family>Arial</family>
+                   <pointsize>9</pointsize>
                    <weight>50</weight>
                    <italic>false</italic>
                    <bold>false</bold>

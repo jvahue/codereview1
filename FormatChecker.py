@@ -166,8 +166,12 @@ class FormatChecker:
 
         # find out how big our line buffer needs to be
         maxSpan = [i.span for i in self.items]
-        maxSpan.sort()
-        self.maxSpan = maxSpan[-1]
+        if maxSpan:
+            maxSpan.sort()
+            self.maxSpan = maxSpan[-1]
+        else:
+            self.maxSpan = 1
+
         self.lineBuffer = []
 
         self.lineCount = 0

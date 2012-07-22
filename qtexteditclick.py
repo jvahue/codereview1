@@ -8,7 +8,7 @@ class QTextEditClick( QTextEdit):
     def Connect( self, func):
         self.connectFunc = func
 
-    def mousePressEvent( self, event):
+    def mouseDoubleClickEvent( self, event):
         if event.button() == Qt.LeftButton:
             self.connectFunc()
 
