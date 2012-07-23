@@ -129,7 +129,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         #------------------------------------------------------------------------------
         # Handle Config Tab Data
         #------------------------------------------------------------------------------
-        self.projectFileSelector.currentIndexChanged.connect(self.NewProjFile)
+        self.projectFileSelector.currentIndexChanged.connect(lambda a,
+                                                             fx=self.NewProjFile: fx(a))
         self.browseProjectFile.clicked.connect(self.SelectMainProjectFile)
 
         self.lineEdit_userName.editingFinished.connect(self.lineEditUserNameChanged)
@@ -401,14 +402,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             #------------------------------------------------------------------------------
             # Establish a DataBase connection
             #------------------------------------------------------------------------------
-            self.dbFname = eDbName
-            self.dbFullFilename = os.path.join( self.projFile.paths[PF.ePathProject],
-                                                eDbRoot, eDbName)
+            self.db = ViolationDb( self.projFile.paths[PF.ePathProject])
 
-            if os.path.isfile(self.dbFullFilename):
-                self.OpenDb( True)
-            else:
-                self.toolOutput.setText('No Database exists for this project yet.')
+            self.FillFilters( 0, '', True)
+            self.DisplayViolationStatistics()
+            self.DisplayViolationsData()
 
             self.violationsData = []
             self.v = None
@@ -416,26 +414,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.programOpenedU4c = False
             self.analysisActive = False
 
-            # clear out the display fields
-            self.DisplayViolationsData()
+            self.toolRunOutput = ''
+            self.toolOutput.setText( self.toolRunOutput)
 
         elif self.projFile:
             msg = self.projFile.GetErrorText()
             self.projFile = None
             self.CrErrPopup( msg)
-
-    #-----------------------------------------------------------------------------------------------
-    def OpenDb(self, forceOpen = False):
-        if forceOpen:
-            del self.db
-            self.db = None
-
-        if self.db is None:
-            self.db = DB_SQLite()
-            self.db.Connect(self.dbFullFilename)
-
-            self.FillFilters( 0, '', True)
-            self.DisplayViolationStatistics()
 
     #-----------------------------------------------------------------------------------------------
     def SelectMainProjectFile( self):
@@ -445,10 +430,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     #-----------------------------------------------------------------------------------------------
     def DisplayViolationStatistics(self):
-        s = 'SELECT count(*) from Violations'
-        total = self.db.Query(s)
-        if len(total) > 0:
+        if self.db:
+            s = 'SELECT count(*) from Violations'
+            total = self.db.Query(s)
+        else:
+            total = []
 
+        if len(total) > 0:
             s = "SELECT count(*) from Violations where status = 'Accepted'"
             accepted = self.db.Query(s)
 
@@ -501,6 +489,24 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.pcAccepted.setText(str(accepted[0]))
             self.pcRemoved.setText(str(noRep[0]))
             self.pcActive.setText(str(total[0].data-noRep[0].data))
+        else:
+            self.totalViolations.setText('0')
+            self.reviewedViolations.setText('0')
+            self.acceptedViolations.setText('0')
+            self.removedViolations.setText('0')
+            self.activeViolations.setText('0')
+
+            self.ksTotal.setText('0')
+            self.ksReviewed.setText('0')
+            self.ksAccepted.setText('0')
+            self.ksRemoved.setText('0')
+            self.ksActive.setText('0')
+
+            self.pcTotal.setText('0')
+            self.pcReviewed.setText('0')
+            self.pcAccepted.setText('0')
+            self.pcRemoved.setText('0')
+            self.pcActive.setText('0')
 
     #-----------------------------------------------------------------------------------------------
     def ShowLog( self, logId):
@@ -588,13 +594,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             # kill the timer
             self.StopTimerEvent()
 
-            self.OpenDb()
-
-            # populate the display data
+            # update things dependent on the DB
             self.FillFilters( 0, '', True)
             self.DisplayViolationStatistics()
+            self.DisplayViolationsData()
 
+            self.violationsData = []
+            self.v = None
+
+            self.programOpenedU4c = False
             self.analysisActive = False
+
             self.runAnalysis.setEnabled(True)
 
     #-----------------------------------------------------------------------------------------------
@@ -1129,10 +1139,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             os.makedirs( '.ini')
 
         host = socket.gethostname()
-        fn =  '.ini/' + eKsCrtIni + '_%s.ini' % host
-        fnv = util.ValidFileName( fn)
+        fn = eKsCrtIni + '_%s.ini' % host
+        fn = util.ValidFileName( fn)
+        rpfn =  os.path.join( '.ini', fn)
 
-        return fnv
+        return rpfn
 
     #-----------------------------------------------------------------------------------------------
     def GetRecentProjFiles( self):
