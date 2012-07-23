@@ -2,5 +2,8 @@ syntax: regexp
 .pyc$
 ^.idea
 .orig$
+^.ini
 syntax: glob
 KsCr.ini
+wingdbstub.py
+pcLintManual.bat

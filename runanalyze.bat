@@ -1,1 +1,0 @@
-c:\python32\python.exe analyze.py

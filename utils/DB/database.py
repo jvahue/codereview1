@@ -133,8 +133,8 @@ class DB:
                 rv = 1
             except :
                 self.queryValid = False
-                print(traceback.print_exc())
-                print()
+                print(traceback.print_exc(file=sys.stdout))
+                print('---------------')
                 print(sql)
                 if args:
                     for i in args:

@@ -46,9 +46,10 @@ class DateTime( datetime.datetime):
                 for tre in timeStrings:
                     ts,dummy = self.CheckFormat( tre, ti)
                     if ts:
-                        time = getattr(self,timeStrings[tre])(ts)
+                        theTime = getattr(self,timeStrings[tre])(ts)
                         dt = DateTime( date.year, date.month, date.day,
-                                       time.hour, time.minute, time.second, time.microsecond)
+                                       theTime.hour, theTime.minute, theTime.second,
+                                       theTime.microsecond)
                         return dt
                 else:
                     dt = DateTime(date.year,date.month,date.day,0,0,0,0)
@@ -61,9 +62,10 @@ class DateTime( datetime.datetime):
         for tre in timeStrings:
             ts,dummy = self.CheckFormat( tre, ti)
             if ts:
-                time = getattr(self,timeStrings[tre])(ts)
+                theTime = getattr(self,timeStrings[tre])(ts)
                 dt = DateTime( self.year, self.month, self.day,
-                               time.hour, time.minute, time.second, time.microsecond)
+                               theTime.hour, theTime.minute, theTime.second,
+                               theTime.microsecond)
                 return dt
 
     #------------------------------------------------------------------------------------------

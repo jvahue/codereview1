@@ -123,11 +123,7 @@ class ProjectFile:
         if not os.path.isdir(self.paths['ProjectRoot']):
             os.makedirs( self.paths['ProjectRoot'])
 
-        if not os.path.isfile( ffn):
-            self.modified = True
-            self.Save()
-        else:
-            self.Open()
+        self.Open()
 
         self.dbLock = threading.Lock()
 
@@ -282,6 +278,15 @@ class ProjectFile:
 
         return includeDirs, srcFiles
 
+    #-----------------------------------------------------------------------------------------------
+    def GetErrorText( self):
+        """ Walk all srcCode roots and files with extension in extensions unless
+            the file is in the excludeFileList
+
+            All .h files seen have their src directory returned in includeDirs
+        """
+        text = '\n'.join( self.errors)
+        return text
 
     #-----------------------------------------------------------------------------------------------
     # Open / Read Operations
@@ -289,40 +294,43 @@ class ProjectFile:
     def Open( self):
         """ Read in the contents of a project file
         """
-        self.projectFile = open( self.projFileName , 'r')
-        rawLines = self.projectFile.readlines()
-        # remove comment lines
-        self.projectFileData = [i for i in rawLines if i[0:2] != '##']
-        self.projectFile.close()
+        if os.path.isfile( self.projFileName):
+            self.projectFile = open( self.projFileName , 'r')
+            rawLines = self.projectFile.readlines()
+            # remove comment lines
+            self.projectFileData = [i for i in rawLines if i[0:2] != '##']
+            self.projectFile.close()
 
-        self.ReadPaths()
-        self.ReadDefs()
-        self.ReadExcludes()
-        self.ReadFormats()
-        self.ReadMetrics()
-        self.ReadNaming()
-        self.ReadOptions()
-        self.ReadRestricted()
-        self.ReadBaseTypes()
-        self.ReadAnalysisComments()
+            self.ReadPaths()
+            self.ReadDefs()
+            self.ReadExcludes()
+            self.ReadFormats()
+            self.ReadMetrics()
+            self.ReadNaming()
+            self.ReadOptions()
+            self.ReadRestricted()
+            self.ReadBaseTypes()
+            self.ReadAnalysisComments()
 
-        # save the raw format info
-        self.rawFormats = copy.deepcopy( self.formats)
+            # save the raw format info
+            self.rawFormats = copy.deepcopy( self.formats)
 
-        # replace keywords in formats
-        for t in self.formats:
-            if t != eFmtRegex:
-                v = self.formats[t]
-                # make sure '\' is done first
-                for c in r'\.^$*+?{}[]|()':
-                    v = v.replace(c, r'\%s' % c)
-                for k in self.formats[eFmtRegex]:
-                    kv = self.formats[eFmtRegex][k]
-                    v = v.replace( k, kv)
-                    self.formats[t] = v
+            # replace keywords in formats
+            for t in self.formats:
+                if t != eFmtRegex:
+                    v = self.formats[t]
+                    # make sure '\' is done first
+                    for c in r'\.^$*+?{}[]|()':
+                        v = v.replace(c, r'\%s' % c)
+                    for k in self.formats[eFmtRegex]:
+                        kv = self.formats[eFmtRegex][k]
+                        v = v.replace( k, kv)
+                        self.formats[t] = v
 
-        # good project file ?
-        self.isValid = self.errors == []
+            # good project file ?
+            self.isValid = self.errors == []
+        else:
+            self.errors.append( '<%s> does not exist.' % self.projFileName)
 
     #-----------------------------------------------------------------------------------------------
     def ReadPaths( self):
@@ -341,8 +349,8 @@ class ProjectFile:
                 v = [v]
 
             for vx in v:
-                if not self.CheckPath( vx):
-                    self.errors.append( '%s Invalid Path/File: %s' % (p, vx))
+                if not vx or not self.CheckPath( vx):
+                    self.errors.append( '%s Invalid Path/File: <%s>' % (p, vx))
 
     #-----------------------------------------------------------------------------------------------
     def CheckPath( self, aPath):

@@ -82,12 +82,24 @@ class ViolationDb( DB_SQLite):
         self.insertInErr = 0
         self.insertUpErr = 0
 
+        # merge stats
+        self.mergePct = 0        # percent complete with merge
+        self.mergeInsert = 0     # how many new records did we insert
+        self.mergeUpdate = 0     # how many existing records did we update
+        self.mergeInsertFail = 0 # how many inserts failed
+        self.mergeUpdateFail = 0 # how many merge updates failed
+
+        self.noAnalysis = 0      # how many have no analysis
+        self.selfAnalysis = 0    # haw many chose the main db analysis
+        self.mergeAnalysis = 0   # how many analysis came from the merge db
+        self.bothAnalysis = 0    # how many are a merge of the to analysis
+
     #-----------------------------------------------------------------------------------------------
     def Open( self):
         self.Connect( self.dbName)
 
     #-----------------------------------------------------------------------------------------------
-    def Insert( self, filename, function, severity, violationId, desc, details, line, detectedBy, updateTime):
+    def Insert( self, fName, func, sev, violationId, desc, details, line, detectedBy, updateTime):
         """ Insert a violation into the DB.
             If entry exists
                 update lineNumber and description
@@ -95,9 +107,9 @@ class ViolationDb( DB_SQLite):
             else
                 insert new row
         """
-        function = function.strip()
-        if function == '':
-            function = 'N/A'
+        func = func.strip()
+        if func == '':
+            func = 'N/A'
 
         details = details.strip()
         if details == '':
@@ -109,13 +121,57 @@ class ViolationDb( DB_SQLite):
                 details = detail0
                 detail0 = details.replace('  ',' ')
 
+        matchItem = self.IsNewRecord(fName, func, sev, violationId,
+                                     desc, details, line, detectedBy, updateTime)
+        if matchItem is None:
+            d = (fName, func, sev, violationId, desc, details, line, detectedBy,updateTime,updateTime)
+            s = """
+                insert into Violations
+                (filename,function,severity,violationId,description,details,lineNumber,detectedBy,firstReport,lastReport)
+                values (%s)
+                """ % ','.join('?'*len(d))
+            #if self.Execute( s, fName, func, sev, violationId, desc, details, line, detectedBy, updateTime, updateTime) != 1:
+            if self.Execute( s, *d) != 1:
+                self.insertInErr += 1
+            else:
+                self.insertNew += 1
+        else:
+            updateItems = (updateTime, desc, details, line)
+            primary = (fName, func, sev, violationId,
+                       matchItem.description, matchItem.details, matchItem.lineNumber)
+            s = """
+                update Violations set lastReport=?, description=?, details=?, lineNumber=? where
+                filename=?
+                and function=?
+                and severity=?
+                and violationID=?
+                and description=?
+                and details=?
+                and lineNumber=?
+                """
+            params = updateItems + primary
+            if self.Execute( s, *params) != 1:
+                self.insertUpErr += 1
+            else:
+                self.insertUpdate += 1
+
+    #-----------------------------------------------------------------------------------------------
+    def IsNewRecord( self, fName, func, sev, violId, desc, details, line, detectedBy, updateTime):
+        """ Check to see if the record is new to the DB, if not return the matching record
+            and there better only be one.
+
+            Returns: the matching row in the DB as matchItem
+        """
         # debug hook
-        if filename==r'application\User.c' and function=='User_ExtractIndex' and severity=='Warning'and violationId =='613':
+        fnM = fName==r'application\AircraftConfigMgr.c'
+        fcM = func=='AircraftConfigInitialization'
+        if fnM and fcM and sev=='Warning'and violId =='534':
             pass
 
         # determine if this violation already exists in the DB
         s = """
-            select description, details, lineNumber, detectedBy, lastReport
+            select filename,function,severity,violationId,description,details,lineNumber,
+                   detectedBy,firstReport,lastReport,status,analysis,who,reviewDate
             from Violations where
             filename=?
             and function=?
@@ -123,21 +179,26 @@ class ViolationDb( DB_SQLite):
             and violationId=?
             and detectedBy=?
             and details=?
-            and lastReport != ?
+            and lastReport!=?
             """
 
-        d = ( filename,function,severity,violationId,detectedBy,details,updateTime)
-        data0 = self.Query( s, filename,function,severity,violationId,detectedBy,details,updateTime)
+        data0 = self.Query( s, fName, func, sev, violId, detectedBy, details, updateTime)
         if data0 is None:
+            """ Query failed - default to no match """
             self.insertSelErr += 1
             data0 = []
 
-        isInsert = True
+        matchedItem = None
         if len(data0) > 0:
+            # create a regex of all line numbers in the description
             descriptionRe = re.compile(self.GetDescriptionRe( desc))
+
             # pre-filter data set for our description
-            # having us do this (vs. the DB with like) speeds thing s up a lot
+            # having us do this (vs. the DB with like) speeds things up a lot
             data = [i for i in data0 if descriptionRe.search(i.description)]
+
+            if len(data) != len(data0):
+                pass
 
             if len(data) > 0:
                 primary = ()
@@ -157,53 +218,203 @@ class ViolationDb( DB_SQLite):
                     m = descriptionRe.search(i.description)
                     # if we match everything ...
                     if m and len(m.group(0)) == len(i.description):
-                        lineMatch = int(line) == i.lineNumber
-                        descMatch = desc == i.description
+                        lineMatch = (matchLineNumber and (int(line) == i.lineNumber))
+                        descMatch = (not matchLineNumber and (desc == i.description))
                         # give preference to a lineNumber/desc match, then first in/first out
-                        if primary == () or (matchLineNumber and lineMatch) or (not matchLineNumber and descMatch):
+                        # we need to run through all incase the linematch is later in the data set
+                        if not matchedItem or lineMatch or descMatch:
                             matchedItem = i
-                            primary = (filename,function,severity,violationId,i.description,i.details,i.lineNumber)
-                        isInsert = False
         else:
             pass
 
-        if isInsert:
-            d = (filename, function, severity, violationId, desc, details, line, detectedBy,updateTime,updateTime)
-            s = """
-                insert into Violations
-                (filename,function,severity,violationId,description,details,lineNumber,detectedBy,firstReport,lastReport)
-                values (%s)
-                """ % ','.join('?'*len(d))
-            if self.Execute( s, filename, function, severity, violationId,
-                                desc, details, line, detectedBy,updateTime,updateTime) != 1:
-                self.insertInErr += 1
-            else:
-                self.insertNew += 1
+        return matchedItem
+
+    #-----------------------------------------------------------------------------------------------
+    def Merge( self, mergeDbName):
+        """ Merge the data from the other DB in with ours.  Merge rules are:
+
+            for all rows in the mergeDb:
+              if row match in selfDB:
+                if no analysis in either: continue
+                if analysis in one DB: insert that with credentials
+                if anaylsis in both: append new to older and insert with newer credentials
+                  - tag merged analysis for review format
+                    MergeOld:
+                      Old analysis
+                    MergeNew:
+                      NewAnalysis
+              else:
+                Insert the entire row from mergeDb
+        """
+        # merge stats
+        self.mergePct = 0        # percent complete with merge
+        self.mergeInsert = 0     # how many new records did we insert
+        self.mergeUpdate = 0     # how many existing records did we update
+        self.mergeInsertFail = 0 # how many inserts failed
+        self.mergeUpdateFail = 0 # how many merge updates failed
+
+        self.noAnalysis = 0      # how many have no analysis
+        self.selfAnalysis = 0    # haw many chose the main db analysis
+        self.mergeAnalysis = 0   # how many analysis came from the merge db
+        self.bothAnalysis = 0    # how many are a merge of the to analysis
+
+        s = 'select count(*) from violations'
+        myCount = self.GetOne(s)
+        if myCount:
+            self.myCount = myCount[0]
+
+        # TODO handle big DB's, right now our are in the 20-25k rows so just it all in mem
+        s = """
+            select filename,function,severity,violationId,description,details,lineNumber,
+                   detectedBy,firstReport,lastReport,status,analysis,who,reviewDate
+            from Violations
+            """
+        odb = DB_SQLite()
+        odb.Connect( mergeDbName)
+        mergeData = odb.Query( s)
+
+        self.size = len(mergeData)
+        if self.size > 0:
+            sizeInv = 100.0/self.size
         else:
-            updateItems = (updateTime, desc, details, line)
-            s = """
-                update Violations set lastReport=?, description=?, details=?, lineNumber=? where
-                filename=?
-                and function=?
-                and severity=?
-                and violationID=?
-                and description=?
-                and details=?
-                and lineNumber=?
-                """
-            params = updateItems + primary
-            if self.Execute( s, *params) != 1:
-                self.insertUpErr += 1
+            sizeInv = 100.0
+
+        if self.size > 0:
+            counter = 0
+            self.mergePct = 0
+            for r in mergeData:
+                counter += 1
+                self.mergePct = float(counter) * sizeInv
+
+                matchItem = self.IsNewRecord(r.filename, r.function, r.severity, r.violationId,
+                                             r.description, r.details, r.lineNumber, r.detectedBy,
+                                             r.lastReport)
+                if matchItem:
+                    primary = (r.filename,r.function,r.severity,r.violationId,
+                               matchItem.description, matchItem.details, matchItem.lineNumber)
+
+                    # get all the analysis data
+                    analysis, who, reviewDate, status = self.GetMergeAnalysis( r, matchItem)
+
+                    # who's firstReport is less
+                    if matchItem.firstReport < r.firstReport:
+                        first = matchItem.firstReport
+                    else:
+                        first = r.firstReport
+
+                    # who's data to insert based on lastReport date
+                    if matchItem.lastReport > r.lastReport:
+                        insert = matchItem
+                    else:
+                        insert = r
+
+                        primary = (matchItem.filename, matchItem.function, matchItem.severity,
+                                   matchItem.violationId, matchItem.description, matchItem.details,
+                                   matchItem.lineNumber)
+
+                        s = """Update violations set filename=?, function=?, severity=?, violationId=?,
+                               description=?, details=?, lineNumber=?, detectedBy=?, firstReport=?,
+                               lastReport=?, status=?, analysis=?, who=?, reviewDate=?
+                               where
+                               filename=? and function=? and severity=? and violationID=?
+                               and description=? and details=? and lineNumber=?
+                               """
+
+                        iData = (insert.filename, insert.function, insert.severity, insert.violationId,
+                                 insert.description, insert.details, insert.lineNumber, insert.detectedBy,
+                                 first, insert.lastReport, status, analysis, who, reviewDate)
+                        allData = iData + primary
+                        if self.Execute( s, *allData) == 1:
+                            self.mergeUpdate += 1
+                        else:
+                            self.mergeUpdateFail += 1
+
+                else:
+                    # selfDb does not have this record, insert the entire thing
+                    d = (r.filename,r.function,r.severity,r.violationId,r.description,r.details,
+                         r.lineNumber,r.detectedBy,r.firstReport,r.lastReport,r.status,r.analysis,
+                         r.reviewDate)
+                    s = """
+                        insert into Violations
+                        (filename,function,severity,violationId,description,details,lineNumber,
+                         detectedBy,firstReport,lastReport,status,analysis,reviewDate)
+                        values (%s)
+                        """ % ','.join('?'*len(d))
+                    if self.Execute( s, *d) == 1:
+                        self.mergeInsert += 1
+                    else:
+                        self.mergeInsertFail += 1
+
+            # now save everything
+            self.Commit()
+
+    #-----------------------------------------------------------------------------------------------
+    def GetMergeAnalysis( self, mergeItem, matchItem):
+        """ create the analysis data to be merged
+        returns all analysis fields
+        """
+        selfAnalysis = matchItem.reviewDate is not None
+        mergeAnalysis = mergeItem.reviewDate is not None
+
+        # check both exist
+        if selfAnalysis and mergeAnalysis:
+            self.bothAnalysis += 1
+            # who's analysis is newer
+            if matchItem.reviewDate > mergeItem.reviewDate:
+                # self is newer
+                newer = matchItem
+                older = mergeItem
             else:
-                self.insertUpdate += 1
+                # merge is newer
+                older = matchItem
+                newer = mergeItem
+            analysis = 'MergeOld(%s/%s):\n%s\nMergeNew:\n%s' % (older.who, older.status,
+                                                                older.analysis, newer.analysis)
+        elif selfAnalysis:
+            self.selfAnalysis += 1
+            analysis = matchItem.analysis
+            newer = matchItem
+        else:
+            if mergeAnalysis:
+                self.mergeAnalysis += 1
+            else:
+                self.noAnalysis += 1
+            analysis = mergeItem.analysis
+            newer = mergeItem
+
+        return analysis, newer.who, newer.reviewDate, newer.status
+
+    #-----------------------------------------------------------------------------------------------
+    def ShowMergeStats(self):
+        """ Display what happened during the last run """
+        statNames = ('mergeInsert',
+                     'insertUpdate',
+                     'mergeUpdate',
+                     'mergeInsertFail',
+                     'mergeUpdateFail',
+                     'noAnalysis',
+                     'selfAnalysis',
+                     'mergeAnalysis',
+                     'bothAnalysis',
+                     )
+
+        self.mergeStats = ['Merge Stats\n']
+        msg = 'PreMerge CurrentDB: %d records - MergeDB: %d records\n' % (self.myCount,
+                                                                          self.size)
+        self.mergeStats.append( msg)
+        for i in statNames:
+            self.mergeStats.append('%s: %s' % (i, str(getattr(self, i, -1))))
+
+        return '\n'.join( self.mergeStats)
 
     #-----------------------------------------------------------------------------------------------
     def GetDescriptionRe( self, desc, sql=False):
-        """ Turn all line number referneces into a regex search
-        Ignoring return value of function 'foo(void)' (compare with line 163, file xyz.h)
-        Storage class of symbol 'foo(void *)' assumed static (line 150)
-        desc: the string to modify
-        sql: create a SQL wildcard search
+        """ Turn all line number referneces into a regex search:
+            Ignoring return value of function 'foo(void)' (compare with line 163, file xyz.h)
+            Storage class of symbol 'foo(void *)' assumed static (line 150)
+
+            desc: the string to modify
+            sql: create a SQL wildcard search
         """
         lineRe = re.compile(r'[Ll]ine[ \t]+([0-9]+)')
         m = lineRe.findall( desc)
@@ -262,3 +473,24 @@ class ViolationDb( DB_SQLite):
         data = self.GetOne()
 
         return data[0]
+
+
+#===================================================================================================
+if __name__ == '__main__':
+    import ProjFile as PF
+
+    mainPfName = r'C:\Knowlogic\tools\CR-Projs\G4-B\G4B.crp'
+    mrgePfName = r'C:\Knowlogic\tools\CR-Projs\G4-A\G4A.crp'
+
+    mainPf = PF.ProjectFile(mainPfName)
+    mrgePf = PF.ProjectFile(mrgePfName)
+
+    mainDb = ViolationDb( mainPf.paths[PF.ePathProject])
+    mrgeDb = ViolationDb( mrgePf.paths[PF.ePathProject])
+
+    s = 'select count(*) from violations'
+    d0 = mainDb.GetOne(s)
+    d1 = mrgeDb.GetOne(s)
+    mainDb.Merge( mrgeDb)
+
+    mainDb.ShowMergeStats()

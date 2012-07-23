@@ -135,7 +135,7 @@ p, li { white-space: pre-wrap; }
                 </widget>
                </item>
                <item>
-                <widget class="QComboBox" name="projectFileNameEditor">
+                <widget class="QComboBox" name="projectFileSelector">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                    <horstretch>1</horstretch>
@@ -151,7 +151,7 @@ p, li { white-space: pre-wrap; }
                 </widget>
                </item>
                <item>
-                <widget class="QPushButton" name="pushButton_pFileBrowse">
+                <widget class="QPushButton" name="browseProjectFile">
                  <property name="maximumSize">
                   <size>
                    <width>16777152</width>
@@ -232,14 +232,14 @@ p, li { white-space: pre-wrap; }
                   <layout class="QVBoxLayout" name="verticalLayout_4"/>
                  </item>
                  <item>
-                  <widget class="QPushButton" name="pushButton_RunAnalysis">
+                  <widget class="QPushButton" name="runAnalysis">
                    <property name="text">
                     <string>Run Analysis</string>
                    </property>
                   </widget>
                  </item>
                  <item>
-                  <widget class="QPushButton" name="pushButtonAbortAnalysis">
+                  <widget class="QPushButton" name="abortAnalysis">
                    <property name="text">
                     <string>Abort Analysis</string>
                    </property>
@@ -300,13 +300,6 @@ p, li { white-space: pre-wrap; }
             <layout class="QVBoxLayout" name="verticalLayout_15">
              <item>
               <layout class="QGridLayout" name="gridLayout">
-               <item row="0" column="0">
-                <widget class="QLabel" name="label_9">
-                 <property name="text">
-                  <string>Total Violations</string>
-                 </property>
-                </widget>
-               </item>
                <item row="5" column="0">
                 <widget class="QLabel" name="label_10">
                  <property name="text">
@@ -323,13 +316,6 @@ p, li { white-space: pre-wrap; }
                </item>
                <item row="3" column="1">
                 <widget class="QLineEdit" name="reviewedViolations">
-                 <property name="readOnly">
-                  <bool>true</bool>
-                 </property>
-                </widget>
-               </item>
-               <item row="0" column="1">
-                <widget class="QLineEdit" name="totalViolations">
                  <property name="readOnly">
                   <bool>true</bool>
                  </property>
@@ -353,13 +339,6 @@ p, li { white-space: pre-wrap; }
                 <widget class="QLineEdit" name="removedViolations">
                  <property name="readOnly">
                   <bool>true</bool>
-                 </property>
-                </widget>
-               </item>
-               <item row="0" column="2">
-                <widget class="QLabel" name="label_4">
-                 <property name="text">
-                  <string>Knowlogic</string>
                  </property>
                 </widget>
                </item>
@@ -497,6 +476,27 @@ p, li { white-space: pre-wrap; }
                </item>
                <item row="2" column="5">
                 <widget class="QLineEdit" name="pcActive"/>
+               </item>
+               <item row="0" column="2">
+                <widget class="QLabel" name="label_4">
+                 <property name="text">
+                  <string>Knowlogic</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="QLineEdit" name="totalViolations">
+                 <property name="readOnly">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="0">
+                <widget class="QLabel" name="label_9">
+                 <property name="text">
+                  <string>Total Violations</string>
+                 </property>
+                </widget>
                </item>
               </layout>
              </item>
@@ -864,7 +864,7 @@ p, li { white-space: pre-wrap; }
              <item>
               <layout class="QHBoxLayout" name="horizontalLayout_9">
                <item>
-                <widget class="QComboBox" name="comboBoxAnalysisTextOptions"/>
+                <widget class="QComboBox" name="cannedAnalysisSelector"/>
                </item>
                <item>
                 <widget class="QPushButton" name="pushButtonAddCanned">
@@ -970,6 +970,114 @@ p, li { white-space: pre-wrap; }
           </item>
          </layout>
         </widget>
+        <widget class="QWidget" name="tab">
+         <attribute name="title">
+          <string>Manual Entry</string>
+         </attribute>
+         <layout class="QGridLayout" name="gridLayout_3">
+          <item row="0" column="2">
+           <widget class="QLineEdit" name="textBrowser_Filename_2">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+              <horstretch>11</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="3">
+           <widget class="QLabel" name="label_Function_2">
+            <property name="text">
+             <string>Function:</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTop|Qt::AlignTrailing</set>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="4">
+           <widget class="QLineEdit" name="textBrowser_Function_2">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>6</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="5">
+           <widget class="QLabel" name="label_28">
+            <property name="text">
+             <string>Line:</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTop|Qt::AlignTrailing</set>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="6">
+           <widget class="QLineEdit" name="lineNumber_2">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>2</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="1" colspan="6">
+           <widget class="QTextEditClick" name="textBrowser_Description_2">
+            <property name="font">
+             <font>
+              <family>Courier New</family>
+              <pointsize>9</pointsize>
+             </font>
+            </property>
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLabel" name="label_Filename_2">
+            <property name="text">
+             <string>File:</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTop|Qt::AlignTrailing</set>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1" colspan="6">
+           <widget class="QLabel" name="label_29">
+            <property name="font">
+             <font>
+              <pointsize>10</pointsize>
+             </font>
+            </property>
+            <property name="text">
+             <string>Description</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignHCenter|Qt::AlignTop</set>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="1" colspan="6">
+           <widget class="QPushButton" name="pushButtonSubmitManual">
+            <property name="text">
+             <string>Submit</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
         <widget class="QWidget" name="tab_ProjFile">
          <attribute name="title">
           <string>Project</string>
@@ -1071,6 +1179,112 @@ p, li { white-space: pre-wrap; }
             </property>
             <property name="textInteractionFlags">
              <set>Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="tab_MergeDb">
+         <attribute name="title">
+          <string>Merge Project</string>
+         </attribute>
+         <layout class="QGridLayout" name="gridLayout_2">
+          <item row="3" column="0">
+           <widget class="QLabel" name="label_26">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Merge Project</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="2">
+           <widget class="QComboBox" name="mergeProjectFileSelector">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+              <horstretch>1</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="3">
+           <widget class="QPushButton" name="browseMergeProjectFile">
+            <property name="maximumSize">
+             <size>
+              <width>16777152</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>Browse...</string>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="2">
+           <spacer name="verticalSpacer_2">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="6" column="2">
+           <widget class="QTextEdit" name="mergeResults"/>
+          </item>
+          <item row="5" column="2">
+           <widget class="QProgressBar" name="mergeProgress">
+            <property name="value">
+             <number>24</number>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="3">
+           <widget class="QPushButton" name="performMerge">
+            <property name="text">
+             <string>Perform Merge</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="2">
+           <widget class="QLabel" name="mergeLabel">
+            <property name="font">
+             <font>
+              <pointsize>10</pointsize>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
+            </property>
+            <property name="text">
+             <string>C:/Knowlogic/tools/CR-Projs/G4-B/G4B.crp</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="2">
+           <widget class="QLabel" name="label_27">
+            <property name="text">
+             <string>Select the project file you would like to merge with this project:</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
             </property>
            </widget>
           </item>
@@ -1214,6 +1428,7 @@ p, li { white-space: pre-wrap; }
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="separator"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
  </widget>
@@ -1228,11 +1443,11 @@ p, li { white-space: pre-wrap; }
  <tabstops>
   <tabstop>lineEdit_userName</tabstop>
   <tabstop>tabWidget</tabstop>
-  <tabstop>projectFileNameEditor</tabstop>
-  <tabstop>pushButton_pFileBrowse</tabstop>
+  <tabstop>projectFileSelector</tabstop>
+  <tabstop>browseProjectFile</tabstop>
   <tabstop>toolOutput</tabstop>
-  <tabstop>pushButton_RunAnalysis</tabstop>
-  <tabstop>pushButtonAbortAnalysis</tabstop>
+  <tabstop>runAnalysis</tabstop>
+  <tabstop>abortAnalysis</tabstop>
   <tabstop>showPcLintLog</tabstop>
   <tabstop>showKsLog</tabstop>
   <tabstop>showToolOutput</tabstop>
@@ -1270,7 +1485,7 @@ p, li { white-space: pre-wrap; }
   <tabstop>textBrowser_Details</tabstop>
   <tabstop>syncCode</tabstop>
   <tabstop>pushButton_GotoCode</tabstop>
-  <tabstop>comboBoxAnalysisTextOptions</tabstop>
+  <tabstop>cannedAnalysisSelector</tabstop>
   <tabstop>pushButtonAddCanned</tabstop>
   <tabstop>plainTextEdit_Analysis</tabstop>
   <tabstop>textBrowser_PrevReviewer</tabstop>

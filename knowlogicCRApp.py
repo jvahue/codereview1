@@ -15,6 +15,7 @@ from collections import OrderedDict
 import datetime
 import os
 import re
+import socket
 import sys
 import subprocess
 import time
@@ -23,7 +24,8 @@ import time
 # Third Party Modules
 #---------------------------------------------------------------------------------------------------
 from PySide import QtCore
-from PySide.QtGui import QApplication, QMainWindow, QMessageBox, QTableWidgetItem, QFileDialog, QDialog, QTextCursor
+from PySide.QtGui import QApplication, QMainWindow, QMessageBox, QTableWidgetItem
+from PySide.QtGui import QFileDialog, QDialog, QTextCursor
 
 import sqlite3
 
@@ -38,9 +40,8 @@ from tools.pcLint.PcLint import PcLint
 from tools.u4c.u4c import U4c
 
 #from Analyze import Analyzer
-from crappcustomiddialog import Ui_CRAppCustomIdDialog
-from crmainwindow import Ui_MainWindow
-from ViolationDb import eDbName, eDbRoot
+from CrtGui import Ui_MainWindow
+from ViolationDb import eDbName, eDbRoot, ViolationDb
 
 import ProjFile as PF
 from qtexteditclick import QTextEditClick
@@ -48,15 +49,17 @@ from qtexteditclick import QTextEditClick
 #---------------------------------------------------------------------------------------------------
 # Data
 #---------------------------------------------------------------------------------------------------
-eKsCrIni = 'KsCr.ini'
+eKsCrtIni = 'KsCrt'
 eLogPc = 'PcLint'
 eLogKs = 'Knowlogic'
 eLogTool = 'Tool Output'
 
 eTabAdmin = 0
 eTabAnalysis = 1
-eTabProject = 2
-eTabReport = 3
+eTabManual = 2
+eTabProject = 3
+eTabMerge = 4
+eTabReport = 5
 
 eVersion = 'v0.0.1'
 
@@ -67,33 +70,6 @@ eVersion = 'v0.0.1'
 #---------------------------------------------------------------------------------------------------
 # Classes
 #---------------------------------------------------------------------------------------------------
-
-#--------------------------------------------------------------------------
-# Class CRAppCustomIdDialog
-#
-# The CRAppCustomIdDialog consists of one QLineEdit object.
-#
-# There is also a QDialogButtonBox:
-#    OK
-#    Cancel
-#
-# NOTE: The Ui_CustomIdDialog code in the CRAppCustomIdDialog should not
-# be altered.  If changes to the UI are required, it should be done with
-# QT Designer and then regenerated.
-#--------------------------------------------------------------------------
-class CRAppCustomIdDialog(QDialog, Ui_CRAppCustomIdDialog):
-    """ This dialog pops up when the user selects the custom option from the violationId Filter comboBox.
-        It allows the user to enter custom text for a the violationId filter. """
-
-    def __init__(self, parent=None):
-        super(CRAppCustomIdDialog, self).__init__()
-        self.setupUi(self)
-        self.buttonBox.accepted.connect(self.accept)
-        self.buttonBox.rejected.connect(self.reject)
-
-    def getValue(self):
-        text = self.lineEdit_customText.text()
-        return (text)
 
 #------------------------------------------------------------------------------------
 # Class MainWindow
@@ -141,6 +117,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.analysisProcess = None
 
+        self.timer = None
+
         self.ResetProject()
 
         #------------------------------------------------------------------------------
@@ -151,14 +129,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         #------------------------------------------------------------------------------
         # Handle Config Tab Data
         #------------------------------------------------------------------------------
-        self.projectFileNameEditor.currentIndexChanged.connect(self.NewProjFile)
-        self.pushButton_pFileBrowse.clicked.connect(self.SelectProjectFile)
+        self.projectFileSelector.currentIndexChanged.connect(self.NewProjFile)
+        self.browseProjectFile.clicked.connect(self.SelectMainProjectFile)
 
         self.lineEdit_userName.editingFinished.connect(self.lineEditUserNameChanged)
         self.lineEdit_userName.setFocus()
 
-        self.pushButton_RunAnalysis.clicked.connect(self.RunAnalysis)
-        self.pushButtonAbortAnalysis.clicked.connect(self.AbortAnalysis)
+        self.runAnalysis.clicked.connect(self.RunAnalysis)
+        self.abortAnalysis.clicked.connect(self.AbortAnalysis)
         self.showPcLintLog.clicked.connect(lambda x=eLogPc,fx=self.ShowLog: fx(x))
         self.showKsLog.clicked.connect(lambda x=eLogKs,fx=self.ShowLog: fx(x))
         self.showToolOutput.clicked.connect(lambda x=eLogTool,fx=self.ShowLog: fx(x))
@@ -199,15 +177,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.horizontalScrollBar.setMaximum(0)
         self.horizontalScrollBar.valueChanged.connect(self.DisplayViolationsData)
 
-        self.pcLintPdf.clicked.connect( self.StartFile)
+        self.pcLintPdf.clicked.connect( self.OpenPcLintManual)
         self.syncCode.setChecked(True)
         self.pushButton_GotoCode.clicked.connect(self.GotoCode)
 
         #------------------------------------------------------------------------------
         # Manage the Analysis Tab Widgets
         #------------------------------------------------------------------------------
-
-        self.comboBoxAnalysisTextOptions.currentIndexChanged.connect(self.SelectAnalysisText)
+        self.cannedAnalysisSelector.currentIndexChanged.connect(self.SelectAnalysisText)
 
         self.pushButtonAddCanned.clicked.connect(self.SelectAnalysisText)
 
@@ -222,6 +199,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.pfSections.clicked.connect( self.PfGoto)
 
         #------------------------------------------------------------------------------
+        # Handle Merge Tab Data
+        #------------------------------------------------------------------------------
+        self.browseMergeProjectFile.clicked.connect( self.SelectMergeProjFile)
+        self.performMerge.clicked.connect(self.PerformMerge)
+        self.mergeProgress.setValue(0) # the first itme it does not seem to listen
+
+        #------------------------------------------------------------------------------
         # Handle GenerateReport Tab Data
         #------------------------------------------------------------------------------
         self.pushButton_BrowseSrcCode.clicked.connect(self.DisplaySrcFileBrowser)
@@ -229,146 +213,216 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.pushButton_GenerateReport.clicked.connect(self.GenerateReport)
 
     #-----------------------------------------------------------------------------------------------
+    # Tab Selection and Control
+    #-----------------------------------------------------------------------------------------------
     def CurrentTabChanged(self):
         """ When changing tabs perform clean up/set up conditions
         """
         newTab = self.tabWidget.currentIndex()
 
         # Make sure we have a username and project file before moving off config tab
-        if newTab != eTabAdmin:
+        if self.curTab == eTabAdmin and newTab != eTabAdmin:
             #-----------------------------------------------------------------------
             # NOTE: this is very simple logic.  You MUST have a project file and a
             #       user name to get off the first tab.
             #-----------------------------------------------------------------------
             # see if we can move off the admin page
-            if self.db is None or self.userName.strip() == '':
-                self.tabWidget.setCurrentIndex(0)
-                if self.userName:
-                    errs = []
-                else:
-                    errs = ['Username']
-                if self.db is None:
-                    errs.append( 'Project File')
-
+            errs = self.OkToMoveOffAdmin()
+            if errs:
+                self.tabWidget.setCurrentIndex(eTabAdmin)
                 self.CrErrPopup('Please enter a valid %s' % ' and '.join(errs))
-
-            if newTab == eTabAnalysis:
-                if not self.programOpenedU4c and not self.analysisActive:
-                    # see if understand is open and open it if not
-                    op = subprocess.check_output( 'tasklist')
-                    opStr = op.decode()
-
-                    # create a U4c object ot get project Db info
-                    u4co = U4c(self.projFile)
-
-                    if opStr.find('understand') == -1:
-                        openIt = True
+            else:
+                if newTab == eTabAnalysis:
+                    if not self.analysisActive:
+                        self.OpenAnalysisTab()
                     else:
-                        msg  = 'Understand is currently running.\n'
-                        msg += 'For Code Viewing the following project should be open.\n'
-                        msg += '<%s>.\nWould you like this to happen.' % u4co.dbName
-                        rtn = QMessageBox.question( self, 'Understand Open',
-                                                    msg, QMessageBox.Yes, QMessageBox.No)
-                        if rtn == QMessageBox.Yes:
-                            u4co.KillU4c()
-                            openIt = True
-                        else:
-                            self.programOpenedU4c = True
-                            openIt = False
+                        self.tabWidget.setCurrentIndex(eTabAdmin)
+                        self.CrErrPopup('You must wait for the tool analysis to complete!')
 
-                    if openIt:
-                        # get path to understand from project
-                        undPath = self.projFile.paths[PF.ePathU4c]
-                        u4cPath, prog = os.path.split(undPath)
-                        understand = os.path.join(u4cPath, 'understand.exe')
-                        cmd = '%s -db "%s"' % (understand, u4co.dbName)
-                        subprocess.Popen( cmd)
-                        self.programOpenedU4c = True
+                elif newTab == eTabProject:
+                    self.OpenProjectTab()
 
-            elif newTab == eTabProject:
-                self.LoadProjectFile()
+                elif newTab == eTabMerge:
+                    self.OpenMergeTab()
 
         # Coming back to the Config tab update the Stats as they may have analyzed something
         elif newTab == eTabAdmin and self.curTab != eTabAdmin:
+            pfList = self.GetRecentProjFiles()
+            self.projectFileSelector.clear()
+            self.projectFileSelector.addItems( pfList)
+
             self.DisplayViolationStatistics()
 
         self.curTab = newTab
 
     #-----------------------------------------------------------------------------------------------
-    def NewProjFile( self, at):
-        projFileName = self.projectFileNameEditor.currentText()
-        if at > 0:
-            self.ResetProject( projFileName)
+    def OkToMoveOffAdmin( self):
+        errs = []
+        if self.db is None or self.userName.strip() == '':
+            if self.db is None: errs.append( 'Project File')
+            if not self.userName: errs = ['Username']
+        return errs
 
     #-----------------------------------------------------------------------------------------------
-    def ResetProject( self, projFileName = ''):
+    def OpenAnalysisTab(self):
+        if not self.programOpenedU4c:
+            # see if understand is open and open it if not
+            op = subprocess.check_output( 'tasklist')
+            opStr = op.decode()
+
+            # create a U4c object ot get project Db info
+            u4co = U4c(self.projFile)
+
+            if opStr.find('understand') == -1:
+                openIt = True
+            else:
+                msg  = 'Understand is currently running.\n'
+                msg += 'For Code Viewing the following project should be open.\n'
+                msg += '<%s>.\nWould you like this to happen.' % u4co.dbName
+                rtn = QMessageBox.question( self, 'Understand Open',
+                                            msg, QMessageBox.Yes, QMessageBox.No)
+                if rtn == QMessageBox.Yes:
+                    u4co.KillU4c()
+                    openIt = True
+                else:
+                    self.programOpenedU4c = True
+                    openIt = False
+
+            if openIt:
+                # get path to understand from project
+                undPath = self.projFile.paths[PF.ePathU4c]
+                u4cPath, prog = os.path.split(undPath)
+                understand = os.path.join(u4cPath, 'understand.exe')
+                cmd = '%s -db "%s"' % (understand, u4co.dbName)
+                subprocess.Popen( cmd)
+                self.programOpenedU4c = True
+
+    #-----------------------------------------------------------------------------------------------
+    def OpenProjectTab(self):
+        """ open the project file and load it into the viewer """
+        self.projFileViewerLoaded = False
+        if not self.projFileViewerLoaded:
+            # open the select project file for display/editing
+            f = open( self.projFileName, 'r')
+            data = f.read()
+            lines = data.split('\n')
+            f.close()
+            # scan the lines for all the ini groups
+            self.iniGroups = OrderedDict()
+            for lx, line in enumerate(lines):
+                ls = line.strip()
+                if ls and ls[0] == '[' and ls[-1] == ']':
+                    # find the pos in the text
+                    at = data.find(ls)
+                    self.iniGroups[ls] = at
+
+            iniList = list(self.iniGroups.keys())
+            self.pfSections.clear()
+            self.pfSections.addItems( iniList)
+
+            text = '\n'.join(lines)
+            self.pfText.setText( text)
+
+    #-----------------------------------------------------------------------------------------------
+    def OpenMergeTab( self):
+        if self.projFile:
+            txt = '[%s]' % self.projFileName
+            self.mergeLabel.setText(txt)
+            self.mergeProgress.setValue(0)
+
+    #-----------------------------------------------------------------------------------------------
+    # Admin Tab
+    #-----------------------------------------------------------------------------------------------
+    def NewProjFile( self, at):
+        projFileName = self.projectFileSelector.currentText()
+        if at > 0:
+            if projFileName != self.projFileName:
+                # reorder our recent PF list
+                projFile = PF.ProjectFile( projFileName)
+                self.ResetProject( projFile)
+
+    #-----------------------------------------------------------------------------------------------
+    def SelectProjectFile(self):
+        """ Where ever the user can select a project file name this function handles that and
+            keeping our known proj file list updated.
+
+            It will only return a valid projFile object or None
+        """
+        pFile, selFilter = QFileDialog.getOpenFileName(self, "Select Project File")
+
+        projFile = None
+
+        if pFile:
+            projFile = PF.ProjectFile( pFile)
+
+        return projFile
+
+
+    #-----------------------------------------------------------------------------------------------
+    def ResetProject( self, projFile=None):
         """ A new project file has been selected - reset all the info in the display
         """
         self.filterUpdateInProgress = False
         self.currentFilters = []
 
-        projFileNames = []
-        if os.path.isfile( eKsCrIni):
-            # recall the last open project file
-            f = open(eKsCrIni, 'r')
-            projFileNames = [i.strip() for i in f.readlines()]
-            f.close()
-
-        if not projFileName and projFileNames:
-            projFileName = projFileNames[0]
-
-        if os.path.isfile( projFileName):
-            self.pFullFilename = projFileName
-            self.projFile = PF.ProjectFile( projFileName)
-
-            if self.projFile.isValid:
-                # save the current project file for next startup
-                f = open(eKsCrIni, 'w')
-
-                # put it in the list at the top
-                if projFileName in projFileNames:
-                    projFileNames.remove( projFileName)
-
-                projFileNames = [projFileName] + projFileNames
-                [f.write( i+'\n') for i in projFileNames]
-                f.close()
-
-                # display the reordered list
-                self.projectFileNameEditor.clear()
-                self.projectFileNameEditor.addItems( projFileNames)
-                self.projectFileNameEditor.setCurrentIndex(0)
-
-                self.dbFname = eDbName
-                self.dbFullFilename = os.path.join( self.projFile.paths[PF.ePathProject],
-                                                    eDbRoot, eDbName)
-
-                # Get the canned comment data
-                self.comboBoxAnalysisTextOptions.clear()
-                self.comboBoxAnalysisTextOptions.addItems(self.GetAnalysisTextOptions())
-                self.comboBoxAnalysisTextOptions.setCurrentIndex(0)
-
-                #------------------------------------------------------------------------------
-                # Establish a DataBase connection
-                #------------------------------------------------------------------------------
-                if os.path.isfile(self.dbFullFilename):
-                    self.OpenDb( True)
-
-                else:
-                    self.toolOutput.setText('No Database exists for this project yet.')
-
-                self.violationsData = []
-                self.v = None
-
-                self.programOpenedU4c = False
-                self.analysisActive = False
-
-                # clear out the display fields
-                self.DisplayViolationsData()
-
+        if projFile is None:
+            projFileNames = self.GetRecentProjFiles()
+            if projFileNames:
+                # select the most recent
+                self.projFileName = projFileNames[0]
+                self.projFile = PF.ProjectFile( self.projFileName)
             else:
-                msg = '\n'.join( self.projFile.errors)
                 self.projFile = None
-                self.CrErrPopup( msg)
+                self.projFileName = ''
+        else:
+            self.projFile = projFile
+            self.projFileName = projFile.projFileName
+            # save the new proj file in the recent list on top
+            self.SaveRecentProjFile( self.projFileName)
+
+        if self.projFile and self.projFile.isValid:
+            projFileNames = self.GetRecentProjFiles()
+
+            # display the recent file list
+            self.projectFileSelector.clear()
+            self.projectFileSelector.addItems( projFileNames)
+            self.projectFileSelector.setCurrentIndex(0)
+
+            # and on the merge tab
+            self.mergeProjectFileSelector.clear()
+            self.mergeProjectFileSelector.addItems( projFileNames)
+            self.mergeProjectFileSelector.setCurrentIndex(0)
+
+            # Get the canned comment data
+            self.cannedAnalysisSelector.clear()
+            self.cannedAnalysisSelector.addItems(self.GetAnalysisTextOptions())
+            self.cannedAnalysisSelector.setCurrentIndex(0)
+
+            #------------------------------------------------------------------------------
+            # Establish a DataBase connection
+            #------------------------------------------------------------------------------
+            self.dbFname = eDbName
+            self.dbFullFilename = os.path.join( self.projFile.paths[PF.ePathProject],
+                                                eDbRoot, eDbName)
+
+            if os.path.isfile(self.dbFullFilename):
+                self.OpenDb( True)
+            else:
+                self.toolOutput.setText('No Database exists for this project yet.')
+
+            self.violationsData = []
+            self.v = None
+
+            self.programOpenedU4c = False
+            self.analysisActive = False
+
+            # clear out the display fields
+            self.DisplayViolationsData()
+
+        elif self.projFile:
+            msg = self.projFile.GetErrorText()
+            self.projFile = None
+            self.CrErrPopup( msg)
 
     #-----------------------------------------------------------------------------------------------
     def OpenDb(self, forceOpen = False):
@@ -384,11 +438,211 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.DisplayViolationStatistics()
 
     #-----------------------------------------------------------------------------------------------
-    def SelectProjectFile(self):
-        """ Display a file browser for the user to select the project file """
-        pFile, selFilter = QFileDialog.getOpenFileName(self, "Select Project File")
-        if pFile:
-            self.ResetProject( pFile)
+    def SelectMainProjectFile( self):
+        pf = self.SelectProjectFile()
+        if pf:
+            self.ResetProject( pf)
+
+    #-----------------------------------------------------------------------------------------------
+    def DisplayViolationStatistics(self):
+        s = 'SELECT count(*) from Violations'
+        total = self.db.Query(s)
+        if len(total) > 0:
+
+            s = "SELECT count(*) from Violations where status = 'Accepted'"
+            accepted = self.db.Query(s)
+
+            s = "SELECT count(*) from Violations where status = 'Reviewed'"
+            reviewed = self.db.Query(s)
+
+            s = "SELECT count(*) from Violations where status = 'Not Reported'"
+            noRep = self.db.Query(s)
+
+            self.totalViolations.setText(str(total[0]))
+            self.reviewedViolations.setText(str(reviewed[0]))
+            self.acceptedViolations.setText(str(accepted[0]))
+            self.removedViolations.setText(str(noRep[0]))
+            self.activeViolations.setText(str(total[0].data-noRep[0].data))
+
+            #-------------- KS Totals
+            s = "SELECT count(*) from Violations where detectedBy = 'Knowlogic'"
+            total = self.db.Query(s)
+
+            s = "SELECT count(*) from Violations where status = 'Accepted' and detectedby = 'Knowlogic'"
+            accepted = self.db.Query(s)
+
+            s = "SELECT count(*) from Violations where status = 'Reviewed' and detectedby = 'Knowlogic'"
+            reviewed = self.db.Query(s)
+
+            s = "SELECT count(*) from Violations where status = 'Not Reported' and detectedby = 'Knowlogic'"
+            noRep = self.db.Query(s)
+
+            self.ksTotal.setText(str(total[0]))
+            self.ksReviewed.setText(str(reviewed[0]))
+            self.ksAccepted.setText(str(accepted[0]))
+            self.ksRemoved.setText(str(noRep[0]))
+            self.ksActive.setText(str(total[0].data-noRep[0].data))
+
+            #-------------- PC-LINT Totals
+            s = "SELECT count(*) from Violations where detectedBy = 'PcLint'"
+            total = self.db.Query(s)
+
+            s = "SELECT count(*) from Violations where status = 'Accepted' and detectedby = 'PcLint'"
+            accepted = self.db.Query(s)
+
+            s = "SELECT count(*) from Violations where status = 'Reviewed' and detectedby = 'PcLint'"
+            reviewed = self.db.Query(s)
+
+            s = "SELECT count(*) from Violations where status = 'Not Reported' and detectedby = 'PcLint'"
+            noRep = self.db.Query(s)
+
+            self.pcTotal.setText(str(total[0]))
+            self.pcReviewed.setText(str(reviewed[0]))
+            self.pcAccepted.setText(str(accepted[0]))
+            self.pcRemoved.setText(str(noRep[0]))
+            self.pcActive.setText(str(total[0].data-noRep[0].data))
+
+    #-----------------------------------------------------------------------------------------------
+    def ShowLog( self, logId):
+        if self.projFile:
+            lines = []
+            logName = ''
+            if logId == eLogPc:
+                pcl = PcLint( self.projFile)
+                logName = pcl.GetLogName()
+            elif logId == eLogKs:
+                u4co = U4c(self.projFile)
+                logName = u4co.GetLogName()
+            elif logId == eLogTool:
+                lines = [i+'\n' for i in self.toolRunOutput.split('\n')]
+
+            if logName and os.path.isfile( logName):
+                f = open(logName, 'r')
+                lines = f.readlines()
+                f.close()
+
+            displayLines = ['%s Output contains %d lines\n' % (logId, len(lines))] + lines
+            self.toolOutput.setText( ''.join( displayLines))
+
+    #-----------------------------------------------------------------------------------------------
+    # Tool Analysis
+    #-----------------------------------------------------------------------------------------------
+    def RunAnalysis(self):
+        """
+        """
+        # --- DO THIS FIRST ---
+        # TODO can be removed when project file editing is working
+        self.ResetProject( self.projFile)
+
+        # TODO: check if u4c running and ask them to save their work
+
+        self.runAnalysis.setEnabled(False)
+        self.analysisActive = True
+
+        self.abortRequested = False
+        self.programOpenedU4c = False
+        self.toolProgress = ''
+        self.toolRunOutput = ''
+        self.toolOutputText = []
+        self.startAnalysis = DateTime.DateTime.today()
+
+        cwd = os.getcwd()
+        cmdPath = os.path.join( cwd, 'Analyze.py')
+        cmd = 'c:\python32\python.exe "%s" "%s"' % (cmdPath, self.projFileName)
+        rootDir = self.projFile.paths[PF.ePathProject]
+
+        self.analysisProcess = subprocess.Popen( cmd,
+                                                 cwd=rootDir,
+                                                 stderr=subprocess.STDOUT,
+                                                 stdout=subprocess.PIPE)
+
+        # launch our thread to collect results
+        t1 = util.ThreadSignal( self.UpdateToolAnalysis)
+        t1.Go()
+
+        self.toolOutput.clear()
+
+        self.StartTimerEvent( self.AnalysisUpdate, 250)
+
+    #-----------------------------------------------------------------------------------------------
+    def AnalysisUpdate( self):
+        #for line in self.analysisProcess.stdout:
+        #    line = line.decode(encoding='windows-1252').strip()
+        #    print(line)
+
+        nowIs = DateTime.DateTime.today()
+        elapsed = nowIs - self.startAnalysis
+        elapsed.ShowMs( False)
+        self.runAnalysis.setText('%s' % (elapsed))
+
+        if self.AnalyzeActive():
+            self.toolOutput.setText( self.toolRunOutput)
+
+        else:
+            self.analysisProcess = None
+            self.BuildToolOutput()
+            self.toolOutput.setText( self.toolRunOutput)
+
+            self.runAnalysis.setText('Run Analysis')
+
+            # kill the timer
+            self.StopTimerEvent()
+
+            self.OpenDb()
+
+            # populate the display data
+            self.FillFilters( 0, '', True)
+            self.DisplayViolationStatistics()
+
+            self.analysisActive = False
+            self.runAnalysis.setEnabled(True)
+
+    #-----------------------------------------------------------------------------------------------
+    def AnalyzeActive(self):
+        """ is a review actively running
+        Note the sleep is to ensure if threads are getting active status they give up control
+        """
+        status = False
+        if self.analysisProcess is not None:
+            if self.analysisProcess.poll() is None:
+                status = True
+
+        return status
+
+    #-----------------------------------------------------------------------------------------------
+    def AbortAnalysis(self):
+        """ Abort the analysis process
+        """
+        if self.analysisProcess:
+            self.abortRequested = True
+            time.sleep(0.25)
+            self.analysisProcess.kill()
+
+    #-----------------------------------------------------------------------------------------------
+    def UpdateToolAnalysis(self):
+        """ This function is run as a thread to collect Tool Analysis Process outputs """
+        while self.AnalyzeActive():
+            line = self.analysisProcess.stdout.readline()
+            line = line.decode(encoding='windows-1252').strip()
+            if line.find( '^') == 0:
+                self.toolProgress = line[1:] # remove the '^'
+            else:
+                self.toolOutputText.append( line)
+
+            self.BuildToolOutput()
+            time.sleep(0.001)
+
+    #-----------------------------------------------------------------------------------------------
+    def BuildToolOutput( self):
+        text = '\n'.join(self.toolOutputText)
+
+        text = self.toolProgress + '\n\n' + text
+
+        if self.abortRequested:
+            text += '\n\n--- Tool Analysis ABORTED. '
+            text += 'Partial tool analysis results maybe included. ---'
+
+        self.toolRunOutput = text
 
     #-----------------------------------------------------------------------------------------------
     # Filter Handling
@@ -575,179 +829,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.v = None
 
     #-----------------------------------------------------------------------------------------------
-    def DisplayViolationStatistics(self):
-        s = 'SELECT count(*) from Violations'
-        total = self.db.Query(s)
-        if len(total) > 0:
-
-            s = "SELECT count(*) from Violations where status = 'Accepted'"
-            accepted = self.db.Query(s)
-
-            s = "SELECT count(*) from Violations where status = 'Reviewed'"
-            reviewed = self.db.Query(s)
-
-            s = "SELECT count(*) from Violations where status = 'Not Reported'"
-            noRep = self.db.Query(s)
-
-            self.totalViolations.setText(str(total[0]))
-            self.reviewedViolations.setText(str(reviewed[0]))
-            self.acceptedViolations.setText(str(accepted[0]))
-            self.removedViolations.setText(str(noRep[0]))
-            self.activeViolations.setText(str(total[0].data-noRep[0].data))
-
-            #-------------- KS Totals
-            s = "SELECT count(*) from Violations where detectedBy = 'Knowlogic'"
-            total = self.db.Query(s)
-
-            s = "SELECT count(*) from Violations where status = 'Accepted' and detectedby = 'Knowlogic'"
-            accepted = self.db.Query(s)
-
-            s = "SELECT count(*) from Violations where status = 'Reviewed' and detectedby = 'Knowlogic'"
-            reviewed = self.db.Query(s)
-
-            s = "SELECT count(*) from Violations where status = 'Not Reported' and detectedby = 'Knowlogic'"
-            noRep = self.db.Query(s)
-
-            self.ksTotal.setText(str(total[0]))
-            self.ksReviewed.setText(str(reviewed[0]))
-            self.ksAccepted.setText(str(accepted[0]))
-            self.ksRemoved.setText(str(noRep[0]))
-            self.ksActive.setText(str(total[0].data-noRep[0].data))
-
-            #-------------- PC-LINT Totals
-            s = "SELECT count(*) from Violations where detectedBy = 'PcLint'"
-            total = self.db.Query(s)
-
-            s = "SELECT count(*) from Violations where status = 'Accepted' and detectedby = 'PcLint'"
-            accepted = self.db.Query(s)
-
-            s = "SELECT count(*) from Violations where status = 'Reviewed' and detectedby = 'PcLint'"
-            reviewed = self.db.Query(s)
-
-            s = "SELECT count(*) from Violations where status = 'Not Reported' and detectedby = 'PcLint'"
-            noRep = self.db.Query(s)
-
-            self.pcTotal.setText(str(total[0]))
-            self.pcReviewed.setText(str(reviewed[0]))
-            self.pcAccepted.setText(str(accepted[0]))
-            self.pcRemoved.setText(str(noRep[0]))
-            self.pcActive.setText(str(total[0].data-noRep[0].data))
-
-    #-----------------------------------------------------------------------------------------------
-    # Tool Analysis
-    #-----------------------------------------------------------------------------------------------
-    def RunAnalysis(self):
-        if not self.analysisActive:
-            # TODO: check if u4c running and ask them to save their work
-            self.ResetProject( self.pFullFilename)
-            self.analysisActive = True
-            self.abortRequested = False
-            self.programOpenedU4c = False
-            self.toolProgress = ''
-            self.toolRunOutput = ''
-            self.toolOutputText = []
-            self.startAnalysis = DateTime.DateTime.today()
-
-            cwd = os.getcwd()
-            cmdPath = os.path.join( cwd, 'Analyze.py')
-            cmd = 'c:\python32\python.exe "%s" "%s"' % (cmdPath, self.pFullFilename)
-            rootDir = self.projFile.paths[PF.ePathProject]
-
-            self.analysisProcess = subprocess.Popen( cmd,
-                                                     cwd=rootDir,
-                                                     stderr=subprocess.STDOUT,
-                                                     stdout=subprocess.PIPE)
-
-            # launch our thread to collect results
-            t1 = util.ThreadSignal( self.UpdateToolAnalysis)
-            t1.Go()
-
-            self.toolOutput.clear()
-            self.timer = QtCore.QTimer(self)
-            self.connect(self.timer, QtCore.SIGNAL("timeout()"), self.AnalysisUpdate)
-            self.timerDelay = 250
-            self.timer.start( self.timerDelay)
-
-    #-----------------------------------------------------------------------------------------------
-    def AnalysisUpdate( self):
-        #for line in self.analysisProcess.stdout:
-        #    line = line.decode(encoding='windows-1252').strip()
-        #    print(line)
-
-        nowIs = DateTime.DateTime.today()
-        elapsed = nowIs - self.startAnalysis
-        elapsed.ShowMs( False)
-        self.pushButton_RunAnalysis.setText('%s' % (elapsed))
-
-        if self.AnalyzeActive():
-            self.toolOutput.setText( self.toolRunOutput)
-
-        else:
-            self.analysisProcess = None
-            self.BuildToolOutput()
-            self.toolOutput.setText( self.toolRunOutput)
-
-            self.pushButton_RunAnalysis.setText('Run Analysis')
-
-            # kill the timer
-            self.timer.stop()
-
-            self.OpenDb()
-
-            # populate the display data
-            self.FillFilters( 0, '', True)
-            self.DisplayViolationStatistics()
-
-            self.analysisActive = False
-
-    #-----------------------------------------------------------------------------------------------
-    def AnalyzeActive(self):
-        """ is a review actively running
-        Note the sleep is to ensure if threads are getting active status they give up control
-        """
-        status = False
-        if self.analysisProcess is not None:
-            if self.analysisProcess.poll() is None:
-                status = True
-
-        return status
-
-    #-----------------------------------------------------------------------------------------------
-    def AbortAnalysis(self):
-        """ Abort the analysis process
-        """
-        if self.analysisProcess:
-            self.abortRequested = True
-            time.sleep(0.25)
-            self.analysisProcess.kill()
-
-    #-----------------------------------------------------------------------------------------------
-    def UpdateToolAnalysis(self):
-        """ This function is run as a thread to collect Tool Analysis Process outputs """
-        while self.AnalyzeActive():
-            line = self.analysisProcess.stdout.readline()
-            line = line.decode(encoding='windows-1252').strip()
-            if line.find( '^') == 0:
-                self.toolProgress = line[1:] # remove the '^'
-            else:
-                self.toolOutputText.append( line)
-
-            self.BuildToolOutput()
-            time.sleep(0.001)
-
-    #-----------------------------------------------------------------------------------------------
-    def BuildToolOutput( self):
-        text = '\n'.join(self.toolOutputText)
-
-        text = self.toolProgress + '\n\n' + text
-
-        if self.abortRequested:
-            text += '\n\n--- Tool Analysis ABORTED. '
-            text += 'Partial tool analysis results maybe included. ---'
-
-        self.toolRunOutput = text
-
-    #-----------------------------------------------------------------------------------------------
     # User Analysis
     #-----------------------------------------------------------------------------------------------
     def GetAnalysisTextOptions(self):
@@ -760,7 +841,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     #-----------------------------------------------------------------------------------------------
     def SelectAnalysisText(self):
         """ Update the Analysis Text Browser with the user's choice from the combobox """
-        analysisChoice = self.comboBoxAnalysisTextOptions.currentText()
+        analysisChoice = self.cannedAnalysisSelector.currentText()
 
         analysisChoice = analysisChoice.replace(r'\n', '\n')
 
@@ -848,19 +929,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.textBrowser_ReportDir.setText(reportFile)
 
     #-----------------------------------------------------------------------------------------------
-    def GenerateReport(self):
-        self.CrErrPopup('Not yet implemented...')
-
-    #-----------------------------------------------------------------------------------------------
-    # Utils
-    #-----------------------------------------------------------------------------------------------
-    def CrErrPopup(self, errText):
-        """ The crErrPopup provides a popup dialog to be used for simple
-            notifications to the user through the GUI """
-        msgBox = QMessageBox()
-        msgBox.setWindowTitle("Knowlogic Code Review")
-        msgBox.setText(errText)
-        msgBox.exec_()
+    def OpenPcLintManual(self):
+        """ open the PC-Lint PDF """
+        # remove the exe
+        f = open('pcLintManual.bat', 'w')
+        path, exe = os.path.split(self.projFile.paths[PF.ePathPcLint])
+        fn = os.path.join( path, 'PC-lint.pdf')
+        cmd = 'start %s\n' % fn
+        f.write( cmd)
+        f.close()
+        t = subprocess.Popen( 'pcLintManual.bat')
 
     #-----------------------------------------------------------------------------------------------
     def GotoCode(self):
@@ -889,83 +967,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.CrErrPopup( msg)
 
     #-----------------------------------------------------------------------------------------------
-    def lineEditDescFilterChanged(self):
-        descFilter = self.lineEditDescFilter.text()
-        # TODO : Handle the description filter
-
+    # Manual Entry Tab
     #-----------------------------------------------------------------------------------------------
-    def lineEditDetailsFilterChanged(self):
-        detailsFilter = self.lineEditDetailsFilter.text()
-        # TODO : Handle the details filter
-
     #-----------------------------------------------------------------------------------------------
-    def lineEditUserNameChanged(self):
-        tmp = self.lineEdit_userName.text().strip()
-        if tmp:
-            self.userName = tmp
-
-    #-----------------------------------------------------------------------------------------------
-    def ShowLog( self, logId):
-        if self.projFile:
-            lines = []
-            logName = ''
-            if logId == eLogPc:
-                pcl = PcLint( self.projFile)
-                logName = pcl.GetLogName()
-            elif logId == eLogKs:
-                u4co = U4c(self.projFile)
-                logName = u4co.GetLogName()
-            elif logId == eLogTool:
-                lines = [i+'\n' for i in self.toolRunOutput.split('\n')]
-
-            if logName and os.path.isfile( logName):
-                f = open(logName, 'r')
-                lines = f.readlines()
-                f.close()
-
-            displayLines = ['%s Output contains %d lines\n' % (logId, len(lines))] + lines
-            self.toolOutput.setText( ''.join( displayLines))
-
-    #-----------------------------------------------------------------------------------------------
-    def StartFile(self):
-        """ open the PC-Lint PDF """
-        # remove the exe
-        f = open('pcLintManual.bat', 'w')
-        path, exe = os.path.split(self.projFile.paths[PF.ePathPcLint])
-        fn = os.path.join( path, 'PC-lint.pdf')
-        cmd = 'start %s\n' % fn
-        f.write( cmd)
-        f.close()
-        t = subprocess.Popen( 'pcLintManual.bat')
-
-    #-----------------------------------------------------------------------------------------------
-    def LoadProjectFile(self):
-        """ open the project file and load it into the viewer """
-        self.projFileViewerLoaded = False
-        if not self.projFileViewerLoaded:
-            # open the select project file for display/editing
-            f = open( self.pFullFilename, 'r')
-            data = f.read()
-            lines = data.split('\n')
-            f.close()
-            # scan the lines for all the ini groups
-            self.iniGroups = OrderedDict()
-            for lx, line in enumerate(lines):
-                ls = line.strip()
-                if ls and ls[0] == '[' and ls[-1] == ']':
-                    # find the pos in the text
-                    at = data.find(ls)
-                    self.iniGroups[ls] = at
-
-            iniList = list(self.iniGroups.keys())
-            self.pfSections.clear()
-            self.pfSections.addItems( iniList)
-
-            text = '\n'.join(lines)
-            self.pfText.setText( text)
-
+    # Project Tab
     #-----------------------------------------------------------------------------------------------
     def PfGoto( self):
+        """ Goto the text for the select ini group, display its tip
+            TODO: center the select group
+        """
         text = self.pfSections.currentItem().text()
         newChar = -1
         for i in self.iniGroups:
@@ -989,6 +999,174 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             curCursor.setPosition( newChar)
             self.pfText.setTextCursor(curCursor)
+
+    #-----------------------------------------------------------------------------------------------
+    # Merge Tab
+    #-----------------------------------------------------------------------------------------------
+    def SelectMergeProjFile( self):
+        pf = self.SelectProjectFile()
+        if pf:
+            pfName = pf.projFileName
+            pfList = self.GetRecentProjFiles()
+
+            # save this pf name at the end of the list
+            self.SaveRecentProjFile( pfName, False)
+            if pfName in pfList:
+                pfList.remove( pfName)
+
+            # we display it first in our merge list though
+            pfList = [pfName] + pfList
+            self.mergeProjectFileSelector.clear()
+            self.mergeProjectFileSelector.addItems( pfList)
+
+    #-----------------------------------------------------------------------------------------------
+    def PerformMerge( self):
+        # run merge as a thread and report it's status
+        # get the merge project file and validate
+        # if valid merge project
+        #   Merge the DB as a thread
+        # else
+        #   report it
+        mergePf = self.mergeProjectFileSelector.currentText()
+        if mergePf != self.projFileName:
+            pf = PF.ProjectFile( mergePf)
+            if pf.isValid:
+                self.performMerge.setEnabled(False)
+
+                mdb = ViolationDb( pf.paths[PF.ePathProject])
+                mn = mdb.dbName
+
+                self.mergeThread = util.ThreadSignal( lambda x=mn,fx=self.RunMerge: fx(x))
+
+                self.mergeProgress.setValue( 0)
+
+                self.mergeThread.Go()
+                self.StartTimerEvent( self.UpdateMerge, 250)
+
+            else:
+                self.CrErrPopup('Merge Project File Error:\n%s' % pf.GetErrorText())
+        else:
+            msg  = 'You cannot merge a file with itself.\n'
+            msg += "Well you can but it really doesn't do much!"
+            self.CrErrPopup(msg)
+
+    #-----------------------------------------------------------------------------------------------
+    def RunMerge( self, otherDbName):
+        """ DB Creation and access must occur in the same thread so we heave this little helper
+            func
+        """
+        # now open our Db
+        self.sdb = ViolationDb( self.projFile.paths[PF.ePathProject])
+        self.sdb.Merge( otherDbName)
+
+    #-----------------------------------------------------------------------------------------------
+    def UpdateMerge( self):
+        #
+        pct = int(self.sdb.mergePct)
+        self.mergeProgress.setValue( pct)
+        # display merge results
+        sts = self.sdb.ShowMergeStats()
+        self.mergeResults.setText( sts)
+
+        if not self.mergeThread.active:
+            self.StopTimerEvent()
+            self.performMerge.setEnabled(True)
+            self.mergeResults.setText( sts + '\n\nDone')
+    #-----------------------------------------------------------------------------------------------
+    # Report Tab
+    #-----------------------------------------------------------------------------------------------
+    def GenerateReport(self):
+        self.CrErrPopup('Not yet implemented...')
+
+    #-----------------------------------------------------------------------------------------------
+    # Utils
+    #-----------------------------------------------------------------------------------------------
+    def StartTimerEvent( self, handler, ms):
+        if self.timer is None:
+            self.timer = QtCore.QTimer(self)
+            self.connect(self.timer, QtCore.SIGNAL("timeout()"), handler)
+            self.timerDelay = ms
+            self.timer.start( self.timerDelay)
+        else:
+            self.CrErrPopup("I'm busy doing something else, have some coffee.")
+
+    #-----------------------------------------------------------------------------------------------
+    def StopTimerEvent( self):
+        self.timer.stop()
+        self.timer = None
+
+    #-----------------------------------------------------------------------------------------------
+    def CrErrPopup(self, errText):
+        """ The crErrPopup provides a popup dialog to be used for simple
+            notifications to the user through the GUI """
+        msgBox = QMessageBox()
+        msgBox.setWindowTitle("Knowlogic Code Review")
+        msgBox.setText(errText)
+        msgBox.exec_()
+
+    #-----------------------------------------------------------------------------------------------
+    def lineEditDescFilterChanged(self):
+        descFilter = self.lineEditDescFilter.text()
+        # TODO : Handle the description filter
+
+    #-----------------------------------------------------------------------------------------------
+    def lineEditDetailsFilterChanged(self):
+        detailsFilter = self.lineEditDetailsFilter.text()
+        # TODO : Handle the details filter
+
+    #-----------------------------------------------------------------------------------------------
+    def lineEditUserNameChanged(self):
+        tmp = self.lineEdit_userName.text().strip()
+        if tmp:
+            self.userName = tmp
+
+    #-----------------------------------------------------------------------------------------------
+    def GetIniFilename( self):
+        """ create an init file name based on the machine the user is running from
+            this is used to make unique ini files if people are workgin from a common install
+        """
+        if not os.path.isdir( '.ini'):
+            os.makedirs( '.ini')
+
+        host = socket.gethostname()
+        fn =  '.ini/' + eKsCrtIni + '_%s.ini' % host
+        fnv = util.ValidFileName( fn)
+
+        return fnv
+
+    #-----------------------------------------------------------------------------------------------
+    def GetRecentProjFiles( self):
+        projFileNames = []
+
+        iniFn = self.GetIniFilename()
+        if os.path.isfile( iniFn):
+            # recall the last open project file
+            f = open(iniFn, 'r')
+            projFileNames = [i.strip() for i in f.readlines()]
+            f.close()
+
+        return projFileNames
+
+    #-----------------------------------------------------------------------------------------------
+    def SaveRecentProjFile( self, projFileName, first=True):
+        """ Save a list of project file, put the name passed in on the top of the list if first
+            is True, otherwise append to the end
+        """
+        projFileNames = self.GetRecentProjFiles()
+        if projFileName in projFileNames:
+            projFileNames.remove( projFileName)
+
+        if first:
+            projFileNames = [projFileName] + projFileNames
+        else:
+            projFileNames.append( projFileName)
+
+        # save the results
+        iniFn = self.GetIniFilename()
+        f = open(iniFn, 'w')
+        [f.write( i+'\n') for i in projFileNames]
+        f.close()
+
 
 #------------------------------------------------------------------------------------
 # Main Program
