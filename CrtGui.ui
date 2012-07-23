@@ -977,6 +977,9 @@ p, li { white-space: pre-wrap; }
          <layout class="QGridLayout" name="gridLayout_3">
           <item row="0" column="2">
            <widget class="QLineEdit" name="textBrowser_Filename_2">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
               <horstretch>11</horstretch>
@@ -984,7 +987,7 @@ p, li { white-space: pre-wrap; }
              </sizepolicy>
             </property>
             <property name="readOnly">
-             <bool>true</bool>
+             <bool>false</bool>
             </property>
            </widget>
           </item>
@@ -1000,6 +1003,9 @@ p, li { white-space: pre-wrap; }
           </item>
           <item row="0" column="4">
            <widget class="QLineEdit" name="textBrowser_Function_2">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
               <horstretch>6</horstretch>
@@ -1007,7 +1013,7 @@ p, li { white-space: pre-wrap; }
              </sizepolicy>
             </property>
             <property name="readOnly">
-             <bool>true</bool>
+             <bool>false</bool>
             </property>
            </widget>
           </item>
@@ -1023,24 +1029,36 @@ p, li { white-space: pre-wrap; }
           </item>
           <item row="0" column="6">
            <widget class="QLineEdit" name="lineNumber_2">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
               <horstretch>2</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
+            <property name="readOnly">
+             <bool>false</bool>
+            </property>
            </widget>
           </item>
           <item row="6" column="1" colspan="6">
            <widget class="QTextEditClick" name="textBrowser_Description_2">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="font">
              <font>
               <family>Courier New</family>
               <pointsize>9</pointsize>
              </font>
             </property>
+            <property name="documentTitle">
+             <string/>
+            </property>
             <property name="readOnly">
-             <bool>true</bool>
+             <bool>false</bool>
             </property>
            </widget>
           </item>
@@ -1071,6 +1089,9 @@ p, li { white-space: pre-wrap; }
           </item>
           <item row="7" column="1" colspan="6">
            <widget class="QPushButton" name="pushButtonSubmitManual">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="text">
              <string>Submit</string>
             </property>
@@ -1323,6 +1344,9 @@ p, li { white-space: pre-wrap; }
               </item>
               <item>
                <widget class="QLineEdit" name="reportFileName">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                   <horstretch>8</horstretch>
@@ -1333,6 +1357,9 @@ p, li { white-space: pre-wrap; }
               </item>
               <item>
                <widget class="QPushButton" name="pushButton_BrowseSrcCode">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
                 <property name="text">
                  <string>Browse...</string>
                 </property>
@@ -1357,6 +1384,9 @@ p, li { white-space: pre-wrap; }
               </item>
               <item>
                <widget class="QLineEdit" name="reportDirectory">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                   <horstretch>8</horstretch>
@@ -1367,6 +1397,9 @@ p, li { white-space: pre-wrap; }
               </item>
               <item>
                <widget class="QPushButton" name="pushButton_BrowseReport">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
                 <property name="text">
                  <string>Browse...</string>
                 </property>
@@ -1404,6 +1437,9 @@ p, li { white-space: pre-wrap; }
               </item>
               <item>
                <widget class="QPushButton" name="pushButton_GenerateReport">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
                 <property name="text">
                  <string>Generate Report</string>
                 </property>

@@ -246,6 +246,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 elif newTab == eTabMerge:
                     self.OpenMergeTab()
 
+        # moving to the Proj tab make sure the data is in there
+        elif newTab == eTabProject:
+            self.OpenProjectTab()
+
+        elif newTab == eTabMerge:
+            self.OpenMergeTab()
+
         # Coming back to the Config tab update the Stats as they may have analyzed something
         elif newTab == eTabAdmin and self.curTab != eTabAdmin:
             pfList = self.GetRecentProjFiles()
