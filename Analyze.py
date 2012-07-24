@@ -146,7 +146,7 @@ if __name__ == '__main__':
         fullAnalysis = True
     else:
         #jvDesk
-        projFile = r'C:\Knowlogic\tools\CR-Projs\G4-B\G4B.crp'
+        projFile = r'C:\Knowlogic\tools\CR-Projs\G4-A\G4A.crp'
         #projFile = r'C:\Knowlogic\tools\CR-Projs\Rypos\Rypos.crp'
 
         # PWC desk

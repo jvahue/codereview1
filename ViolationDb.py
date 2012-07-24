@@ -308,26 +308,26 @@ class ViolationDb( DB_SQLite):
                     else:
                         insert = r
 
-                        primary = (matchItem.filename, matchItem.function, matchItem.severity,
-                                   matchItem.violationId, matchItem.description, matchItem.details,
-                                   matchItem.lineNumber)
+                    primary = (matchItem.filename, matchItem.function, matchItem.severity,
+                               matchItem.violationId, matchItem.description, matchItem.details,
+                               matchItem.lineNumber)
 
-                        s = """Update violations set filename=?, function=?, severity=?, violationId=?,
-                               description=?, details=?, lineNumber=?, detectedBy=?, firstReport=?,
-                               lastReport=?, status=?, analysis=?, who=?, reviewDate=?
-                               where
-                               filename=? and function=? and severity=? and violationID=?
-                               and description=? and details=? and lineNumber=?
-                               """
+                    s = """Update violations set filename=?, function=?, severity=?, violationId=?,
+                           description=?, details=?, lineNumber=?, detectedBy=?, firstReport=?,
+                           lastReport=?, status=?, analysis=?, who=?, reviewDate=?
+                           where
+                           filename=? and function=? and severity=? and violationID=?
+                           and description=? and details=? and lineNumber=?
+                           """
 
-                        iData = (insert.filename, insert.function, insert.severity, insert.violationId,
-                                 insert.description, insert.details, insert.lineNumber, insert.detectedBy,
-                                 first, insert.lastReport, status, analysis, who, reviewDate)
-                        allData = iData + primary
-                        if self.Execute( s, *allData) == 1:
-                            self.mergeUpdate += 1
-                        else:
-                            self.mergeUpdateFail += 1
+                    iData = (insert.filename, insert.function, insert.severity, insert.violationId,
+                             insert.description, insert.details, insert.lineNumber, insert.detectedBy,
+                             first, insert.lastReport, status, analysis, who, reviewDate)
+                    allData = iData + primary
+                    if self.Execute( s, *allData) == 1:
+                        self.mergeUpdate += 1
+                    else:
+                        self.mergeUpdateFail += 1
 
                 else:
                     # selfDb does not have this record, insert the entire thing
@@ -368,8 +368,17 @@ class ViolationDb( DB_SQLite):
                 # merge is newer
                 older = matchItem
                 newer = mergeItem
-            analysis = 'MergeOld(%s/%s):\n%s\nMergeNew:\n%s' % (older.who, older.status,
-                                                                older.analysis, newer.analysis)
+
+            # TODO fix this and make a table of analysis related to each violation row
+            newHasOld = newer.analysis.find( older.analysis) != -1
+            oldHasNew = older.analysis.find( newer.analysis) != -1
+            if newHasOld or oldHasNew:
+                analysis = newer.analysis
+            else:
+                analysis = 'MergeOld(%s/%s):\n%s\nMergeNew:\n%s' % (older.who,
+                                                                    older.status,
+                                                                    older.analysis,
+                                                                    newer.analysis)
         elif selfAnalysis:
             self.selfAnalysis += 1
             analysis = matchItem.analysis

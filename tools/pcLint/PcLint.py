@@ -213,6 +213,19 @@ class PcLint( ToolManager):
             self.LoadViolations()
             self.SetStatusMsg(100, 'Processing Complete')
         else:
+            # collect the last 20 lines from the result file and put them in the log file
+            finName = os.path.join( self.projToolRoot, eResultFile)
+            f = open( finName, 'r')
+            lines = f.readlines()
+            at = -1
+            while abs(at) < len(lines) and (lines[at].find( '--- Module:') == -1 or at < -20):
+                at -= 1
+
+            for i in lines[at:]:
+                self.Log(i)
+
+            self.LogFlush()
+
             self.SetStatusMsg(100, 'Processing Error (see log)')
 
     #-----------------------------------------------------------------------------------------------

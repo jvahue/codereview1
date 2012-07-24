@@ -61,7 +61,7 @@ eTabProject = 3
 eTabMerge = 4
 eTabReport = 5
 
-eVersion = 'v0.0.1'
+eVersion = 'v0.0.2'
 
 #---------------------------------------------------------------------------------------------------
 # Functions
@@ -265,10 +265,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     #-----------------------------------------------------------------------------------------------
     def OkToMoveOffAdmin( self):
+        """ here we make sure we have a project selected and a user name.  A user name could
+            be their initials - 2 will do in case they hate their middle name or something
+        """
         errs = []
-        if self.db is None or self.userName.strip() == '':
+        user = self.userName.strip()
+        if self.db is None or len(user) < 2:
             if self.db is None: errs.append( 'Project File')
-            if not self.userName: errs = ['Username']
+            if len(user) < 2: errs = ['User Name or initials (at least two characters).']
         return errs
 
     #-----------------------------------------------------------------------------------------------
@@ -547,7 +551,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # TODO can be removed when project file editing is working
         self.ResetProject( self.projFile)
 
-        # TODO: check if u4c running and ask them to save their work
+        # see if understand is open they may have been edting something
+        # give them a chance to save it.
+        op = subprocess.check_output( 'tasklist')
+        opStr = op.decode()
+        if opStr.find('understand') != -1:
+            msg  = 'We are about to close an open instance of Understand.\n\n'
+            msg += 'If you have any unsaved work, please save the file(s) now\n'
+            msg += 'or your work will be lost.'
+            self.CrErrPopup(msg)
 
         self.runAnalysis.setEnabled(False)
         self.analysisActive = True
@@ -570,7 +582,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                                                  stdout=subprocess.PIPE)
 
         # launch our thread to collect results
-        t1 = util.ThreadSignal( self.UpdateToolAnalysis)
+        t1 = util.ThreadSignal( self.CollectToolAnalysisOutput)
         t1.Go()
 
         self.toolOutput.clear()
@@ -636,7 +648,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.analysisProcess.kill()
 
     #-----------------------------------------------------------------------------------------------
-    def UpdateToolAnalysis(self):
+    def CollectToolAnalysisOutput(self):
         """ This function is run as a thread to collect Tool Analysis Process outputs """
         while self.AnalyzeActive():
             line = self.analysisProcess.stdout.readline()
@@ -656,6 +668,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         text = self.toolProgress + '\n\n' + text
 
         if self.abortRequested:
+            text = text.strip()
             text += '\n\n--- Tool Analysis ABORTED. '
             text += 'Partial tool analysis results maybe included. ---'
 
