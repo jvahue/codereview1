@@ -146,11 +146,11 @@ if __name__ == '__main__':
         fullAnalysis = True
     else:
         #jvDesk
-        projFile = r'C:\Knowlogic\tools\CR-Projs\G4-A\G4A.crp'
+        #projFile = r'C:\Knowlogic\tools\CR-Projs\G4-A\G4A.crp'
         #projFile = r'C:\Knowlogic\tools\CR-Projs\Rypos\Rypos.crp'
 
         # PWC desk
-        #projFile = r'L:\FAST II\control processor\CodeReview\G4.crp'
+        projFile = r'C:\Users\P916214\Documents\Knowlogic\CodeReviewProj\Fast JM\G4JM.crp'
 
         # jvLaptop
         #projFile = r'D:\Knowlogic\Tools\CR-Projs\zzzCodereviewPROJ\G4.crp'

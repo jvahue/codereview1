@@ -108,14 +108,16 @@ class U4cDb:
             if fileEnt is not None:
                 functions = fileEnt.ents( 'Define', 'Function')
 
-                lxr = fileEnt.lexer()
-                returnsAt = self.GetReturnsInFile( lxr)
+                # incase someone deleted the file let's check
+                if os.path.isfile( fileEnt.longname()):
+                    lxr = fileEnt.lexer()
+                    returnsAt = self.GetReturnsInFile( lxr)
 
-                for f in functions:
-                    funcInfo[f.name()] = self.GetFuncInfo( f, returnsAt)
-                    funcInfo[f.name()][eFiFullPath] = self.GetFileEnt( filename).longname()
+                    for f in functions:
+                        funcInfo[f.name()] = self.GetFuncInfo( f, returnsAt)
+                        funcInfo[f.name()][eFiFullPath] = self.GetFileEnt( filename).longname()
 
-                self.fileFuncInfo[filename] = funcInfo
+                    self.fileFuncInfo[filename] = funcInfo
         else:
             funcInfo = self.fileFuncInfo[filename]
 

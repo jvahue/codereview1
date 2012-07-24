@@ -163,9 +163,9 @@ class ViolationDb( DB_SQLite):
             Returns: the matching row in the DB as matchItem
         """
         # debug hook
-        fnM = fName==r'application\AircraftConfigMgr.c'
-        fcM = func=='AircraftConfigInitialization'
-        if fnM and fcM and sev=='Warning'and violId =='534':
+        fnM = fName==r'application\EngineRun.c'
+        fcM = func=='N/A'
+        if fnM and fcM and sev=='Error'and violId =='FileFmt-FileName':
             pass
 
         # determine if this violation already exists in the DB

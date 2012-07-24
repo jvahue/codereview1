@@ -43,7 +43,8 @@ class Item( Holder):
     """ This holds the info about an item (or a group of items that go together).  It allows for
         checking the existence of the item in the line buffer.
     """
-    def __init__( self, raw, desc, dependsOn = None):
+    def __init__( self, itemId, raw, desc, dependsOn = None):
+        self.itemId = itemId
         self.raw = [raw]
         self.desc = [desc]
         self.offset = [0]
@@ -148,12 +149,13 @@ class FormatChecker:
 
         self.items = []
         for ix, i in enumerate(self.descLines):
+            iid = len(self.items)
             posDef = posDefRe.findall( i.strip())
             if posDef:
                 posDef = posDef[0]
                 if posDef == ':D:':
                     descLine = self.descLines[ix].replace( posDef, '').strip()
-                    item = Item( self.rawDescLines[ix], descLine, self.items[-1])
+                    item = Item( iid, self.rawDescLines[ix], descLine, self.items[-1])
                     self.items.append(item)
                 else:
                     span = int(posDef.replace(':', ''))
@@ -161,7 +163,7 @@ class FormatChecker:
                     descLine = self.descLines[ix].replace( posDef, '').strip()
                     item.AddGroupItem( self.rawDescLines[ix], descLine, span)
             else:
-                item = Item( self.rawDescLines[ix], self.descLines[ix])
+                item = Item( iid, self.rawDescLines[ix], self.descLines[ix])
                 self.items.append(item)
 
         # find out how big our line buffer needs to be

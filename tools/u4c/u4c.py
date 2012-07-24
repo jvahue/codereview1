@@ -505,7 +505,8 @@ class U4c( ToolManager):
                     violationId = 'FileFmt-FileName'
                     func = 'N/A'
                     desc = 'Missing Filename near line %d' % keyInfo.line0
-                    details = 'Expected filename at line %d' % keyInfo.line0
+                    details = 'Expected filename at line %d [Item %d]' % (keyInfo.line0,
+                                                                          item.itemId)
                     self.vDb.Insert( rpfn, func, severity, violationId,
                                      desc, details, keyInfo.line0, eDbDetectId, self.updateTime)
 
@@ -524,7 +525,8 @@ class U4c( ToolManager):
                     violationId = 'FileFmt-NoDesc'
                     func = 'N/A'
                     desc = 'Missing File Desc near line %d' % keyInfo.line0
-                    details = 'Expected file description at line %d' % keyInfo.line0
+                    details = 'Expected file description at line %d [Item %d]' % (keyInfo.line0,
+                                                                                  item.itemId)
                     self.vDb.Insert( rpfn, func, severity, violationId,
                                      desc, details, keyInfo.line0, eDbDetectId, self.updateTime)
 
@@ -954,11 +956,14 @@ class U4c( ToolManager):
         """ return the text of 'lineNumber' in file 'filename'
         """
         fullPathName = self.projFile.FullPathName( filename)
-        # TODO: handle non-unique filenames in different srcRoots
-        f = open( fullPathName[0], 'r')
-        lines = f.readlines()
-        f.close()
-        txt = lines[lineNumber - 1]
+        if fullPathName:
+            # TODO: handle non-unique filenames in different srcRoots
+            f = open( fullPathName[0], 'r')
+            lines = f.readlines()
+            f.close()
+            txt = lines[lineNumber - 1]
+        else:
+            txt = 'Filename: %s does not exist or has been moved.'
         return txt
 
 
