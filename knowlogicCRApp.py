@@ -61,7 +61,7 @@ eTabProject = 3
 eTabMerge = 4
 eTabReport = 5
 
-eVersion = 'v0.0.2'
+eVersion = 'v0.0.3'
 
 #---------------------------------------------------------------------------------------------------
 # Functions
@@ -138,6 +138,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.runAnalysis.clicked.connect(self.RunAnalysis)
         self.abortAnalysis.clicked.connect(self.AbortAnalysis)
+        self.abortAnalysis.setEnabled( False)
         self.showPcLintLog.clicked.connect(lambda x=eLogPc,fx=self.ShowLog: fx(x))
         self.showKsLog.clicked.connect(lambda x=eLogKs,fx=self.ShowLog: fx(x))
         self.showToolOutput.clicked.connect(lambda x=eLogTool,fx=self.ShowLog: fx(x))
@@ -369,7 +370,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         return projFile
 
-
     #-----------------------------------------------------------------------------------------------
     def ResetProject( self, projFile=None):
         """ A new project file has been selected - reset all the info in the display
@@ -540,6 +540,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             displayLines = ['%s Output contains %d lines\n' % (logId, len(lines))] + lines
             self.toolOutput.setText( ''.join( displayLines))
+        else:
+            self.CrErrPopup( 'Please select a project file.')
 
     #-----------------------------------------------------------------------------------------------
     # Tool Analysis
@@ -547,47 +549,51 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def RunAnalysis(self):
         """
         """
-        # --- DO THIS FIRST ---
-        # TODO can be removed when project file editing is working
-        self.ResetProject( self.projFile)
+        if self.projFile:
+            # --- DO THIS FIRST ---
+            # TODO can be removed when project file editing is working
+            self.ResetProject( self.projFile)
 
-        # see if understand is open they may have been edting something
-        # give them a chance to save it.
-        op = subprocess.check_output( 'tasklist')
-        opStr = op.decode()
-        if opStr.find('understand') != -1:
-            msg  = 'We are about to close an open instance of Understand.\n\n'
-            msg += 'If you have any unsaved work, please save the file(s) now\n'
-            msg += 'or your work will be lost.'
-            self.CrErrPopup(msg)
+            # see if understand is open they may have been edting something
+            # give them a chance to save it.
+            op = subprocess.check_output( 'tasklist')
+            opStr = op.decode()
+            if opStr.find('understand') != -1:
+                msg  = 'We are about to close an open instance of Understand.\n\n'
+                msg += 'If you have any unsaved work, please save the file(s) now\n'
+                msg += 'or your work will be lost.'
+                self.CrErrPopup(msg)
 
-        self.runAnalysis.setEnabled(False)
-        self.analysisActive = True
+            self.runAnalysis.setEnabled(False)
+            self.abortAnalysis.setEnabled(True)
+            self.analysisActive = True
 
-        self.abortRequested = False
-        self.programOpenedU4c = False
-        self.toolProgress = ''
-        self.toolRunOutput = ''
-        self.toolOutputText = []
-        self.startAnalysis = DateTime.DateTime.today()
+            self.abortRequested = False
+            self.programOpenedU4c = False
+            self.toolProgress = ''
+            self.toolRunOutput = ''
+            self.toolOutputText = []
+            self.startAnalysis = DateTime.DateTime.today()
 
-        cwd = os.getcwd()
-        cmdPath = os.path.join( cwd, 'Analyze.py')
-        cmd = 'c:\python32\python.exe "%s" "%s"' % (cmdPath, self.projFileName)
-        rootDir = self.projFile.paths[PF.ePathProject]
+            cwd = os.getcwd()
+            cmdPath = os.path.join( cwd, 'Analyze.py')
+            cmd = 'c:\python32\python.exe "%s" "%s"' % (cmdPath, self.projFileName)
+            rootDir = self.projFile.paths[PF.ePathProject]
 
-        self.analysisProcess = subprocess.Popen( cmd,
-                                                 cwd=rootDir,
-                                                 stderr=subprocess.STDOUT,
-                                                 stdout=subprocess.PIPE)
+            self.analysisProcess = subprocess.Popen( cmd,
+                                                     cwd=rootDir,
+                                                     stderr=subprocess.STDOUT,
+                                                     stdout=subprocess.PIPE)
 
-        # launch our thread to collect results
-        t1 = util.ThreadSignal( self.CollectToolAnalysisOutput)
-        t1.Go()
+            # launch our thread to collect results
+            t1 = util.ThreadSignal( self.CollectToolAnalysisOutput)
+            t1.Go()
 
-        self.toolOutput.clear()
+            self.toolOutput.clear()
 
-        self.StartTimerEvent( self.AnalysisUpdate, 250)
+            self.StartTimerEvent( self.AnalysisUpdate, 250)
+        else:
+            self.CrErrPopup('Please select a project file.')
 
     #-----------------------------------------------------------------------------------------------
     def AnalysisUpdate( self):
@@ -625,6 +631,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.analysisActive = False
 
             self.runAnalysis.setEnabled(True)
+            self.abortAnalysis.setEnabled(False)
 
     #-----------------------------------------------------------------------------------------------
     def AnalyzeActive(self):
