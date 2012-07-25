@@ -547,7 +547,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     # Tool Analysis
     #-----------------------------------------------------------------------------------------------
     def RunAnalysis(self):
-        """
+        """ Run the analysis tools for PcLint and U4C
         """
         if self.projFile:
             # --- DO THIS FIRST ---
