@@ -61,7 +61,7 @@ eTabProject = 3
 eTabMerge = 4
 eTabReport = 5
 
-eVersion = 'v0.0.4'
+eVersion = 'v0.0.5'
 
 #---------------------------------------------------------------------------------------------------
 # Functions
@@ -198,7 +198,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         #------------------------------------------------------------------------------
         # Handle Project Tab Data
         #------------------------------------------------------------------------------
-        self.pfSections.clicked.connect( self.PfGoto)
+        self.pfSections.clicked.connect( self.GotoProjectFileIni)
 
         #------------------------------------------------------------------------------
         # Handle Merge Tab Data
@@ -940,11 +940,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 # refresh the data in our cache
                 self.ApplyFilters()
 
-                # now go there
+                # now go there - scroll bar handles setting to locations that do not exist
+                # i.e., if we accepted the last violation in a set
+                #       => 19 of 19 we should position ourself at 18 of 18
                 if self.dispositioned.isChecked():
                     self.horizontalScrollBar.setValue(at+1)
                 else:
                     self.horizontalScrollBar.setValue(at)
+
+                self.GotoCode()
             else:
                 if reportBlank:
                     QMessageBox.information( self, "Comment", 'You need to specify a comment')
@@ -979,7 +983,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     #-----------------------------------------------------------------------------------------------
     def GotoCode(self):
-        viewerCommand = self.projFile.paths[PF.ePathViewer]
         # get the filename and line number for this violation
         if self.v:
             filename = self.v.filename
@@ -987,6 +990,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             fpfn = self.projFile.FullPathName( filename)
             if fpfn:
                 if len(fpfn) == 1:
+                    viewerCommand = self.projFile.paths[PF.ePathViewer]
+
                     viewerCommand = viewerCommand.replace( '<fullPathFileName>', '"%s"' % fpfn[0])
 
                     linenumber = self.v.lineNumber
@@ -1009,7 +1014,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     #-----------------------------------------------------------------------------------------------
     # Project Tab
     #-----------------------------------------------------------------------------------------------
-    def PfGoto( self):
+    def GotoProjectFileIni( self):
         """ Goto the text for the select ini group, display its tip
             TODO: center the select group
         """
@@ -1026,13 +1031,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             # goto that area of the proj file
             curCursor = self.pfText.textCursor()
             atChar = curCursor.position()
-
-            #moveOffset = newChar - atChar
-            #if moveOffset >= 0:
-            #    moveMode = QTextCursor.NextCharacter
-            #else:
-            #    moveMode = QTextCursor.PreviousCharacter
-            #    moveOffset *= -1
 
             curCursor.setPosition( newChar)
             self.pfText.setTextCursor(curCursor)
