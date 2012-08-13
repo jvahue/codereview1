@@ -332,7 +332,10 @@ class PcLint( ToolManager):
             fin.close()
 
             # rename
-            os.remove( finName)
+            tmp = finName + '.txt'
+            if os.path.isfile(tmp):
+                os.remove(tmp)
+            os.rename( finName, tmp)
             os.rename( foutName, finName)
 
     #-----------------------------------------------------------------------------------------------

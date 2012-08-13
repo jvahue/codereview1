@@ -233,6 +233,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             if errs:
                 self.tabWidget.setCurrentIndex(eTabAdmin)
                 self.CrErrPopup('Please enter a valid %s' % ' and '.join(errs))
+                newTab = eTabAdmin
             else:
                 if newTab == eTabAnalysis:
                     if not self.analysisActive:
