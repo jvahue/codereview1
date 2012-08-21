@@ -7,6 +7,7 @@ their analysis was.
 #---------------------------------------------------------------------------------------------------
 # Python Modules
 #---------------------------------------------------------------------------------------------------
+import csv
 import os
 import re
 
@@ -483,23 +484,50 @@ class ViolationDb( DB_SQLite):
 
         return data[0]
 
+    #-----------------------------------------------------------------------------------------------
+    def Export(self, fn):
+        """ Export the Db to a Csv file
+        """
+
+        s = """
+        select filename,function,severity,violationId,description,details,lineNumber,
+               detectedBy,firstReport,lastReport,status,analysis,who,reviewDate
+               from violations
+        """
+        q = self.Query(s)
+
+        f = open(fn, 'w', newline='')
+        fcsv = csv.writer( f)
+
+        fcsv.writerow( q.fields)
+        for i in q:
+            fcsv.writerow(i.data)
+
+        f.close()
 
 #===================================================================================================
 if __name__ == '__main__':
     import ProjFile as PF
 
-    mainPfName = r'C:\Knowlogic\tools\CR-Projs\G4-B\G4B.crp'
-    mrgePfName = r'C:\Knowlogic\tools\CR-Projs\G4-A\G4A.crp'
+    if False:
+        mainPfName = r'C:\Knowlogic\tools\CR-Projs\G4-B\G4B.crp'
+        mrgePfName = r'C:\Knowlogic\tools\CR-Projs\G4-A\G4A.crp'
 
-    mainPf = PF.ProjectFile(mainPfName)
-    mrgePf = PF.ProjectFile(mrgePfName)
+        mainPf = PF.ProjectFile(mainPfName)
+        mrgePf = PF.ProjectFile(mrgePfName)
 
-    mainDb = ViolationDb( mainPf.paths[PF.ePathProject])
-    mrgeDb = ViolationDb( mrgePf.paths[PF.ePathProject])
+        mainDb = ViolationDb( mainPf.paths[PF.ePathProject])
+        mrgeDb = ViolationDb( mrgePf.paths[PF.ePathProject])
 
-    s = 'select count(*) from violations'
-    d0 = mainDb.GetOne(s)
-    d1 = mrgeDb.GetOne(s)
-    mainDb.Merge( mrgeDb)
+        s = 'select count(*) from violations'
+        d0 = mainDb.GetOne(s)
+        d1 = mrgeDb.GetOne(s)
+        mainDb.Merge( mrgeDb)
 
-    mainDb.ShowMergeStats()
+        mainDb.ShowMergeStats()
+    else:
+        pfName = r'C:\Users\P916214\Documents\Knowlogic\CodeReviewProj\FAST\G4.crp'
+        mainPf = PF.ProjectFile(pfName)
+        mainDb = ViolationDb( mainPf.paths[PF.ePathProject])
+
+        mainDb.Export()

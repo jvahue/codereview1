@@ -524,14 +524,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     #-----------------------------------------------------------------------------------------------
     def ExportDb( self):
-        self.CrErrPopup( 'Coming soon')
-        return
-        fn, fltr = QFileDialog.getSaveFileName( self,
-                                          "Save DB to",
-                                          '.',
-                                          "CSV File (*.csv)")
-        if fn:
-            pass
+        if self.db:
+            fn, fltr = QFileDialog.getSaveFileName( self,
+                                              "Save DB to",
+                                              self.projFile.paths[PF.ePathProject],
+                                              "CSV File (*.csv)")
+            if fn:
+                self.db.Export( fn)
+        else:
+            self.CrErrPopup('You must select a project first')
 
 
     #-----------------------------------------------------------------------------------------------
