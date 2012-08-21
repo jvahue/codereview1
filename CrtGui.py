@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'CrtGui.ui'
 #
-# Created: Mon Jul 23 17:59:10 2012
+# Created: Mon Aug 20 23:33:02 2012
 #      by: pyside-uic 0.2.13 running on PySide 1.1.0
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,7 +12,7 @@ from PySide import QtCore, QtGui
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(855, 706)
+        MainWindow.resize(1034, 706)
         self.centralWidget = QtGui.QWidget(MainWindow)
         self.centralWidget.setObjectName("centralWidget")
         self.verticalLayout_13 = QtGui.QVBoxLayout(self.centralWidget)
@@ -139,7 +139,7 @@ class Ui_MainWindow(object):
         self.abortAnalysis = QtGui.QPushButton(self.groupBox_2)
         self.abortAnalysis.setObjectName("abortAnalysis")
         self.verticalLayout_5.addWidget(self.abortAnalysis)
-        spacerItem1 = QtGui.QSpacerItem(20, 48, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
+        spacerItem1 = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
         self.verticalLayout_5.addItem(spacerItem1)
         self.showPcLintLog = QtGui.QPushButton(self.groupBox_2)
         self.showPcLintLog.setObjectName("showPcLintLog")
@@ -262,6 +262,9 @@ class Ui_MainWindow(object):
         self.label_9 = QtGui.QLabel(self.groupBox)
         self.label_9.setObjectName("label_9")
         self.gridLayout.addWidget(self.label_9, 0, 0, 1, 1)
+        self.exportDb = QtGui.QPushButton(self.groupBox)
+        self.exportDb.setObjectName("exportDb")
+        self.gridLayout.addWidget(self.exportDb, 6, 5, 1, 1)
         self.verticalLayout_15.addLayout(self.gridLayout)
         self.verticalLayout_9.addWidget(self.groupBox)
         self.tabWidget.addTab(self.tab_Config, "")
@@ -787,10 +790,7 @@ class Ui_MainWindow(object):
         MainWindow.setTabOrder(self.browseProjectFile, self.toolOutput)
         MainWindow.setTabOrder(self.toolOutput, self.runAnalysis)
         MainWindow.setTabOrder(self.runAnalysis, self.abortAnalysis)
-        MainWindow.setTabOrder(self.abortAnalysis, self.showPcLintLog)
-        MainWindow.setTabOrder(self.showPcLintLog, self.showKsLog)
-        MainWindow.setTabOrder(self.showKsLog, self.showToolOutput)
-        MainWindow.setTabOrder(self.showToolOutput, self.reviewedViolations)
+        MainWindow.setTabOrder(self.abortAnalysis, self.reviewedViolations)
         MainWindow.setTabOrder(self.reviewedViolations, self.totalViolations)
         MainWindow.setTabOrder(self.totalViolations, self.acceptedViolations)
         MainWindow.setTabOrder(self.acceptedViolations, self.removedViolations)
@@ -882,6 +882,7 @@ class Ui_MainWindow(object):
         self.label_22.setText(QtGui.QApplication.translate("MainWindow", "Active", None, QtGui.QApplication.UnicodeUTF8))
         self.label_4.setText(QtGui.QApplication.translate("MainWindow", "Knowlogic", None, QtGui.QApplication.UnicodeUTF8))
         self.label_9.setText(QtGui.QApplication.translate("MainWindow", "Total Violations", None, QtGui.QApplication.UnicodeUTF8))
+        self.exportDb.setText(QtGui.QApplication.translate("MainWindow", "Export Database to CSV File", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_Config), QtGui.QApplication.translate("MainWindow", "Admin", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox_Filters.setTitle(QtGui.QApplication.translate("MainWindow", "Select Filters", None, QtGui.QApplication.UnicodeUTF8))
         self.label_18.setText(QtGui.QApplication.translate("MainWindow", "Description Filter:", None, QtGui.QApplication.UnicodeUTF8))

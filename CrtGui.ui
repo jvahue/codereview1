@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>855</width>
+    <width>1034</width>
     <height>706</height>
    </rect>
   </property>
@@ -246,14 +246,14 @@ p, li { white-space: pre-wrap; }
                   </widget>
                  </item>
                  <item>
-                  <spacer name="verticalSpacer_3">
+                  <spacer name="verticalSpacer_4">
                    <property name="orientation">
                     <enum>Qt::Vertical</enum>
                    </property>
                    <property name="sizeHint" stdset="0">
                     <size>
                      <width>20</width>
-                     <height>48</height>
+                     <height>40</height>
                     </size>
                    </property>
                   </spacer>
@@ -495,6 +495,13 @@ p, li { white-space: pre-wrap; }
                 <widget class="QLabel" name="label_9">
                  <property name="text">
                   <string>Total Violations</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="6" column="5">
+                <widget class="QPushButton" name="exportDb">
+                 <property name="text">
+                  <string>Export Database to CSV File</string>
                  </property>
                 </widget>
                </item>
@@ -1484,9 +1491,6 @@ p, li { white-space: pre-wrap; }
   <tabstop>toolOutput</tabstop>
   <tabstop>runAnalysis</tabstop>
   <tabstop>abortAnalysis</tabstop>
-  <tabstop>showPcLintLog</tabstop>
-  <tabstop>showKsLog</tabstop>
-  <tabstop>showToolOutput</tabstop>
   <tabstop>reviewedViolations</tabstop>
   <tabstop>totalViolations</tabstop>
   <tabstop>acceptedViolations</tabstop>

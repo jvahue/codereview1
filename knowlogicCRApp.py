@@ -49,7 +49,7 @@ from qtexteditclick import QTextEditClick
 #---------------------------------------------------------------------------------------------------
 # Data
 #---------------------------------------------------------------------------------------------------
-eVersion = 'v0.0.6'
+eVersion = 'v0.0.7'
 
 eKsCrtIni = 'KsCrt'
 eLogPc = 'PcLint'
@@ -142,6 +142,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.showPcLintLog.clicked.connect(lambda x=eLogPc,fx=self.ShowLog: fx(x))
         self.showKsLog.clicked.connect(lambda x=eLogKs,fx=self.ShowLog: fx(x))
         self.showToolOutput.clicked.connect(lambda x=eLogTool,fx=self.ShowLog: fx(x))
+
+        self.exportDb.clicked.connect( self.ExportDb)
 
         #------------------------------------------------------------------------------
         # Set up the filter comboboxes and the Apply Filter pushbutton
@@ -519,6 +521,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.pcAccepted.setText('0')
             self.pcRemoved.setText('0')
             self.pcActive.setText('0')
+
+    #-----------------------------------------------------------------------------------------------
+    def ExportDb( self):
+        self.CrErrPopup( 'Coming soon')
+        return
+        fn, fltr = QFileDialog.getSaveFileName( self,
+                                          "Save DB to",
+                                          '.',
+                                          "CSV File (*.csv)")
+        if fn:
+            pass
+
 
     #-----------------------------------------------------------------------------------------------
     def ShowLog( self, logId):
