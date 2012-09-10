@@ -49,7 +49,7 @@ from qtexteditclick import QTextEditClick
 #---------------------------------------------------------------------------------------------------
 # Data
 #---------------------------------------------------------------------------------------------------
-eVersion = 'v0.0.7'
+eVersion = 'v0.0.8'
 
 eKsCrtIni = 'KsCrt'
 eLogPc = 'PcLint'
@@ -465,6 +465,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.acceptedViolations.setText(str(accepted[0]))
             self.removedViolations.setText(str(noRep[0]))
             self.activeViolations.setText(str(total[0].data-noRep[0].data))
+            openIssues = total[0].data - (accepted[0].data + reviewed[0].data + noRep[0].data)
+            self.openViolations.setText(str(openIssues))
 
             #-------------- KS Totals
             s = "SELECT count(*) from Violations where detectedBy = 'Knowlogic'"
@@ -484,6 +486,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.ksAccepted.setText(str(accepted[0]))
             self.ksRemoved.setText(str(noRep[0]))
             self.ksActive.setText(str(total[0].data-noRep[0].data))
+            openIssues = total[0].data - (accepted[0].data + reviewed[0].data + noRep[0].data)
+            self.ksOpen.setText(str(openIssues))
 
             #-------------- PC-LINT Totals
             s = "SELECT count(*) from Violations where detectedBy = 'PcLint'"
@@ -503,21 +507,26 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.pcAccepted.setText(str(accepted[0]))
             self.pcRemoved.setText(str(noRep[0]))
             self.pcActive.setText(str(total[0].data-noRep[0].data))
+            openIssues = total[0].data - (accepted[0].data + reviewed[0].data + noRep[0].data)
+            self.pcOpen.setText(str(openIssues))
         else:
             self.totalViolations.setText('0')
             self.reviewedViolations.setText('0')
+            self.openViolations.setText('0')
             self.acceptedViolations.setText('0')
             self.removedViolations.setText('0')
             self.activeViolations.setText('0')
 
             self.ksTotal.setText('0')
             self.ksReviewed.setText('0')
+            self.ksOpen.setText('0')
             self.ksAccepted.setText('0')
             self.ksRemoved.setText('0')
             self.ksActive.setText('0')
 
             self.pcTotal.setText('0')
             self.pcReviewed.setText('0')
+            self.pcOpen.setText('0')
             self.pcAccepted.setText('0')
             self.pcRemoved.setText('0')
             self.pcActive.setText('0')

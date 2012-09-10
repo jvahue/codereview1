@@ -324,7 +324,7 @@ class U4c( ToolManager):
             if fileSize > fileLimit:
                 line = fileSize
                 severity = 'Error'
-                violationId = 'Metric-File'
+                violationId = 'Metric.File'
                 desc = 'File Length Exceeded: %s' % (fn)
                 details = 'Total line count (%d) exceeds project maximum (%d)' % (fileSize,
                                                                                   fileLimit)
@@ -361,7 +361,7 @@ class U4c( ToolManager):
             # this is the total count of lines in the function including comments
             lines = info['metrics']['CountLine']
             if lines > funcLimit:
-                violationId = 'Metric-Func'
+                violationId = 'Metric.Func'
                 desc = 'Function Length exceeded in %s' % (func)
                 details = 'Total Line Count %d exceeds %d' % (lines, funcLimit)
                 self.vDb.Insert( rpfn, func, severity, violationId, desc,
@@ -369,7 +369,7 @@ class U4c( ToolManager):
 
             mccabe = info['metrics']['Cyclomatic']
             if mccabe > mccabeLimit:
-                violationId = 'Metric-Cyclomatic'
+                violationId = 'Metric.Cyclomatic'
                 desc = 'Function Cyclomatic Complexity exceeded in %s' % (func)
                 details = 'Cyclomatic Complexity %d exceeds %d' % (mccabe, mccabeLimit)
                 self.vDb.Insert( rpfn, func, severity, violationId, desc,
@@ -377,7 +377,7 @@ class U4c( ToolManager):
 
             nesting = info['metrics']['MaxNesting']
             if nesting > nestingLimit:
-                violationId = 'Metric-Nesting'
+                violationId = 'Metric.Nesting'
                 desc = 'Function Nesting exceeded in %s' % (func)
                 details = 'Nesting Levels %d exceeds %d' % (nesting, nestingLimit)
                 self.vDb.Insert( rpfn, func, severity, violationId, desc,
@@ -385,7 +385,7 @@ class U4c( ToolManager):
 
             returns = info['returns']
             if returns > returnLimit:
-                violationId = 'Metric-Returns'
+                violationId = 'Metric.Returns'
                 desc = 'Function Return Points exceeded in %s' % (func)
                 details = 'Return Points %d exceeds %d' % (returns, returnLimit)
                 self.vDb.Insert( rpfn, func, severity, violationId, desc,
@@ -447,7 +447,7 @@ class U4c( ToolManager):
                         func = data[(ds,de)]
 
                 severity = 'Warning'
-                violationId = 'Metric-Line'
+                violationId = 'Metric.Line'
                 desc = 'Line Length in %s line %d' % (fn, lx)
                 details = '%3d: %s' % (lineLen, txt.strip())
                 self.vDb.Insert( rpfn, func, severity, violationId, desc,
@@ -464,7 +464,7 @@ class U4c( ToolManager):
                         if u4cLine >= ds and u4cLine <= de:
                             func = data[(ds,de)]
                 severity = 'Info'
-                violationId = 'Misc-TODO'
+                violationId = 'Misc.TODO'
                 desc = 'Line contains TODO/TBD %s line %d' % (fn, lx)
                 details = '%s' % (txt.strip())
                 self.vDb.Insert( rpfn, func, severity, violationId, desc,
@@ -479,7 +479,7 @@ class U4c( ToolManager):
                             if u4cLine >= ds and u4cLine <= de:
                                 func = data[(ds,de)]
                     severity = 'Error'
-                    violationId = 'Misc-TAB'
+                    violationId = 'Misc.TAB'
                     desc = 'Line contains TAB(s) %s line %d' % (fn, lx)
                     details = '%s' % (txt.strip())
                     self.vDb.Insert( rpfn, func, severity, violationId, desc,
@@ -502,7 +502,7 @@ class U4c( ToolManager):
                 if text.lower().find( fn.lower()) == -1:
                     # no mention of file name
                     severity = 'Error'
-                    violationId = 'FileFmt-FileName'
+                    violationId = 'FileFmt.FileName'
                     func = 'N/A'
                     desc = 'Missing Filename near line %d' % keyInfo.line0
                     details = 'Expected filename at line %d [Item %d]' % (keyInfo.line0,
@@ -522,7 +522,7 @@ class U4c( ToolManager):
                 if not text:
                     # no mention of file name
                     severity = 'Error'
-                    violationId = 'FileFmt-NoDesc'
+                    violationId = 'FileFmt.NoDesc'
                     func = 'N/A'
                     desc = 'Missing File Desc near line %d' % keyInfo.line0
                     details = 'Expected file description at line %d [Item %d]' % (keyInfo.line0,
@@ -597,7 +597,7 @@ class U4c( ToolManager):
 
                 # log a declared but not defined variable
                 if defFile == '' and decFile != '':
-                    violationId = 'Undefined-%s' % (name)
+                    violationId = 'Undefined.%s' % (name)
                     defFile = decFile
                     defLine = decLine
                     fpfn = decFile.longname()
@@ -618,7 +618,7 @@ class U4c( ToolManager):
                 if not match or tooBig:
                     bad += 1
                     severity = 'Error'
-                    violationId = 'Naming-%s' % name
+                    violationId = 'Naming.%s' % name
                     func = getFunc( item)
 
                     if defFile != '':
@@ -684,7 +684,7 @@ class U4c( ToolManager):
             pct = (float(pctCtr)/totalItems) * 100.0
             self.SetStatusMsg( pct)
             itemRefs = self.udb.GetItemRefs( item, 'Function')
-            self.ReportExcluded( item, itemRefs, 'Error', 'Excluded-Func',
+            self.ReportExcluded( item, itemRefs, 'Error', 'Excluded.Func',
                                  'Excluded function %s at line %d')
 
         # excluded keywords
@@ -696,7 +696,7 @@ class U4c( ToolManager):
                 itemRefs = specialProcessing[item]()
             else:
                 itemRefs = self.udb.GetItemRefs( item)
-            self.ReportExcluded( item, itemRefs, 'Error', 'Excluded-Keyword',
+            self.ReportExcluded( item, itemRefs, 'Error', 'Excluded.Keyword',
                                  'Excluded keyword %s at line %d')
 
         # restricted functions
@@ -705,7 +705,7 @@ class U4c( ToolManager):
             pct = (float(pctCtr)/totalItems) * 100.0
             self.SetStatusMsg( pct)
             itemRefs = self.udb.GetItemRefs( item, 'Function')
-            self.ReportExcluded( item, itemRefs, 'Warning', 'Restricted-Func',
+            self.ReportExcluded( item, itemRefs, 'Warning', 'Restricted.Func',
                                  'Restricted function %s at line %d')
 
     #-----------------------------------------------------------------------------------------------
@@ -800,7 +800,7 @@ class U4c( ToolManager):
                 else:
                     # No function header
                     severity = 'Error'
-                    violationId = 'FuncHdr-NoHeader'
+                    violationId = 'FuncHdr.NoHeader'
                     desc = 'Function Header %s is missing' % (func)
                     details = 'N/A'
                     self.vDb.Insert(rpfn, func, severity, violationId, desc,
@@ -815,7 +815,7 @@ class U4c( ToolManager):
                         searchIn = '\n'.join(keyInfo.lines)
                         if searchIn.find( func) == -1:
                             severity = 'Error'
-                            violationId = 'FuncHdr-FuncName'
+                            violationId = 'FuncHdr.FuncName'
                             desc = 'Function Name %s Missing in header' % func
                             details = 'Expected at offset %d of %d lines' % (keyInfo.line0, len(hdrLines))
                             self.vDb.Insert(rpfn, func, severity, violationId, desc,
@@ -837,7 +837,7 @@ class U4c( ToolManager):
                     for px,p in enumerate(params):
                         if searchIn.find( p) == -1:
                             severity = 'Error'
-                            violationId = 'FuncHdr-Param'
+                            violationId = 'FuncHdr.Param'
                             desc = 'Function Header %s Missing Param %s' % (func, p)
                             details = 'Parameter <%s> not in description' % p
                             self.vDb.Insert(rpfn, func, severity, violationId, desc,
@@ -852,7 +852,7 @@ class U4c( ToolManager):
                     searchIn = searchIn.replace( rtnLineDesc, '').strip()
                     if not searchIn and fi[udb.eFiReturnType] != 'void':
                         severity = 'Error'
-                        violationId = 'FuncHdr-Return'
+                        violationId = 'FuncHdr.Return'
                         desc = 'Function Header %s Missing return info' % (func)
                         details = 'Function header consists of %d lines' % len(hdrLines)
                         self.vDb.Insert(rpfn, func, severity, violationId, desc,

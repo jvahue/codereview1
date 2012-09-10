@@ -301,7 +301,7 @@ class FormatChecker:
                 found.append( item)
             else:
                 severity = 'Error'
-                violationId = errMsg + '-MissingItem'
+                violationId = errMsg + '.MissingItem'
                 lineMis = lineNum
                 rawText = item.JoinRaw()
                 desc = '%s\n%s[Item %d]\nmissing in %s' % (checkDesc, rawText, ix, func )
@@ -334,7 +334,7 @@ class FormatChecker:
 
                 # header field order
                 severity = 'Warning'
-                violationId = errMsg + '-Seq'
+                violationId = errMsg + '.Seq'
                 lineSeq = item.index
                 rawText = item.JoinRaw()
                 desc = '%s Sequence Error\n%s[Item %d]' % (checkDesc, rawText, ix)
