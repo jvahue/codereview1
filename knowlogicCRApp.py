@@ -49,7 +49,7 @@ from qtexteditclick import QTextEditClick
 #---------------------------------------------------------------------------------------------------
 # Data
 #---------------------------------------------------------------------------------------------------
-eVersion = 'v0.0.8'
+eVersion = 'v0.0.9'
 
 eKsCrtIni = 'KsCrt'
 eLogPc = 'PcLint'
@@ -973,7 +973,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 else:
                     self.horizontalScrollBar.setValue(at)
 
-                self.GotoCode()
+                if self.syncCode.isChecked():
+                    self.GotoCode()
             else:
                 if reportBlank:
                     QMessageBox.information( self, "Comment", 'You need to specify a comment')
