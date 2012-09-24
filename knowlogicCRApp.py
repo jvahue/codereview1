@@ -49,7 +49,7 @@ from qtexteditclick import QTextEditClick
 #---------------------------------------------------------------------------------------------------
 # Data
 #---------------------------------------------------------------------------------------------------
-eVersion = 'v0.0.9'
+eVersion = 'v0.1.0'
 
 eKsCrtIni = 'KsCrt'
 eLogPc = 'PcLint'
@@ -189,6 +189,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # Manage the Analysis Tab Widgets
         #------------------------------------------------------------------------------
         self.cannedAnalysisSelector.currentIndexChanged.connect(self.SelectAnalysisText)
+        self.autoAcceptCanned = False
 
         self.pushButtonAddCanned.clicked.connect(self.SelectAnalysisText)
 
@@ -807,6 +808,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """ Display the violations information based on selected filters """
 
         """ Query the database using filters selected """
+        # don't automatically accept teh select canned analysis
+        self.autoAcceptCanned = False
+
         s = """
             SELECT filename, function, severity, violationId, description, details,
                    lineNumber, detectedBy, firstReport, lastReport, status, analysis,
@@ -924,14 +928,29 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 # see if a canned comment is selected
                 self.SelectAnalysisText()
                 analysisText = self.plainTextEdit_Analysis.toPlainText()
-                if analysisText:
-                    msg = 'We have auto-populated the analysis comment.\nDo you want to keep it?'
-                    rtn = QMessageBox.question( self, 'Auto-Complete',
-                                                msg, QMessageBox.Yes, QMessageBox.No)
-                    if rtn != QMessageBox.Yes:
+                if analysisText and not self.autoAcceptCanned:
+                    msgBox = QMessageBox(self)
+                    msgBox.setWindowTitle( 'Auto-Complete Prompt')
+
+                    msg  = 'We have auto-populated the analysis comment.'
+                    msgBox.setText(msg)
+
+                    msg = "If you want to keep it click 'Yes'.\n"
+                    msg += "\nIf you want to keep the selected comment, without being asked again\n"
+                    msg += "until you 'Apply Filters' click 'Yes To All'."
+                    msgBox.setInformativeText(msg)
+
+                    msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.YesToAll | QMessageBox.No);
+                    msgBox.setDefaultButton(QMessageBox.Yes);
+                    rtn = msgBox.exec_();
+
+                    if rtn not in (QMessageBox.Yes, QMessageBox.YesToAll):
                         analysisText = ''
                         self.plainTextEdit_Analysis.clear()
                         reportBlank = False
+
+                    if rtn == QMessageBox.YesToAll:
+                        self.autoAcceptCanned = True
 
             if analysisText:
                 updateCmd = """UPDATE Violations
@@ -962,8 +981,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 # remember where we are to the next issue
                 at = self.horizontalScrollBar.value()
 
-                # refresh the data in our cache
+                # refresh the data in our cache, save autoAcceptCanned State
+                temp = self.autoAcceptCanned
                 self.ApplyFilters()
+                self.autoAcceptCanned = temp
 
                 # now go there - scroll bar handles setting to locations that do not exist
                 # i.e., if we accepted the last violation in a set
@@ -1126,14 +1147,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         #
         pct = int(self.sdb.mergePct)
         self.mergeProgress.setValue( pct)
-        # display merge results
-        sts = self.sdb.ShowMergeStats()
-        self.mergeResults.setText( sts)
+        if pct > 1:
+            # display merge results
+            sts = self.sdb.ShowMergeStats()
+            self.mergeResults.setText( sts)
 
         if not self.mergeThread.active:
             self.StopTimerEvent()
             self.performMerge.setEnabled(True)
             self.mergeResults.setText( sts + '\n\nDone')
+
     #-----------------------------------------------------------------------------------------------
     # Report Tab
     #-----------------------------------------------------------------------------------------------

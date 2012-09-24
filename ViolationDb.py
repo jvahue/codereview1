@@ -259,6 +259,9 @@ class ViolationDb( DB_SQLite):
         self.mergeAnalysis = 0   # how many analysis came from the merge db
         self.bothAnalysis = 0    # how many are a merge of the to analysis
 
+        self.myCount = 0
+        self.size = 0
+
         s = 'select count(*) from violations'
         myCount = self.GetOne(s)
         if myCount:
@@ -371,15 +374,22 @@ class ViolationDb( DB_SQLite):
                 newer = mergeItem
 
             # TODO fix this and make a table of analysis related to each violation row
-            newHasOld = newer.analysis.find( older.analysis) != -1
-            oldHasNew = older.analysis.find( newer.analysis) != -1
-            if newHasOld or oldHasNew:
+            # right now for Not reported Analysis is None
+            if newer.analysis and older.analysis:
+                newHasOld = newer.analysis.find( older.analysis) != -1
+                oldHasNew = older.analysis.find( newer.analysis) != -1
+                if newHasOld or oldHasNew:
+                    analysis = newer.analysis
+                else:
+                    analysis = 'MergeOld(%s/%s):\n%s\nMergeNew:\n%s' % (older.who,
+                                                                        older.status,
+                                                                        older.analysis,
+                                                                        newer.analysis)
+            elif newer.analysis:
                 analysis = newer.analysis
             else:
-                analysis = 'MergeOld(%s/%s):\n%s\nMergeNew:\n%s' % (older.who,
-                                                                    older.status,
-                                                                    older.analysis,
-                                                                    newer.analysis)
+                analysis = older.analysis
+
         elif selfAnalysis:
             self.selfAnalysis += 1
             analysis = matchItem.analysis
