@@ -246,7 +246,7 @@ class Query:
             'T.field as name' becomes name
     """
     def __init__( self, query, db, data = None):
-        """ Initalize a query object, needs a query
+        """ Initialize a query object, needs a query
         params:
             query: the query to run, or the query that sourced the data
             db: a DB object to perform the query

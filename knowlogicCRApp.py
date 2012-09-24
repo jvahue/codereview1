@@ -24,27 +24,21 @@ import time
 # Third Party Modules
 #---------------------------------------------------------------------------------------------------
 from PySide import QtCore
-from PySide.QtGui import QApplication, QMainWindow, QMessageBox, QTableWidgetItem
-from PySide.QtGui import QFileDialog, QDialog, QTextCursor
-
-import sqlite3
+from PySide.QtGui import QApplication, QMainWindow, QMessageBox
+from PySide.QtGui import QFileDialog
 
 #---------------------------------------------------------------------------------------------------
 # Knowlogic Modules
 #---------------------------------------------------------------------------------------------------
 from utils import DateTime, util
-from utils.DB.database import Query, GetAll, GetCursor
-from utils.DB.sqlLite.database import DB_SQLite
 
 from tools.pcLint.PcLint import PcLint
 from tools.u4c.u4c import U4c
 
-#from Analyze import Analyzer
 from CrtGui import Ui_MainWindow
-from ViolationDb import eDbName, eDbRoot, ViolationDb
+from ViolationDb import ViolationDb
 
 import ProjFile as PF
-from qtexteditclick import QTextEditClick
 
 #---------------------------------------------------------------------------------------------------
 # Data
@@ -208,7 +202,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         #------------------------------------------------------------------------------
         self.browseMergeProjectFile.clicked.connect( self.SelectMergeProjFile)
         self.performMerge.clicked.connect(self.PerformMerge)
-        self.mergeProgress.setValue(0) # the first itme it does not seem to listen
+        self.mergeProgress.setValue(0) # the first item it does not seem to listen
 
         #------------------------------------------------------------------------------
         # Handle GenerateReport Tab Data
@@ -535,10 +529,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     #-----------------------------------------------------------------------------------------------
     def ExportDb( self):
         if self.db:
-            fn, fltr = QFileDialog.getSaveFileName( self,
-                                              "Save DB to",
-                                              self.projFile.paths[PF.ePathProject],
-                                              "CSV File (*.csv)")
+            fn, dummy = QFileDialog.getSaveFileName( self,
+                                                     "Save DB to",
+                                                     self.projFile.paths[PF.ePathProject],
+                                                     "CSV File (*.csv)")
             if fn:
                 self.db.Export( fn)
         else:
@@ -727,8 +721,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     gui = getattr( self, 'comboBox_%s' % dd)
                     gui.clear()
 
-            noFilterRe = re.compile('Select <[A-Za-z]+> \[[0-9]+\]')
-
             # don't refill the ones that have changed
             if name:
                 if name not in self.currentFilters:
@@ -807,10 +799,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def ApplyFilters(self):
         """ Display the violations information based on selected filters """
 
-        """ Query the database using filters selected """
-        # don't automatically accept teh select canned analysis
+        # don't automatically accept the select canned analysis
         self.autoAcceptCanned = False
 
+        # Query the database using filters selected
         s = """
             SELECT filename, function, severity, violationId, description, details,
                    lineNumber, detectedBy, firstReport, lastReport, status, analysis,
@@ -825,7 +817,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.violationsData = []
         self.violationsData = self.db.Query( sql)
 
-        """ Display Violations Data """
+        # Display Violations Data
         if self.violationsData:
             self.horizontalScrollBar.setMinimum(0)
             self.horizontalScrollBar.setMaximum((len(self.violationsData)-1))
@@ -844,10 +836,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         total = len(self.violationsData)
 
         if self.violationsData:
-            """ Violation 'number' is one greater than scrollbar index which starts at 0 """
+            # Violation 'number' is one greater than scrollbar index which starts at 0
             self.groupBox_Violations.setTitle("Currently Selected Violation %d of %d" % (at,total))
 
-            """ Populate the fields in the violations groupbox """
+            # Populate the fields in the violations groupbox
             self.v = self.violationsData[self.horizontalScrollBar.value()]
             self.textBrowser_Filename.setText(self.v.filename)
             self.textBrowser_Function.setText(self.v.function)
@@ -863,7 +855,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             dt.ShowMs( False)
             self.reportedOn.setText(str(dt))
 
-            """ Populate the fields in the Analysis groupbox """
+            # Populate the fields in the Analysis groupbox
             if self.v.reviewDate:
                 self.textBrowser_PrevReviewer.setText(self.v.who)
                 rd = '%s' % self.v.reviewDate
@@ -912,8 +904,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         analysisChoice = analysisChoice.replace(r'\n', '\n')
 
         if analysisChoice != 'Analysis Text Selection':
-            """ Append the canned comment to the analysis text rather than clear() it first.
-                This would allow for the case where they want to enter other information first """
+            # Append the canned comment to the analysis text rather than clear() it first.
+            # This would allow for the case where they want to enter other information first
             self.plainTextEdit_Analysis.append(analysisChoice)
 
     #-----------------------------------------------------------------------------------------------
@@ -940,9 +932,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     msg += "until you 'Apply Filters' click 'Yes To All'."
                     msgBox.setInformativeText(msg)
 
-                    msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.YesToAll | QMessageBox.No);
-                    msgBox.setDefaultButton(QMessageBox.Yes);
-                    rtn = msgBox.exec_();
+                    msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.YesToAll | QMessageBox.No)
+                    msgBox.setDefaultButton(QMessageBox.Yes)
+                    rtn = msgBox.exec_()
 
                     if rtn not in (QMessageBox.Yes, QMessageBox.YesToAll):
                         analysisText = ''
@@ -1147,10 +1139,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         #
         pct = int(self.sdb.mergePct)
         self.mergeProgress.setValue( pct)
-        if pct > 1:
-            # display merge results
-            sts = self.sdb.ShowMergeStats()
-            self.mergeResults.setText( sts)
+        # display merge results
+        sts = self.sdb.ShowMergeStats()
+        self.mergeResults.setText( sts)
 
         if not self.mergeThread.active:
             self.StopTimerEvent()
@@ -1197,7 +1188,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     #-----------------------------------------------------------------------------------------------
     def lineEditDetailsFilterChanged(self):
         detailsFilter = self.lineEditDetailsFilter.text()
-        # TODO : Handle the details filter
 
     #-----------------------------------------------------------------------------------------------
     def lineEditUserNameChanged(self):

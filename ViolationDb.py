@@ -18,7 +18,6 @@ import re
 #---------------------------------------------------------------------------------------------------
 # Knowlogic Modules
 #---------------------------------------------------------------------------------------------------
-from utils.DB.database import Query
 from utils.DB.sqlLite.database import DB_SQLite
 
 #---------------------------------------------------------------------------------------------------
@@ -185,7 +184,7 @@ class ViolationDb( DB_SQLite):
 
         data0 = self.Query( s, fName, func, sev, violId, detectedBy, details, updateTime)
         if data0 is None:
-            """ Query failed - default to no match """
+            # Query failed - default to no match
             self.insertSelErr += 1
             data0 = []
 
@@ -202,7 +201,6 @@ class ViolationDb( DB_SQLite):
                 pass
 
             if len(data) > 0:
-                primary = ()
                 matchLineNumber = True
                 # check some conditions
                 # if multiple row with the same line number don't match on LineNumber
@@ -238,7 +236,7 @@ class ViolationDb( DB_SQLite):
               if row match in selfDB:
                 if no analysis in either: continue
                 if analysis in one DB: insert that with credentials
-                if anaylsis in both: append new to older and insert with newer credentials
+                if analysis in both: append new to older and insert with newer credentials
                   - tag merged analysis for review format
                     MergeOld:
                       Old analysis
@@ -292,11 +290,8 @@ class ViolationDb( DB_SQLite):
 
                 matchItem = self.IsNewRecord(r.filename, r.function, r.severity, r.violationId,
                                              r.description, r.details, r.lineNumber, r.detectedBy,
-                                             r.lastReport)
+                                             '')
                 if matchItem:
-                    primary = (r.filename,r.function,r.severity,r.violationId,
-                               matchItem.description, matchItem.details, matchItem.lineNumber)
-
                     # get all the analysis data
                     analysis, who, reviewDate, status = self.GetMergeAnalysis( r, matchItem)
 
@@ -519,20 +514,20 @@ class ViolationDb( DB_SQLite):
 if __name__ == '__main__':
     import ProjFile as PF
 
-    if False:
-        mainPfName = r'C:\Knowlogic\tools\CR-Projs\G4-B\G4B.crp'
-        mrgePfName = r'C:\Knowlogic\tools\CR-Projs\G4-A\G4A.crp'
+    if True:
+        mainPfName = r'L:/FAST II/control processor/CodeReview/G4master.crp'
+        mergePfName = r'C:/Users/P916214/Documents/Knowlogic/CodeReviewProj/FAST/G4.crp'
 
         mainPf = PF.ProjectFile(mainPfName)
-        mrgePf = PF.ProjectFile(mrgePfName)
+        mergePf = PF.ProjectFile(mergePfName)
 
         mainDb = ViolationDb( mainPf.paths[PF.ePathProject])
-        mrgeDb = ViolationDb( mrgePf.paths[PF.ePathProject])
+        mergeDb = ViolationDb( mergePf.paths[PF.ePathProject])
 
         s = 'select count(*) from violations'
         d0 = mainDb.GetOne(s)
-        d1 = mrgeDb.GetOne(s)
-        mainDb.Merge( mrgeDb)
+        d1 = mergeDb.GetOne(s)
+        mainDb.Merge( mergeDb.dbName)
 
         mainDb.ShowMergeStats()
     else:
