@@ -424,7 +424,7 @@ class ViolationDb( DB_SQLite):
 
     #-----------------------------------------------------------------------------------------------
     def GetDescriptionRe( self, desc, sql=False):
-        """ Turn all line number referneces into a regex search:
+        """ Turn all line number references into a regex search:
             Ignoring return value of function 'foo(void)' (compare with line 163, file xyz.h)
             Storage class of symbol 'foo(void *)' assumed static (line 150)
 

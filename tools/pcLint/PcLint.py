@@ -11,7 +11,6 @@ Design Assumptions:
 import csv
 import datetime
 import os
-import sys
 
 #---------------------------------------------------------------------------------------------------
 # Third Party Modules
@@ -21,12 +20,10 @@ import sys
 # Knowlogic Modules
 #---------------------------------------------------------------------------------------------------
 import ProjFile as PF
-import ViolationDb as VDB
 
 from tools.pcLint import PcLintFileTemplates
 from tools.pcLint.KsCrLnt import LintLoader
 from tools.ToolMgr import ToolSetup, ToolManager
-from utils.DateTime import DateTime
 
 #---------------------------------------------------------------------------------------------------
 # Data
@@ -83,7 +80,6 @@ class PcLintSetup( ToolSetup):
         assert( isinstance( self.projFile, PF.ProjectFile))
 
         batTmpl = PcLintFileTemplates.ePcLintBatTemplate
-        optTmpl = PcLintFileTemplates.eOptionsTemplate
 
         toolExe = self.projFile.paths['PcLint']
 
@@ -133,27 +129,6 @@ class PcLintSetup( ToolSetup):
         """
         fullPath = os.path.join( self.projToolRoot, name)
         ToolSetup.CreateFile( self, fullPath, content)
-
-    #-----------------------------------------------------------------------------------------------
-    def TestCreate(self,):
-        # prepend the -i command for PcLint
-        includes = ['-i%s' % i.strip() for i in incStr.split('\n') if i.strip() ]
-        options['includes'] = '\n'.join(includes)
-
-        options['defines'] = misc
-
-        # get the srcFiles only take .c for testing
-        srcFiles = []
-        excludedFiles = ('ind_crt0.c','c_cover_ioPWES.c','Etm.c','TestPoints.c')
-        for dirPath, dirs, fileNames in os.walk( srcCodeRoot):
-            for f in fileNames:
-                ffn = os.path.join( dirPath, f)
-                if os.path.isfile(ffn) and os.path.splitext( f)[1] == '.c' and f.lower().find('table') == -1:
-                    if f not in excludedFiles:
-                        srcFiles.append( ffn)
-
-        pcls = PcLintSetup( projRoot)
-        pcls.CreateProject( srcFiles, options)
 
     #-----------------------------------------------------------------------------------------------
     def FileCount( self):
@@ -256,7 +231,6 @@ class PcLint( ToolManager):
         # see how many lines we need to process
         fin = open( finName, 'r', newline='')
         lines = fin.readlines()
-        totalLines = len(lines)
         fin.close()
 
         # only do this for newly generated data

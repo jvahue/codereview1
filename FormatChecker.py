@@ -1,12 +1,12 @@
 """
 This file holds an object that verifies format information.  That is for functions
 or files or whatever set of lines you want to check, this class will see if you set
-of lines matches the sequecen and content of a description of those lines.
+of lines matches the sequence and content of a description of those lines.
 
 The description holds important items you want to see in the lines in the order that
 you want to see them.
 
-The class also understands and trackes key words that you passed in and can tell you
+The class also understands and tracks key words that you passed in and can tell you
 things about them, like where was the keyword item found in the real lines, and where
 did it end.
 

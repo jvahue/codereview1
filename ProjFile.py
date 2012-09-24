@@ -49,7 +49,7 @@ The following is a list of project configuraiton items currently support :
 from collections import OrderedDict
 
 import copy
-import inspect
+#import inspect
 import threading
 import os
 
@@ -254,7 +254,7 @@ class ProjectFile:
         return tip
 
     #-----------------------------------------------------------------------------------------------
-    def GetSrcCodeFiles( self, extensions=['.h','.c'], excludeDirs=[], excludedFiles=[]):
+    def GetSrcCodeFiles( self, extensions=('.h','.c'), excludeDirs=(), excludedFiles=()):
         """ Walk all srcCode roots and files with extension in extensions unless
             the file is in the excludeFileList
 
@@ -684,10 +684,10 @@ class ProjectFile:
         """ Convert a full path name to a relative path file name
             return: rpfn, title
         """
-        relPathNames = []
         srcRoots = self.paths[ePathSrcRoot]
 
         # compute the relative path from a srcRoot
+        fn = fpfn
         for sr in srcRoots:
             fn = fpfn.replace(sr, '')
             if fn != fpfn:

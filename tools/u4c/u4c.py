@@ -22,9 +22,6 @@ import subprocess
 #---------------------------------------------------------------------------------------------------
 # Third Party Modules
 #---------------------------------------------------------------------------------------------------
-import understand
-
-from PySide.QtCore import *
 
 #---------------------------------------------------------------------------------------------------
 # Knowlogic Modules
@@ -33,10 +30,8 @@ from FormatChecker import FormatChecker
 from tools.u4c import u4cDbWrapper as udb
 from tools.u4c import U4cFileTemplates
 from tools.ToolMgr import ToolSetup, ToolManager
-from utils.DateTime import DateTime
 
 import ProjFile as PF
-import ViolationDb as VDB
 
 #---------------------------------------------------------------------------------------------------
 # Data
@@ -197,6 +192,7 @@ class U4c( ToolManager):
         fileList = []
         analyzing = False
         self.SetStatusMsg( msg = 'Parsing Source Files')
+        line = ''
         while self.AnalyzeActive():
             for line in self.toolProcess.stdout:
                 line = line.decode(encoding='windows-1252').strip()
@@ -716,7 +712,7 @@ class U4c( ToolManager):
 
     #-----------------------------------------------------------------------------------------------
     def ReportExcluded( self, item, itemRefs, severity, violationId, descFmt):
-        """ This is a common reporintg function for excluded functions/keywords and restricited
+        """ This is a common reporting function for excluded functions/keywords and restricted
             functions
         """
         for ref in itemRefs:

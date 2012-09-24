@@ -6,7 +6,6 @@ Code review Main
 #---------------------------------------------------------------------------------------------------
 import datetime
 import os
-import socket
 import sys
 import time
 
@@ -26,8 +25,8 @@ import ProjFile
 from utils import DateTime
 from utils.util import ThreadSignal
 
-from utils.DB.database import Query
-from utils.DB.sqlLite.database import DB_SQLite
+#from utils.DB.database import Query
+#from utils.DB.sqlLite.database import DB_SQLite
 
 from tools.pcLint import PcLint
 from tools.u4c import u4c
@@ -45,7 +44,7 @@ from tools.u4c import u4c
 #---------------------------------------------------------------------------------------------------
 class Analyzer:
     def __init__( self, projFile):
-        """ Initializ an analyzer object """
+        """ Initialize an analyzer object """
         self.abortRequest = False
 
         if os.path.isfile( projFile):

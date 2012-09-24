@@ -1,10 +1,6 @@
 #==============================================================================================
 #
-# $Workfile: $
-# $Revision: $
-# $Date: $
-#
-# Descritpion: Utility Functions
+# Description: Utility Functions
 #
 #==============================================================================================
 import datetime
@@ -35,7 +31,7 @@ def IntSelect( aStr, theMin, theMax):
         Return and INT
     """
     select = theMin - 1
-    while (select == theMin - 1):
+    while select == (theMin - 1):
         try:
             select = int( input( aStr))
             if select < theMin or select > theMax:
@@ -79,7 +75,7 @@ def SelectInt( aList):
 #----- TIME CONVERSIONS
 #----------------------------------------------------------------------------------------------
 def StringToSeconds( aStr, fmt = timeFormat):
-    """assumes Date aStr format is 'Thu 28 Jun 2001 14:17:15'"""
+    """ assumes Date aStr format is 'Thu 28 Jun 2001 14:17:15' """
     seconds = zeroSeconds
     # check for a date that could not be converted
     # (i.e., only 1970 < date < 2038)
@@ -88,23 +84,15 @@ def StringToSeconds( aStr, fmt = timeFormat):
     except:
         print("*** ERROR: Date: ", aStr)
 
-    """if ( fmt == timeForamt):
-        if ( aStr[:3] in days):
-            seconds = time.mktime( time.strptime( aStr, fmt))
-        else:
-            print "*** ERROR: Date: ", aStr
-    else:
-        seconds = time.mktime( time.strptime( aStr, fmt))"""
-
     return seconds
 
 #----------------------------------------------------------------------------------------------
 def SecondsToString( seconds, format = timeFormat):
-    """assumes Date str format is 'Thu 28 Jun 2001 14:17:15'"""
+    """ assumes Date str format is 'Thu 28 Jun 2001 14:17:15' """
     try:
         string = strftime( format, seconds)
     except:
-        pass
+        string = ''
 
     return string
 
@@ -221,11 +209,11 @@ def OpenCreatePath( filename, mode):
         if not os.path.isdir( path):
             os.makedirs(path)
 
-    return file( filename, mode)
+    return open( filename, mode)
 
 #----------------------------------------------------------------------------------------------
 def igetattr( obj, thing, default, acceptNone=True):
-    """ Return a targetted item in an object ensuring that something is returned. This
+    """ Return a targeted item in an object ensuring that something is returned. This
         function walks down into an object based on thing that is thing is formattered
         as a multiple object select "a.b.c.d".  This function walks down into c to get d.
 
@@ -248,7 +236,7 @@ def igetattr( obj, thing, default, acceptNone=True):
         if obj is not errorMarker:
             if acceptNone:
                 return obj
-            elif obj != None:
+            elif obj is not None:
                 return obj
             else:
                 return default
@@ -335,7 +323,7 @@ class Output:
                 if self.reset[i]:
                     setattr( self, name, None)
 
-                if value == None:
+                if value is None:
                     self.f.write(self.unset)
                 else:
                     try:

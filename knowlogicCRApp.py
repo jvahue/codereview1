@@ -1183,7 +1183,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     #-----------------------------------------------------------------------------------------------
     def lineEditDescFilterChanged(self):
         descFilter = self.lineEditDescFilter.text()
-        # TODO : Handle the description filter
 
     #-----------------------------------------------------------------------------------------------
     def lineEditDetailsFilterChanged(self):
