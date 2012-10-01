@@ -123,7 +123,7 @@ class DB:
         self.queryValid = False
 
         if self.cursor is not None:
-            if (self.debug > eDbDebugErr): print("Execute: ", sql)
+            if (self.debug > eDbDebugErr): print("Execute: ", sql, args)
             self.queryValid = True
             try:
                 if args:
@@ -180,7 +180,10 @@ class DB:
     # Utility Functions
     #------------------------------------------------------------------------------------------
     def DebugState( self, state):
-        self.debug = state
+        if state:
+            self.debug = True
+        else:
+            self.debug = False
 
     #----------------------------------------------------------------------------------------------
     def _GetCursor( self):
@@ -222,7 +225,7 @@ class DB:
                 theOne = ()
             return theOne
         except:
-            if (self.debug  > eDbDebugOff):
+            if (self.debug > eDbDebugOff):
                 print("GetOne: Unexpected error:\n", sys.exc_info())
                 traceback.print_exc()
             return ()
@@ -372,12 +375,14 @@ class Query:
 
     #------------------------------------------------------------------------------------------
     def Properties( self, query):
-        """ build field reference names from the query string for __getattr__ """
+        """ build field reference names from the query string for __getattr__
+            Make sure we handle sub-selects in the select query
+        """
         selAt = query.lower().find('select')
         newFields = []
         if selAt != -1:
             selAt += len('select')
-            fromAt = query.lower().find('from')
+            fromAt = query.lower().rfind('from')
             fields = query[selAt:fromAt]
             fields = fields.replace('\n', ' ')
             # remove SQL functions
@@ -387,15 +392,16 @@ class Query:
 
             # process select column syntax
             for field in fields:
-                # change N = T.F to N
-                eq = field.find('=')
-                if eq != -1:
-                    field = field[:eq].strip()
+                aField = field.lower()
+                # change T.F as N to N
+                asX = aField.find(' as ')
+                if asX != -1:
+                    field = field[asX+4:].strip()
                 else:
-                    # change T.F as N to N
-                    asX = field.find(' as ')
-                    if asX != -1:
-                        field = field[asX+4:].strip()
+                    # change N = T.F to N
+                    eq = field.find('=')
+                    if eq != -1:
+                        field = field[:eq].strip()
                     else:
                         # change table.field to field
                         per = field.find('.')
