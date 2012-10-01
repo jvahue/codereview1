@@ -180,7 +180,10 @@ class DB:
     # Utility Functions
     #------------------------------------------------------------------------------------------
     def DebugState( self, state):
-        self.debug = state
+        if state:
+            self.debug = True
+        else:
+            self.debug = False
 
     #----------------------------------------------------------------------------------------------
     def _GetCursor( self):
@@ -372,12 +375,14 @@ class Query:
 
     #------------------------------------------------------------------------------------------
     def Properties( self, query):
-        """ build field reference names from the query string for __getattr__ """
+        """ build field reference names from the query string for __getattr__
+            Make sure we handle sub-selects in the select query
+        """
         selAt = query.lower().find('select')
         newFields = []
         if selAt != -1:
             selAt += len('select')
-            fromAt = query.lower().find('from')
+            fromAt = query.lower().rfind('from')
             fields = query[selAt:fromAt]
             fields = fields.replace('\n', ' ')
             # remove SQL functions
@@ -387,16 +392,17 @@ class Query:
 
             # process select column syntax
             for field in fields:
+                aField = field.lower()
+                # change T.F as N to N
+                asX = aField.find(' as ')
+                if asX != -1:
+                    field = field[asX+4:].strip()
+                else:
                 # change N = T.F to N
                 eq = field.find('=')
                 if eq != -1:
                     field = field[:eq].strip()
                 else:
-                    # change T.F as N to N
-                    asX = field.find(' as ')
-                    if asX != -1:
-                        field = field[asX+4:].strip()
-                    else:
                         # change table.field to field
                         per = field.find('.')
                         if per != -1:
