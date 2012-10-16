@@ -136,11 +136,25 @@ class ViolationDb( DB_SQLite):
             else:
                 self.insertNew += 1
         else:
-            updateItems = (updateTime, desc, details, line)
+            sts = matchItem.status
+            stsDate = matchItem.reviewDate
+            analysis = matchItem.analysis
+            who = matchItem.who
+            # if it was 'Not Reported' and has come back clear analysis out
+            if sts == eNotReported:
+                sts = None
+                who = None
+                stsDate = None
+                analysis = None
+
+            updateItems = (updateTime, desc, details, line, sts, who, stsDate, analysis)
             primary = (fName, func, sev, violationId,
                        matchItem.description, matchItem.details, matchItem.lineNumber)
             s = """
-                update Violations set lastReport=?, description=?, details=?, lineNumber=? where
+                update Violations
+                set lastReport=?, description=?, details=?, lineNumber=?,
+                    status = ?, who=?, reviewDate=?, who=?
+                where
                 filename=?
                 and function=?
                 and severity=?
