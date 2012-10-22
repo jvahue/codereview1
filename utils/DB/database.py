@@ -382,7 +382,7 @@ class Query:
         newFields = []
         if selAt != -1:
             selAt += len('select')
-            fromAt = query.lower().rfind('from')
+            fromAt = query.lower().find('from')
             fields = query[selAt:fromAt]
             fields = fields.replace('\n', ' ')
             # remove SQL functions
