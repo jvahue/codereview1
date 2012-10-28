@@ -47,7 +47,11 @@ class LintLoader:
     def Read(self):
         f = open( self.fn, 'r', newline='')
         csvf = csv.reader( f)
-        self.hdr = csvf.__next__()
+        try:
+            self.hdr = csvf.__next__()
+        except StopIteration:
+            pass
+        
         # validate the contents
         self.isValid = True
         for i in csvf:

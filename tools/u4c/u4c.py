@@ -78,7 +78,7 @@ class U4cSetup( ToolSetup):
 
         excludeDirs = self.projFile.exclude['Dirs']
         excludeFiles = self.projFile.exclude['Files_U4c']
-        incDirs, srcFiles = self.projFile.GetSrcCodeFiles( ['.c','.h'], excludeDirs, excludeFiles)
+        incDirs, srcFiles = self.projFile.GetSrcCodeFiles( ['.h','.c','.cpp','.hpp'], excludeDirs, excludeFiles)
 
         # U4c Option definitions
         options = OrderedDict()

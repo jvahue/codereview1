@@ -88,7 +88,7 @@ class PcLintSetup( ToolSetup):
 
         excludeDirs = self.projFile.exclude['Dirs']
         excludeFiles = self.projFile.exclude['Files_PcLint']
-        srcIncludeDirs, srcCodeFiles = self.projFile.GetSrcCodeFiles( ['.c'], excludeDirs, excludeFiles)
+        srcIncludeDirs, srcCodeFiles = self.projFile.GetSrcCodeFiles( ['.c','.cpp'], excludeDirs, excludeFiles)
 
         # put all the PcLint Options together
         userOptions = self.projFile.options['PcLint']
@@ -102,11 +102,8 @@ class PcLintSetup( ToolSetup):
             if i in srcIncludeDirs:
                 srcIncludeDirs.remove(i)
 
-        # STD PC Lint Options
-        options  = '%s\n' % (ePcLintStdOptions)
-
         # Specify all the include dirs
-        options += '%s\n' % '\n'.join( ['-i"%s"' % i for i in srcIncludeDirs+includeDirs])
+        options  = '%s\n' % '\n'.join( ['-i"%s"' % i for i in srcIncludeDirs+includeDirs])
 
         # specify the user defined options
         options += '\n// User Options\n%s\n' % ( userOptions)
@@ -114,6 +111,9 @@ class PcLintSetup( ToolSetup):
         options += '\n// User Undefines\n%s\n' % ( undefines)
         # tag all the extra IndludeDirs not in the SrcCode Root tree as libdirs
         options += '\n// Library Dirs\n%s\n' % '\n'.join( ['+libdir(%s)' % i for i in includeDirs])
+
+        # STD PC Lint Options
+        options += '%s\n' % (ePcLintStdOptions)
 
         # create the required files
         self.CreateFile( eBatchName, batTmpl % (toolExe, pcLintRoot, eResultFile))
@@ -234,7 +234,7 @@ class PcLint( ToolManager):
         fin.close()
 
         # only do this for newly generated data
-        if lines[0].strip().find('Cnt') != 0:
+        if lines and lines[0].strip().find('Cnt') != 0:
             # open the source file
             fin = open( finName, 'r', newline='')
             csvIn = csv.reader( fin)

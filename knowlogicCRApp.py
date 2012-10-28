@@ -43,7 +43,7 @@ import ProjFile as PF
 #---------------------------------------------------------------------------------------------------
 # Data
 #---------------------------------------------------------------------------------------------------
-eVersion = 'v0.1.2'
+eVersion = 'v0.1.3'
 
 eKsCrtIni = 'KsCrt'
 eLogPc = 'PcLint'
@@ -975,7 +975,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
                 # refresh the data in our cache, save autoAcceptCanned State
                 temp = self.autoAcceptCanned
+                
+                keepState = self.syncCode.checkState()
+                self.syncCode.setCheckState(QtCore.Qt.Unchecked)                
                 self.ApplyFilters()
+                self.syncCode.setCheckState(keepState)
                 self.autoAcceptCanned = temp
 
                 # now go there - scroll bar handles setting to locations that do not exist

@@ -254,7 +254,7 @@ class ProjectFile:
         return tip
 
     #-----------------------------------------------------------------------------------------------
-    def GetSrcCodeFiles( self, extensions=('.h','.c'), excludeDirs=(), excludedFiles=()):
+    def GetSrcCodeFiles( self, extensions=('.h','.c','.cpp','.hpp'), excludeDirs=(), excludedFiles=()):
         """ Walk all srcCode roots and files with extension in extensions unless
             the file is in the excludeFileList
 
@@ -555,6 +555,8 @@ class ProjectFile:
 
     #-----------------------------------------------------------------------------------------------
     def GetHdr( self, header):
+        """ Find the Project File header
+        """
         at = 0
         hdr = '[%s]' % header
         while at < len(self.projectFileData) and self.projectFileData[at].find( hdr) == -1:
@@ -607,7 +609,8 @@ class ProjectFile:
             at += 1
             while at < len(self.projectFileData):
                 v = self.projectFileData[at].strip()
-                if v:
+                # read until the next header
+                if v and v[0] != '[' and v[-1] != ']':
                     newList.append( v)
                     at += 1
                 else:
