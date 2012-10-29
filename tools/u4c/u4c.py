@@ -863,89 +863,90 @@ class U4c( ToolManager):
             the project base types
             This additionally accepts: void and void*
         """
-        baseTypes = self.projFile.baseTypes + ['void']
-        allObjs = sorted(self.udb.db.ents( 'object'),key= lambda ent: ent.name().lower())
-        totalObjs = len(allObjs)
-
-        objStats = {'ok':0, 'bad':0, 'other':0}
-
-        pctCtr = 0
-        self.SetStatusMsg(msg = 'Check Base Types [Step %d of %d]'%(step,totalTasks))
-        letter0 = None
-        for obj in allObjs:
-            if self.abortRequest:
-                break
-
-            pctCtr += 1
-            pct = (float(pctCtr)/totalObjs) * 100
-            self.SetStatusMsg( pct)
-
-            oType = obj.type()
-            typeOk = True
-
-            if oType not in baseTypes:
-                typeOk = False
-                if oType is None:
-                    # make sure this is a typedef
-                    if obj.kindname().lower() == 'typedef':
-                        typeOk = True
-                else:
-                    # check is part of type is in any basetype
-                    for b in baseTypes:
-                        if oType.find( b) != -1:
+        if self.projFile.baseTypes:
+            baseTypes = self.projFile.baseTypes + ['void']
+            allObjs = sorted(self.udb.db.ents( 'object'),key= lambda ent: ent.name().lower())
+            totalObjs = len(allObjs)
+    
+            objStats = {'ok':0, 'bad':0, 'other':0}
+    
+            pctCtr = 0
+            self.SetStatusMsg(msg = 'Check Base Types [Step %d of %d]'%(step,totalTasks))
+            letter0 = None
+            for obj in allObjs:
+                if self.abortRequest:
+                    break
+    
+                pctCtr += 1
+                pct = (float(pctCtr)/totalObjs) * 100
+                self.SetStatusMsg( pct)
+    
+                oType = obj.type()
+                typeOk = True
+    
+                if oType not in baseTypes:
+                    typeOk = False
+                    if oType is None:
+                        # make sure this is a typedef
+                        if obj.kindname().lower() == 'typedef':
                             typeOk = True
-                            break
                     else:
-                        # clean up the type
-                        inOtype = oType
-                        # must be 1st or escaped ']' and '-'
-                        cleanRe = re.compile(r'const|volatile|[()+\-*/]+?')
-                        numRe = re.compile(r'\[[0-9A-Za-z_\- ]*\]')
-                        repStr = cleanRe.findall( oType)
-                        for i in repStr:
-                            oType = oType.replace(i,'')
-
-                        # remove extra numbers
-                        rep1Str = numRe.findall( oType)
-                        for i in rep1Str:
-                            oType = oType.replace(i,'')
-
-                        oType = oType.strip()
-                        #self.Log('In: <%s> Out: <%s> RepStr: %s - %s' % (inOtype, oType,
-                        #                                              str(repStr), str(rep1Str)))
-
-                        tdefFound = self.udb.db.lookup(oType, 'Typedef')
-                        tdefFound = [i for i in tdefFound if i.name() == oType]
-
-                        if len(tdefFound) != 1:
-                            objStats['bad'] += 1
+                        # check is part of type is in any basetype
+                        for b in baseTypes:
+                            if oType.find( b) != -1:
+                                typeOk = True
+                                break
                         else:
-                            typeOk = True
-
-            if not typeOk:
-                defFile, defLine = self.udb.FindEnt( obj)
-                if defFile != '':
-                    objStats['bad'] += 1
-                    self.Log( '%s: Type(%s), Kind(%s)' % (obj.name(), oType, obj.kindname()))
-                    severity = 'Error'
-                    violationId = 'BaseType'
-                    fpfn = defFile.longname()
-                    rpfn, title = self.projFile.RelativePathName(fpfn)
-                    func, info = self.udb.InFunction( fpfn, defLine)
-                    details = self.ReadLineN( fpfn, defLine)
-                    desc = 'Base Type Error: %s line %d' % (obj.name(), defLine)
-                    self.vDb.Insert( rpfn, func, severity, violationId, desc,
-                                     details, defLine, eDbDetectId, self.updateTime)
-                    if letter0 != obj.name()[0]:
-                        letter0 = obj.name()[0]
-                        self.vDb.Commit()
+                            # clean up the type
+                            inOtype = oType
+                            # must be 1st or escaped ']' and '-'
+                            cleanRe = re.compile(r'const|volatile|[()+\-*/]+?')
+                            numRe = re.compile(r'\[[0-9A-Za-z_\- ]*\]')
+                            repStr = cleanRe.findall( oType)
+                            for i in repStr:
+                                oType = oType.replace(i,'')
+    
+                            # remove extra numbers
+                            rep1Str = numRe.findall( oType)
+                            for i in rep1Str:
+                                oType = oType.replace(i,'')
+    
+                            oType = oType.strip()
+                            #self.Log('In: <%s> Out: <%s> RepStr: %s - %s' % (inOtype, oType,
+                            #                                              str(repStr), str(rep1Str)))
+    
+                            tdefFound = self.udb.db.lookup(oType, 'Typedef')
+                            tdefFound = [i for i in tdefFound if i.name() == oType]
+    
+                            if len(tdefFound) != 1:
+                                objStats['bad'] += 1
+                            else:
+                                typeOk = True
+    
+                if not typeOk:
+                    defFile, defLine = self.udb.FindEnt( obj)
+                    if defFile != '':
+                        objStats['bad'] += 1
+                        self.Log( '%s: Type(%s), Kind(%s)' % (obj.name(), oType, obj.kindname()))
+                        severity = 'Error'
+                        violationId = 'BaseType'
+                        fpfn = defFile.longname()
+                        rpfn, title = self.projFile.RelativePathName(fpfn)
+                        func, info = self.udb.InFunction( fpfn, defLine)
+                        details = self.ReadLineN( fpfn, defLine)
+                        desc = 'Base Type Error: %s line %d' % (obj.name(), defLine)
+                        self.vDb.Insert( rpfn, func, severity, violationId, desc,
+                                         details, defLine, eDbDetectId, self.updateTime)
+                        if letter0 != obj.name()[0]:
+                            letter0 = obj.name()[0]
+                            self.vDb.Commit()
+                    else:
+                        self.Log('BaseType: Library variable %s' % obj.name())
+    
                 else:
-                    self.Log('BaseType: Library variable %s' % obj.name())
-
-            else:
-                objStats['ok'] += 1
-
-        self.Log('ObjStats: ok(%d), bad(%d), other(%d)' % (objStats['ok'], objStats['bad'], objStats['other']))
+                    objStats['ok'] += 1
+    
+            self.Log('ObjStats: ok(%d), bad(%d), other(%d)' % (objStats['ok'], objStats['bad'], objStats['other']))
 
     #-----------------------------------------------------------------------------------------------
     def ReadLineN( self, filename, lineNumber):
