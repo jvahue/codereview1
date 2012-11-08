@@ -490,7 +490,7 @@ class U4c( ToolManager):
         fc.FinishBuffer()
 
         #------------------------------------------------- report and file format errors
-        # save this info incase we need to do some work for the three eLocal/Gloabl above
+        # save this info incase we need to do some work for the three eLocal/Global above
         self.fileKeywordData[rpfn] = copy.deepcopy(fc.items)
         fc.ReportErrors( self.vDb, rpfn, -1, 'File Format', rpfn, 'FileFmt')
 

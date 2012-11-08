@@ -960,13 +960,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                                 analysisText,
                                 self.userName,
                                 datetime.datetime.now(),
-                                self.v.filename,
-                                self.v.function,
-                                self.v.severity,
-                                self.v.violationId,
-                                self.v.description,
-                                self.v.details,
-                                self.v.lineNumber)
+                                    self.v.filename,
+                                    self.v.function,
+                                    self.v.severity,
+                                    self.v.violationId,
+                                    self.v.description,
+                                    self.v.details,
+                                    self.v.lineNumber)
 
                 self.db.Commit()
 
@@ -975,9 +975,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
                 # refresh the data in our cache, save autoAcceptCanned State
                 temp = self.autoAcceptCanned
-                
+
                 keepState = self.syncCode.checkState()
-                self.syncCode.setCheckState(QtCore.Qt.Unchecked)                
+                self.syncCode.setCheckState(QtCore.Qt.Unchecked)
                 self.ApplyFilters()
                 self.syncCode.setCheckState(keepState)
                 self.autoAcceptCanned = temp
