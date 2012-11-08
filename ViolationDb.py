@@ -279,7 +279,7 @@ class ViolationDb( DB_SQLite):
         if myCount:
             self.myCount = myCount[0]
 
-        # TODO handle big DB's, right now our are in the 20-25k rows so just it all in mem
+        # TODO handle big DB's, right now we are in the 20-25k rows so just it all in mem
         s = """
             select filename,function,severity,violationId,description,details,lineNumber,
                    detectedBy,firstReport,lastReport,status,analysis,who,reviewDate
@@ -321,21 +321,24 @@ class ViolationDb( DB_SQLite):
                     else:
                         insert = r
 
+                    iData = (insert.filename, insert.function, insert.severity, insert.violationId,
+                             insert.description, insert.details, insert.lineNumber, insert.detectedBy,
+                             first, insert.lastReport, status, analysis, who, reviewDate)
+
                     primary = (matchItem.filename, matchItem.function, matchItem.severity,
                                matchItem.violationId, matchItem.description, matchItem.details,
                                matchItem.lineNumber)
 
-                    s = """Update violations set filename=?, function=?, severity=?, violationId=?,
-                           description=?, details=?, lineNumber=?, detectedBy=?, firstReport=?,
-                           lastReport=?, status=?, analysis=?, who=?, reviewDate=?
+                    s = """Update violations set
+                             filename=?, function=?, severity=?, violationId=?,
+                             description=?, details=?, lineNumber=?, detectedBy=?,
+                             firstReport=?, lastReport=?, status=?, analysis=?, who=?, reviewDate=?
                            where
-                           filename=? and function=? and severity=? and violationID=?
-                           and description=? and details=? and lineNumber=?
+                             filename=? and function=? and severity=? and
+                             violationID=? and description=? and details=? and
+                             lineNumber=?
                            """
 
-                    iData = (insert.filename, insert.function, insert.severity, insert.violationId,
-                             insert.description, insert.details, insert.lineNumber, insert.detectedBy,
-                             first, insert.lastReport, status, analysis, who, reviewDate)
                     allData = iData + primary
                     if self.Execute( s, *allData) == 1:
                         self.mergeUpdate += 1
@@ -344,13 +347,14 @@ class ViolationDb( DB_SQLite):
 
                 else:
                     # selfDb does not have this record, insert the entire thing
-                    d = (r.filename,r.function,r.severity,r.violationId,r.description,r.details,
-                         r.lineNumber,r.detectedBy,r.firstReport,r.lastReport,r.status,r.analysis,
-                         r.reviewDate)
+                    d = (r.filename, r.function, r.severity, r.violationId, r.description, r.details,
+                         r.lineNumber, r.detectedBy, r.firstReport, r.lastReport, r.status, r.analysis,
+                         r.who, r.reviewDate)
                     s = """
-                        insert into Violations
-                        (filename,function,severity,violationId,description,details,lineNumber,
-                         detectedBy,firstReport,lastReport,status,analysis,reviewDate)
+                        insert into Violations (
+                          filename, function, severity, violationId, description, details,
+                          lineNumber, detectedBy, firstReport, lastReport, status, analysis,
+                          who, reviewDate)
                         values (%s)
                         """ % ','.join('?'*len(d))
                     if self.Execute( s, *d) == 1:

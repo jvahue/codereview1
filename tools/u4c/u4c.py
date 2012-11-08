@@ -33,6 +33,11 @@ from tools.ToolMgr import ToolSetup, ToolManager
 
 import ProjFile as PF
 
+try:
+    import wingdbstub
+except:
+    pass
+
 #---------------------------------------------------------------------------------------------------
 # Data
 #---------------------------------------------------------------------------------------------------
@@ -867,23 +872,23 @@ class U4c( ToolManager):
             baseTypes = self.projFile.baseTypes + ['void']
             allObjs = sorted(self.udb.db.ents( 'object'),key= lambda ent: ent.name().lower())
             totalObjs = len(allObjs)
-    
+
             objStats = {'ok':0, 'bad':0, 'other':0}
-    
+
             pctCtr = 0
             self.SetStatusMsg(msg = 'Check Base Types [Step %d of %d]'%(step,totalTasks))
             letter0 = None
             for obj in allObjs:
                 if self.abortRequest:
                     break
-    
+
                 pctCtr += 1
                 pct = (float(pctCtr)/totalObjs) * 100
                 self.SetStatusMsg( pct)
-    
+
                 oType = obj.type()
                 typeOk = True
-    
+
                 if oType not in baseTypes:
                     typeOk = False
                     if oType is None:
@@ -905,24 +910,24 @@ class U4c( ToolManager):
                             repStr = cleanRe.findall( oType)
                             for i in repStr:
                                 oType = oType.replace(i,'')
-    
+
                             # remove extra numbers
                             rep1Str = numRe.findall( oType)
                             for i in rep1Str:
                                 oType = oType.replace(i,'')
-    
+
                             oType = oType.strip()
                             #self.Log('In: <%s> Out: <%s> RepStr: %s - %s' % (inOtype, oType,
                             #                                              str(repStr), str(rep1Str)))
-    
+
                             tdefFound = self.udb.db.lookup(oType, 'Typedef')
                             tdefFound = [i for i in tdefFound if i.name() == oType]
-    
+
                             if len(tdefFound) != 1:
                                 objStats['bad'] += 1
                             else:
                                 typeOk = True
-    
+
                 if not typeOk:
                     defFile, defLine = self.udb.FindEnt( obj)
                     if defFile != '':
@@ -942,10 +947,10 @@ class U4c( ToolManager):
                             self.vDb.Commit()
                     else:
                         self.Log('BaseType: Library variable %s' % obj.name())
-    
+
                 else:
                     objStats['ok'] += 1
-    
+
             self.Log('ObjStats: ok(%d), bad(%d), other(%d)' % (objStats['ok'], objStats['bad'], objStats['other']))
 
     #-----------------------------------------------------------------------------------------------
