@@ -281,7 +281,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             op = subprocess.check_output( 'tasklist')
             opStr = op.decode()
 
-            # create a U4c object ot get project Db info
+            # create a U4c object to get project Db info
             u4co = U4c(self.projFile)
 
             if opStr.find('understand') == -1:

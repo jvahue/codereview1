@@ -118,6 +118,12 @@ class ProjectFile:
     def __init__(self, ffn):
         """ Read/Create a Project file with the specified name
         """
+        if os.name == 'nt':
+            # windows machine paths are case insensitive
+            self.pathCaseMatters = False
+        else:
+            self.pathCaseMatters = True
+
         self.Reset(ffn)
 
         if not os.path.isdir(self.paths['ProjectRoot']):
@@ -354,6 +360,10 @@ class ProjectFile:
 
     #-----------------------------------------------------------------------------------------------
     def CheckPath( self, aPath):
+        """ Validate the path info provided in the project file.
+            This should ensure the actual case is provided when on Windows (although Windows does
+            not care) because our relative path and fullPath check do care.
+        """
         status = True
         # is it a directory
         if not os.path.isdir( aPath):

@@ -109,7 +109,7 @@ class PcLintSetup( ToolSetup):
         options += '\n// User Options\n%s\n' % ( userOptions)
         options += '\n// User Defines\n%s\n' % ( defines)
         options += '\n// User Undefines\n%s\n' % ( undefines)
-        # tag all the extra IndludeDirs not in the SrcCode Root tree as libdirs
+        # tag all the extra IncludeDirs, TODO: not in the SrcCode Root tree as libdirs
         options += '\n// Library Dirs\n%s\n' % '\n'.join( ['+libdir(%s)' % i for i in includeDirs])
 
         # STD PC Lint Options
