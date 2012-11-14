@@ -528,6 +528,20 @@ class ViolationDb( DB_SQLite):
 
         f.close()
 
+    #-----------------------------------------------------------------------------------------------
+    def ClearRemoved(self):
+        """ delete all entries marked as removed
+        """
+
+        s = """
+        delete from violations
+        where status = '%s'
+        """ % eNotReported
+
+        self.Execute(s)
+
+        q = self.Query(s)
+
 #===================================================================================================
 if __name__ == '__main__':
     import ProjFile as PF

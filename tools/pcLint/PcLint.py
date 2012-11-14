@@ -45,9 +45,13 @@ ePcLintStdOptions = r"""
 
 // Other options
 +macros   // (STD) make macros accept string 2*4096
--wlib(1)  // (STD) turn off lib warnings
+-wlib(0)  // (STD) turn off all lib warnings
 -e830     // (STD) canonical reference info
 -e831     // (STD) canonical reference info
+
+//+vf
++libclass(angle, ansi)
+
 """
 
 #---------------------------------------------------------------------------------------------------
@@ -109,8 +113,21 @@ class PcLintSetup( ToolSetup):
         options += '\n// User Options\n%s\n' % ( userOptions)
         options += '\n// User Defines\n%s\n' % ( defines)
         options += '\n// User Undefines\n%s\n' % ( undefines)
-        # tag all the extra IncludeDirs, TODO: not in the SrcCode Root tree as libdirs
-        options += '\n// Library Dirs\n%s\n' % '\n'.join( ['+libdir(%s)' % i for i in includeDirs])
+
+        # tag all the extra IncludeDirs,
+        # TODO: not in the SrcCode Root tree as libdirs
+        libdirs = []
+        for ip in includeDirs:
+            inSrcPath = False
+            for sp in self.projFile.paths[PF.ePathSrcRoot]:
+                # TODO: handle path name formating/case etc.
+                if ip.find(sp) != -1:
+                    inSrcPath = True
+                    break
+            if not inSrcPath:
+                libdirs.append( ip)
+
+        options += '\n// Library Dirs\n%s\n' % '\n'.join( ['+libdir(%s)' % i for i in libdirs])
 
         # STD PC Lint Options
         options += '%s\n' % (ePcLintStdOptions)

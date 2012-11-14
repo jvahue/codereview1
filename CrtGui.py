@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'CrtGui.ui'
 #
-# Created: Wed Nov 14 15:35:27 2012
+# Created: Wed Nov 14 18:23:38 2012
 #      by: pyside-uic 0.2.13 running on PySide 1.1.0
 #
 # WARNING! All changes made in this file will be lost!
@@ -283,6 +283,9 @@ class Ui_MainWindow(object):
         self.pcOpen = QtGui.QLineEdit(self.groupBox)
         self.pcOpen.setObjectName("pcOpen")
         self.gridLayout.addWidget(self.pcOpen, 4, 5, 1, 1)
+        self.clearedDbOfRemoved = QtGui.QPushButton(self.groupBox)
+        self.clearedDbOfRemoved.setObjectName("clearedDbOfRemoved")
+        self.gridLayout.addWidget(self.clearedDbOfRemoved, 8, 0, 1, 2)
         self.verticalLayout_15.addLayout(self.gridLayout)
         self.verticalLayout_9.addWidget(self.groupBox)
         self.tabWidget.addTab(self.tab_Config, "")
@@ -346,6 +349,9 @@ class Ui_MainWindow(object):
         self.verticalLayout_2.addLayout(self.verticalLayout_10)
         self.horizontalLayout_17 = QtGui.QHBoxLayout()
         self.horizontalLayout_17.setObjectName("horizontalLayout_17")
+        self.resetFilters = QtGui.QPushButton(self.groupBox_Filters)
+        self.resetFilters.setObjectName("resetFilters")
+        self.horizontalLayout_17.addWidget(self.resetFilters)
         spacerItem2 = QtGui.QSpacerItem(218, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.horizontalLayout_17.addItem(spacerItem2)
         self.horizontalLayout_14 = QtGui.QHBoxLayout()
@@ -907,10 +913,12 @@ class Ui_MainWindow(object):
         self.label_30.setText(QtGui.QApplication.translate("MainWindow", "Open Violations", None, QtGui.QApplication.UnicodeUTF8))
         self.label_31.setText(QtGui.QApplication.translate("MainWindow", "Open", None, QtGui.QApplication.UnicodeUTF8))
         self.label_32.setText(QtGui.QApplication.translate("MainWindow", "Open", None, QtGui.QApplication.UnicodeUTF8))
+        self.clearedDbOfRemoved.setText(QtGui.QApplication.translate("MainWindow", "Delete \'Removed Violations\' from DB", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_Config), QtGui.QApplication.translate("MainWindow", "Admin", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox_Filters.setTitle(QtGui.QApplication.translate("MainWindow", "Select Filters", None, QtGui.QApplication.UnicodeUTF8))
         self.label_18.setText(QtGui.QApplication.translate("MainWindow", "Description Filter:", None, QtGui.QApplication.UnicodeUTF8))
         self.label_19.setText(QtGui.QApplication.translate("MainWindow", "Details Filter :", None, QtGui.QApplication.UnicodeUTF8))
+        self.resetFilters.setText(QtGui.QApplication.translate("MainWindow", "Reset Filters", None, QtGui.QApplication.UnicodeUTF8))
         self.dispositioned.setText(QtGui.QApplication.translate("MainWindow", "Include Dispositioned", None, QtGui.QApplication.UnicodeUTF8))
         self.pushButton_ApplyFilters.setText(QtGui.QApplication.translate("MainWindow", "Apply Filters", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox_Violations.setTitle(QtGui.QApplication.translate("MainWindow", "View Violations", None, QtGui.QApplication.UnicodeUTF8))

@@ -535,6 +535,13 @@ p, li { white-space: pre-wrap; }
                <item row="4" column="5">
                 <widget class="QLineEdit" name="pcOpen"/>
                </item>
+               <item row="8" column="0" colspan="2">
+                <widget class="QPushButton" name="clearedDbOfRemoved">
+                 <property name="text">
+                  <string>Delete 'Removed Violations' from DB</string>
+                 </property>
+                </widget>
+               </item>
               </layout>
              </item>
             </layout>
@@ -626,6 +633,13 @@ p, li { white-space: pre-wrap; }
              </item>
              <item>
               <layout class="QHBoxLayout" name="horizontalLayout_17">
+               <item>
+                <widget class="QPushButton" name="resetFilters">
+                 <property name="text">
+                  <string>Reset Filters</string>
+                 </property>
+                </widget>
+               </item>
                <item>
                 <spacer name="horizontalSpacer">
                  <property name="orientation">

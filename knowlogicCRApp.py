@@ -122,7 +122,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.tabWidget.currentChanged.connect(self.CurrentTabChanged)
 
         #------------------------------------------------------------------------------
-        # Handle Config Tab Data
+        # Handle Admin Tab Data
         #------------------------------------------------------------------------------
         self.projectFileSelector.currentIndexChanged.connect(lambda a,
                                                              fx=self.NewProjFile: fx(a))
@@ -139,6 +139,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.showToolOutput.clicked.connect(lambda x=eLogTool,fx=self.ShowLog: fx(x))
 
         self.exportDb.clicked.connect( self.ExportDb)
+        self.clearedDbOfRemoved.clicked.connect( self.ClearRemoved)
 
         #------------------------------------------------------------------------------
         # Set up the filter comboboxes and the Apply Filter pushbutton
@@ -165,6 +166,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                                                  fx=self.FillFilters: fx(a,x))
 
         self.pushButton_ApplyFilters.clicked.connect(self.ApplyFilters)
+
+        self.resetFilters.clicked.connect( self.ResetFilters)
 
         #------------------------------------------------------------------------------
         # Manage the violations horizontal slider scroll bar
@@ -541,6 +544,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         else:
             self.CrErrPopup('You must select a project first')
 
+    #-----------------------------------------------------------------------------------------------
+    def ClearRemoved( self):
+        if self.db:
+            self.db.ClearRemoved()
+            self.DisplayViolationStatistics()
+        else:
+            self.CrErrPopup('You must select a project first')
 
     #-----------------------------------------------------------------------------------------------
     def ShowLog( self, logId):
@@ -706,6 +716,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     #-----------------------------------------------------------------------------------------------
     # Filter Handling
+    #-----------------------------------------------------------------------------------------------
+    def ResetFilters( self):
+        """ Clear all the filters """
+        self.FillFilters( 0, '', True)
+
     #-----------------------------------------------------------------------------------------------
     def FillFilters( self, index=-1, name='', reset=False):
         """ This function fills in all of the filter selection dropdowns based on the
