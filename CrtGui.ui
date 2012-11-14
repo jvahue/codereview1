@@ -1488,6 +1488,11 @@ p, li { white-space: pre-wrap; }
           </item>
          </layout>
         </widget>
+        <widget class="QWidget" name="tab_2">
+         <attribute name="title">
+          <string>Statistics</string>
+         </attribute>
+        </widget>
        </widget>
       </item>
      </layout>

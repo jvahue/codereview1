@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'CrtGui.ui'
 #
-# Created: Mon Sep 10 14:40:24 2012
+# Created: Wed Nov 14 15:35:27 2012
 #      by: pyside-uic 0.2.13 running on PySide 1.1.0
 #
 # WARNING! All changes made in this file will be lost!
@@ -788,6 +788,9 @@ class Ui_MainWindow(object):
         self.verticalLayout_11.addLayout(self.horizontalLayout_21)
         self.verticalLayout_12.addLayout(self.verticalLayout_11)
         self.tabWidget.addTab(self.tab_Reports, "")
+        self.tab_2 = QtGui.QWidget()
+        self.tab_2.setObjectName("tab_2")
+        self.tabWidget.addTab(self.tab_2, "")
         self.verticalLayout.addWidget(self.tabWidget)
         self.verticalLayout_13.addLayout(self.verticalLayout)
         MainWindow.setCentralWidget(self.centralWidget)
@@ -952,5 +955,6 @@ class Ui_MainWindow(object):
         self.pushButton_BrowseReport.setText(QtGui.QApplication.translate("MainWindow", "Browse...", None, QtGui.QApplication.UnicodeUTF8))
         self.pushButton_GenerateReport.setText(QtGui.QApplication.translate("MainWindow", "Generate Report", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_Reports), QtGui.QApplication.translate("MainWindow", "Generate Report", None, QtGui.QApplication.UnicodeUTF8))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), QtGui.QApplication.translate("MainWindow", "Statistics", None, QtGui.QApplication.UnicodeUTF8))
 
 from qtexteditclick import QTextEditClick

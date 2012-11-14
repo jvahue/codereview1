@@ -43,7 +43,7 @@ import ProjFile as PF
 #---------------------------------------------------------------------------------------------------
 # Data
 #---------------------------------------------------------------------------------------------------
-eVersion = 'v0.2.0'
+eVersion = 'v0.2.1'
 
 eKsCrtIni = 'KsCrt'
 eLogPc = 'PcLint'
@@ -81,7 +81,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         super(MainWindow, self).__init__()
         self.setupUi(self)
-        self.setWindowTitle("Knowlogic Code Review Tool %s" % eVersion)
+        self.baseTitle = "Knowlogic Code Review Tool %s" % eVersion
+        self.setWindowTitle(self.baseTitle)
 
         #------------------------------------------------------------------------------
         # Declare All object attributes
@@ -392,6 +393,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         if self.projFile and self.projFile.isValid:
             projFileNames = self.GetRecentProjFiles()
+
+            self.setWindowTitle(self.baseTitle + '  <' + self.projFile.projFileName + '>')
 
             # display the recent file list
             self.projectFileSelector.clear()
