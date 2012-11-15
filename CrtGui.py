@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'CrtGui.ui'
 #
-# Created: Wed Nov 14 18:23:38 2012
+# Created: Thu Nov 15 15:47:37 2012
 #      by: pyside-uic 0.2.13 running on PySide 1.1.0
 #
 # WARNING! All changes made in this file will be lost!
@@ -537,6 +537,9 @@ class Ui_MainWindow(object):
         self.pushButton_MarkAccepted = QtGui.QPushButton(self.groupBox_Analysis)
         self.pushButton_MarkAccepted.setObjectName("pushButton_MarkAccepted")
         self.horizontalLayout_16.addWidget(self.pushButton_MarkAccepted)
+        self.applyToAll = QtGui.QCheckBox(self.groupBox_Analysis)
+        self.applyToAll.setObjectName("applyToAll")
+        self.horizontalLayout_16.addWidget(self.applyToAll)
         self.verticalLayout_3.addLayout(self.horizontalLayout_16)
         self.verticalLayout_14.addWidget(self.groupBox_Analysis)
         self.tabWidget.addTab(self.tab_Analysis, "")
@@ -939,6 +942,7 @@ class Ui_MainWindow(object):
         self.label_PrevStatus.setText(QtGui.QApplication.translate("MainWindow", "Previous Status:", None, QtGui.QApplication.UnicodeUTF8))
         self.pushButton_MarkReviewed.setText(QtGui.QApplication.translate("MainWindow", "Mark Reviewed", None, QtGui.QApplication.UnicodeUTF8))
         self.pushButton_MarkAccepted.setText(QtGui.QApplication.translate("MainWindow", "Mark Accepted", None, QtGui.QApplication.UnicodeUTF8))
+        self.applyToAll.setText(QtGui.QApplication.translate("MainWindow", "Apply to All", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_Analysis), QtGui.QApplication.translate("MainWindow", "Analysis", None, QtGui.QApplication.UnicodeUTF8))
         self.label_Function_2.setText(QtGui.QApplication.translate("MainWindow", "Function:", None, QtGui.QApplication.UnicodeUTF8))
         self.label_28.setText(QtGui.QApplication.translate("MainWindow", "Line:", None, QtGui.QApplication.UnicodeUTF8))

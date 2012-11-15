@@ -793,7 +793,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 filterOff = noFilterRe.search( text)
                 if filterOff is None:
                     # ok we have something to filter on
-                    filterText = "%s like '%%%s%%'" % (self.filterInfo[dd], text)
+                    filterText = "%s = '%s'" % (self.filterInfo[dd], text)
                     constraints.append( filterText)
                 elif text == '':
                     # ok we want an empty string
@@ -964,6 +964,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                         self.autoAcceptCanned = True
 
             if analysisText:
+                if self.applyToAll.isChecked():
+                    tagList = self.violationsData
+                else:
+                    tagList = [self.v]
+
                 updateCmd = """UPDATE Violations
                                    SET status = ?, analysis = ?, who = ?, reviewDate = ?
                                  WHERE filename = ?
@@ -974,20 +979,26 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                                    AND details = ?
                                    AND lineNumber = ? """
 
-                self.db.Execute(updateCmd,
-                                status,
-                                analysisText,
-                                self.userName,
-                                datetime.datetime.now(),
-                                    self.v.filename,
-                                    self.v.function,
-                                    self.v.severity,
-                                    self.v.violationId,
-                                    self.v.description,
-                                    self.v.details,
-                                    self.v.lineNumber)
+                nowIs = datetime.datetime.now()
+
+                for i in tagList:
+                    self.db.Execute(updateCmd,
+                                    status,
+                                    analysisText,
+                                    self.userName,
+                                    nowIs,
+                                    i.filename,
+                                    i.function,
+                                    i.severity,
+                                    i.violationId,
+                                    i.description,
+                                    i.details,
+                                    i.lineNumber)
 
                 self.db.Commit()
+
+                # ensure apply to all is cleared after each use
+                self.applyToAll.setCheckState(QtCore.Qt.Unchecked)
 
                 # remember where we are to the next issue
                 at = self.horizontalScrollBar.value()

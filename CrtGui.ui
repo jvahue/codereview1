@@ -1014,6 +1014,13 @@ p, li { white-space: pre-wrap; }
                  </property>
                 </widget>
                </item>
+               <item>
+                <widget class="QCheckBox" name="applyToAll">
+                 <property name="text">
+                  <string>Apply to All</string>
+                 </property>
+                </widget>
+               </item>
               </layout>
              </item>
             </layout>
