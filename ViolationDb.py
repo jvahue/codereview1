@@ -516,6 +516,7 @@ class ViolationDb( DB_SQLite):
         select filename,function,severity,violationId,description,details,lineNumber,
                detectedBy,firstReport,lastReport,status,analysis,who,reviewDate
                from violations
+               order by filename, function, lineNumber, description, details
         """
         q = self.Query(s)
 
