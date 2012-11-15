@@ -540,7 +540,7 @@ class ViolationDb( DB_SQLite):
 
         self.Execute(s)
 
-        q = self.Query(s)
+        self.Commit()
 
 #===================================================================================================
 if __name__ == '__main__':
