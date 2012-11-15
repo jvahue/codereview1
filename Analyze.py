@@ -67,7 +67,7 @@ class Analyzer:
         self.status = sts
 
     #-----------------------------------------------------------------------------------------------
-    def Analyze( self, fullAnalysis = True):
+    def Analyze( self, fullAnalysis = True, pcLintRun=True, u4cRun=True):
         """ Analyze the project file with the tools selected
         """
         status = True
@@ -75,10 +75,12 @@ class Analyzer:
         self.SetStatus( 'Start Analysis %s - Create Tool Projects' % start)
 
         # create the tool analysis files
-        pcs = PcLint.PcLintSetup( self.projFile)
-        u4s = u4c.U4cSetup( self.projFile)
-        pcs.CreateProject()
-        u4s.CreateProject()
+        if pcLintRun:
+            pcs = PcLint.PcLintSetup( self.projFile)
+            pcs.CreateProject()
+        if u4cRun:
+            u4s = u4c.U4cSetup( self.projFile)
+            u4s.CreateProject()
 
         self.SetStatus( 'Tool Project Creation Complete - Start Analysis %s' % start)
 
@@ -88,13 +90,15 @@ class Analyzer:
 
         if fullAnalysis:
             # check if we can open the DB and stop U4c if running
-            r1 = u4co.IsReadyToAnalyze(True)
+            r1 = u4co.IsReadyToAnalyze(kill=True)
             if not r1 or u4co.IsReadyToAnalyze():
                 u4cThread = ThreadSignal( u4co.RunToolAsProcess, u4co)
                 pclThread = ThreadSignal( pcl.RunToolAsProcess, pcl)
 
-                u4cThread.Go()
-                pclThread.Go()
+                if u4cRun:
+                    u4cThread.Go()
+                if pcLintRun:
+                    pclThread.Go()
                 while u4cThread.active or pclThread.active:
                     pcl.abortRequest = self.abortRequest
                     u4co.abortRequest = self.abortRequest
@@ -114,8 +118,10 @@ class Analyzer:
             u4cThread = ThreadSignal( u4co.LoadViolations, u4co)
             pclThread = ThreadSignal( pcl.LoadViolations, pcl)
 
-            u4cThread.Go()
-            pclThread.Go()
+            if u4cRun:
+                u4cThread.Go()
+            if pcLintRun:
+                pclThread.Go()
             while u4cThread.active or pclThread.active:
                 time.sleep(1)
                 timeNow = DateTime.DateTime.today()
@@ -143,6 +149,8 @@ if __name__ == '__main__':
     if len(sys.argv) == 2:
         projFile = sys.argv[1]
         fullAnalysis = True
+        pcRun = True
+        u4cRun = True
     else:
         #jvDesk
         #projFile = r'C:\Knowlogic\tools\CR-Projs\G4-A\G4A.crp'
@@ -159,15 +167,18 @@ if __name__ == '__main__':
             projFile = projFile[1:-1]
 
         fullAnalysis = input( 'Do you want to analyze the source code (Y/n): ')
-        if fullAnalysis and fullAnalysis.lower()[0] == 'n':
-            fullAnalysis = False
-        else:
-            fullAnalysis = True
+        fullAnalysis = False if fullAnalysis and fullAnalysis.lower()[0] == 'n' else True
+
+        pcRun = input( 'Do you want to Run PcLint (Y/n): ')
+        pcRun = False if pcRun and pcRun.lower()[0] == 'n' else True
+
+        u4cRun = input( 'Do you want to Run Knowlogic (Y/n): ')
+        u4cRun = False if u4cRun and u4cRun.lower()[0] == 'n' else True
 
     analyzer = Analyzer(projFile)
 
     if analyzer.isValid:
-        analyzer.Analyze(fullAnalysis)
+        analyzer.Analyze(fullAnalysis, pcRun, u4cRun)
     else:
         print( 'Errors:\n%s' % '\n'.join(analyzer.projFile.errors))
 

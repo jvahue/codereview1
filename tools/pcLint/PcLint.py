@@ -114,20 +114,10 @@ class PcLintSetup( ToolSetup):
         options += '\n// User Defines\n%s\n' % ( defines)
         options += '\n// User Undefines\n%s\n' % ( undefines)
 
-        # tag all the extra IncludeDirs,
-        # TODO: not in the SrcCode Root tree as libdirs
-        libdirs = []
-        for ip in includeDirs:
-            inSrcPath = False
-            for sp in self.projFile.paths[PF.ePathSrcRoot]:
-                # TODO: handle path name formating/case etc.
-                if ip.find(sp) != -1:
-                    inSrcPath = True
-                    break
-            if not inSrcPath:
-                libdirs.append( ip)
-
-        options += '\n// Library Dirs\n%s\n' % '\n'.join( ['+libdir(%s)' % i for i in libdirs])
+        # tag all the extra IncludeDirs as libdir so PC-LINT does not report errors against them
+        options += '\n// Library Dirs\n%s\n' % '\n'.join( ['+libdir(%s)' % i for i in includeDirs])
+        # make sure this is last to ensure these are not treated as library dirs
+        options += '\n// Src Library Dirs\n%s\n' % '\n'.join( ['-libdir(%s)' % i for i in srcIncludeDirs])
 
         # STD PC Lint Options
         options += '%s\n' % (ePcLintStdOptions)
@@ -239,7 +229,12 @@ class PcLint( ToolManager):
             repeats closed items
 
             TODO: detect errors in processing ... not all files processed
+            <details>
+            <*>Filename,function,line,Warning,641,"Converting enum 'SYS_MODE_IDS' to 'int'"
         """
+        eFn, eFunc, eLine, eType, eViol, eDesc = range(0,6)
+
+        gWrapUp = False
         self.SetStatusMsg( msg = 'Format PC-Lint Output')
 
         finName = os.path.join( self.projToolRoot, eResultFile)
@@ -270,20 +265,38 @@ class PcLint( ToolManager):
                 #pct = (float(lineNum)/totalLines) * 100.0
                 #self.SetStatusMsg( pct)
                 if len( line) > 0:
-                    if line[0].find('---') == -1:
-                        if line[0].find('<*>') == -1:
+                    if line[eFn].find('---') == -1:
+                        if line[eFn].find('<*>') == -1:
                             details = ','.join( line)
                         else:
                             # the format puts a '<*>' on the front of each error report to distinguish
                             # it from details
-                            line[0] = line[0].replace('<*>', '')
+                            line[eFn] = line[eFn].replace('<*>', '')
 
                             if len(line) != eFieldCount:# and l[1:6] == l[6:]:
                                 line = line[:eFieldCount]
 
+                            if gWrapUp:
+                                # Global Wrap-up does not have filename,line# in the usual place
+                                # eq, Symbol 'foo' (line X, file <filename>) not referenced
+                                # set filename = <filename> and lineNumber = X
+                                if line[eFn] == '':
+                                    # find parens in desc from reverse because these exist
+                                    # ext 'foo(p1, p2, ..)' (line X, file foo.c, module foo.c) desc"
+                                    op = line[eDesc].rfind('(')
+                                    cp = line[eDesc].rfind(')')
+                                    if op != -1 and cp != -1:
+                                        data = line[eDesc][op+1:cp]
+                                        parts = data.split(',')
+                                        if len( parts) >= 2:
+                                            line[eLine] = parts[0].replace('line ', '').strip()
+                                            line[eFn] = parts[1].replace('file', '').strip()
+                                        else:
+                                            pass
+
                             # remove full pathname
-                            if line[0] and line[0][0] != '.':
-                                path, fn = os.path.split(line[0])
+                            if line[eFn] and line[eFn][0] != '.':
+                                path, fn = os.path.split(line[eFn])
                                 subdir = os.path.split( path)[1]
                                 if subdir:
                                     aFilename = r'%s\%s' % (subdir, fn)
@@ -292,8 +305,8 @@ class PcLint( ToolManager):
                                 line = [aFilename] + line[1:]
 
                             # replace the unknown file name with current file name
-                            if line[0] == eSrcFilesName:
-                                line[0] = cFileName
+                            if line[eFn] == eSrcFilesName:
+                                line[eFn] = cFileName
 
                             opv = [1] + line + [details]
                             # debug
@@ -308,7 +321,8 @@ class PcLint( ToolManager):
                         # |--- Module:   <full path file name> (C)
                         # |    --- Wrap-up for Module: <fullpath file name>
                         line = line[0]
-                        wrapUp = line.find('Wrap') != -1 and '(W)' or '()'
+                        wrapUp = line.find('--- Wrap') != -1 and '(W)' or '()'
+                        gWrapUp = True if line.find('--- Global Wrap') != -1 else False
 
                         at = line.find( 'Module: ')
                         if at != -1:
@@ -370,5 +384,6 @@ class PcLint( ToolManager):
         except:
             raise
         finally:
+            self.vDb.Commit()
             self.projFile.dbLock.release()
             pass

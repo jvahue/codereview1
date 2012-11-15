@@ -143,10 +143,10 @@ class ToolManager:
                 self.vDb.Close()
                 raise
 
-            self.GetUpdateStats()
+        self.GetUpdateStats()
 
-            # we have to close the DB in the thread it was opened in
-            self.vDb.Close()
+        # we have to close the DB in the thread it was opened in
+        self.vDb.Close()
 
     #-----------------------------------------------------------------------------------------------
     def Log(self, msg):

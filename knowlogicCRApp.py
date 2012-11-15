@@ -43,7 +43,7 @@ import ProjFile as PF
 #---------------------------------------------------------------------------------------------------
 # Data
 #---------------------------------------------------------------------------------------------------
-eVersion = 'v0.2.1'
+eVersion = 'v0.2.2'
 
 eKsCrtIni = 'KsCrt'
 eLogPc = 'PcLint'
@@ -280,11 +280,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     #-----------------------------------------------------------------------------------------------
     def OpenAnalysisTab(self):
-        if not self.programOpenedU4c:
-            # see if understand is open and open it if not
-            op = subprocess.check_output( 'tasklist')
-            opStr = op.decode()
+        # see if understand is open and open it if not
+        op = subprocess.check_output( 'tasklist')
+        opStr = op.decode()
 
+        if not self.programOpenedU4c or opStr.find('understand') == -1:
             # create a U4c object to get project Db info
             u4co = U4c(self.projFile)
 
@@ -300,7 +300,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     u4co.KillU4c()
                     openIt = True
                 else:
-                    self.programOpenedU4c = True
                     openIt = False
 
             if openIt:
@@ -310,7 +309,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 understand = os.path.join(u4cPath, 'understand.exe')
                 cmd = '%s -db "%s"' % (understand, u4co.dbName)
                 subprocess.Popen( cmd)
-                self.programOpenedU4c = True
+
+            # indicate the user has the U4C Db open that they want open
+            self.programOpenedU4c = True
 
     #-----------------------------------------------------------------------------------------------
     def OpenProjectTab(self):
