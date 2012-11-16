@@ -322,13 +322,17 @@ class PcLint( ToolManager):
                         # |    --- Wrap-up for Module: <fullpath file name>
                         line = line[0]
                         wrapUp = line.find('--- Wrap') != -1 and '(W)' or '()'
-                        gWrapUp = True if line.find('--- Global Wrap') != -1 else False
+
+                        if line.find('--- Global Wrap') != -1:
+                            gWrapUp = True
+                        else:
+                            gWrapUp = False
 
                         at = line.find( 'Module: ')
                         if at != -1:
                             line = line[at+len( 'Module: '):]
-                        parts = line.strip().split()
-                        line = parts[0]
+
+                        line = line.replace('(C)', '').strip()
                         path, fn = os.path.split(line)
                         subdir = os.path.split( path)[1]
                         cFileName = r'%s\%s %s' % (subdir, fn, wrapUp)
