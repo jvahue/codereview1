@@ -536,7 +536,10 @@ class ViolationDb( DB_SQLite):
         """ % eNotReported
 
         self.Execute(s)
+        self.Commit()
 
+        # compact the DB
+        self.Execute( 'vacuum')
         self.Commit()
 
 #===================================================================================================
