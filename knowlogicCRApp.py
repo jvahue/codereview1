@@ -43,7 +43,7 @@ import ProjFile as PF
 #---------------------------------------------------------------------------------------------------
 # Data
 #---------------------------------------------------------------------------------------------------
-eVersion = 'v0.2.3'
+eVersion = 'v0.2.4'
 
 eKsCrtIni = 'KsCrt'
 eLogPc = 'PcLint'
@@ -971,28 +971,19 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
                 updateCmd = """UPDATE Violations
                                    SET status = ?, analysis = ?, who = ?, reviewDate = ?
-                                 WHERE filename = ?
-                                   AND function = ?
-                                   AND severity = ?
-                                   AND violationId = ?
-                                   AND description = ?
-                                   AND details = ?
+                                 WHERE
+                                   filename = ? AND function = ? AND severity = ?
+                                   AND violationId = ? AND description = ? AND details = ?
                                    AND lineNumber = ? """
 
+                who = self.userName
                 nowIs = datetime.datetime.now()
 
                 for i in tagList:
                     self.db.Execute(updateCmd,
-                                    status,
-                                    analysisText,
-                                    self.userName,
-                                    nowIs,
-                                    i.filename,
-                                    i.function,
-                                    i.severity,
-                                    i.violationId,
-                                    i.description,
-                                    i.details,
+                                    status, analysisText, who, nowIs,
+                                    i.filename, i.function, i.severity,
+                                    i.violationId, i.description, i.details,
                                     i.lineNumber)
 
                 self.db.Commit()

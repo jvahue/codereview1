@@ -147,21 +147,17 @@ class ViolationDb( DB_SQLite):
                 stsDate = None
                 analysis = None
 
-            updateItems = (updateTime, desc, details, line, sts, who, stsDate, analysis)
+            updateItems = (updateTime, desc, details, line,
+                           sts, who, stsDate, analysis)
             primary = (fName, func, sev, violationId,
                        matchItem.description, matchItem.details, matchItem.lineNumber)
             s = """
                 update Violations
                 set lastReport=?, description=?, details=?, lineNumber=?,
-                    status = ?, who=?, reviewDate=?, who=?
+                    status = ?, who=?, reviewDate=?, analysis=?
                 where
-                filename=?
-                and function=?
-                and severity=?
-                and violationID=?
-                and description=?
-                and details=?
-                and lineNumber=?
+                    filename=? and function=? and severity=? and violationID=?
+                    and description=? and details=? and lineNumber=?
                 """
             params = updateItems + primary
             if self.Execute( s, *params) != 1:
