@@ -943,7 +943,7 @@ p, li { white-space: pre-wrap; }
                <item>
                 <widget class="QLabel" name="label_3">
                  <property name="text">
-                  <string>Previous Reviewer:</string>
+                  <string>Reviewer:</string>
                  </property>
                 </widget>
                </item>
@@ -963,7 +963,7 @@ p, li { white-space: pre-wrap; }
                <item>
                 <widget class="QLabel" name="label_PrevDate">
                  <property name="text">
-                  <string>Previous Date:</string>
+                  <string>Date:</string>
                  </property>
                 </widget>
                </item>
@@ -983,7 +983,7 @@ p, li { white-space: pre-wrap; }
                <item>
                 <widget class="QLabel" name="label_PrevStatus">
                  <property name="text">
-                  <string>Previous Status:</string>
+                  <string>Status:</string>
                  </property>
                 </widget>
                </item>

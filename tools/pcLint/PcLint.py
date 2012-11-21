@@ -11,6 +11,7 @@ Design Assumptions:
 import csv
 import datetime
 import os
+import re
 
 #---------------------------------------------------------------------------------------------------
 # Third Party Modules
@@ -321,7 +322,7 @@ class PcLint( ToolManager):
                         # |--- Module:   <full path file name> (C)
                         # |    --- Wrap-up for Module: <fullpath file name>
                         line = line[0]
-                        wrapUp = line.find('--- Wrap') != -1 and '(W)' or '()'
+                        wrapUp = line.find('--- Wrap') != -1 and ' (W)' or ' ()'
 
                         if line.find('--- Global Wrap') != -1:
                             gWrapUp = True
@@ -333,9 +334,8 @@ class PcLint( ToolManager):
                             line = line[at+len( 'Module: '):]
 
                         line = line.replace('(C)', '').strip()
-                        path, fn = os.path.split(line)
-                        subdir = os.path.split( path)[1]
-                        cFileName = r'%s\%s %s' % (subdir, fn, wrapUp)
+                        cFileName, title = self.projFile.RelativePathName(line)
+                        cFileName += wrapUp
 
             fout.close()
             fin.close()
@@ -369,6 +369,9 @@ class PcLint( ToolManager):
             commitSize = 10
             nextCommit = commitSize
             for filename,func,line,severity,violationId,desc,details in lintLoader.reducedData:
+                # insert relative path names for all file references
+                desc = self.CleanFpfn( desc)
+
                 if self.abortRequest:
                     break
 
@@ -391,3 +394,72 @@ class PcLint( ToolManager):
             self.vDb.Commit()
             self.projFile.dbLock.release()
             pass
+
+    #-----------------------------------------------------------------------------------------------
+    def CleanFpfn( self, desc):
+        """ This function cleans out any full path file names and creates relative path file names
+            for names in the description.
+
+            PC-Lint precedes file names with 'file' and 'module' in its descriptions
+            e.g.,
+            [Reference: file D:\knowlogic\FAST\dev\CP\drivers\FPGA.c: line 559]
+            (line 62, file D:\knowlogic\FAST\dev\CP\drivers\RTC.c)
+            (line 61, file D:\knowlogic\FAST\dev\CP\drivers\EvaluatorInterface.h, module D:\knowlogic\FAST\dev\CP\application\AircraftConfigMgr.c)
+        """
+        debug = True
+        desc0 = desc
+
+        qFile = "file '"
+        rFile = 'file '
+        rModule = 'module '
+
+        for i in (qFile, rFile, rModule):
+            desc =  self.Handle( i, desc)
+
+        return desc
+
+    def Handle(self, pattern, desc):
+        """
+        Header file 'c:\path\stdio.h' repeatedly included but does not have a standard include guard
+        Ignoring return value of function 'CfgMgr_StoreConfigItem(void *, void *, unsigned short)' (compare with line 189, file D:path\CfgManager.h)
+        macro 'SPI_DEV' was defined differently in another module (line 30, file D:\path\SPIManager.h, module D:path\AircraftConfigMgr.c)
+        """
+        pAt = desc.find( pattern)
+        newDesc = ''
+        while pAt != -1 and desc:
+            start = pAt + len(pattern)
+
+            for i in ");,'":
+                fe = desc.find(i, start+1)
+                if fe != -1:
+                    newDesc0, desc = self.CheckAndReplace( desc, start, fe)
+                    newDesc += newDesc0
+            else:
+                # end of the line
+                fe = len(desc)
+                newDesc0, desc = self.CheckAndReplace( desc, start, fe)
+                newDesc += newDesc0
+
+            pAt = desc.find( pattern)
+
+        return newDesc
+
+    def CheckAndReplace(self, desc, start, fe):
+        """
+        """
+        newDesc = ''
+        fname = desc[start:fe]
+        if os.path.isfile( fname):
+            sname, title = self.projFile.RelativePathName(fname)
+            if sname != fname:
+                newDesc += desc[:start]
+                newDesc += sname + desc[fe]
+                desc = desc[fe+1:]
+            else:
+                newDesc = desc[:fe]
+
+        else:
+            newDesc += desc[:fe]
+
+        desc = desc[fe:]
+        return newDesc, desc

@@ -157,8 +157,8 @@ if __name__ == '__main__':
         #projFile = r'C:\Knowlogic\tools\CR-Projs\Rypos\Rypos.crp'
 
         # PWC desk
-        #projFile = r'C:\Users\P916214\Documents\Knowlogic\CodeReviewProj\Fast\G4.crp'
-        projFile = r'L:\FAST II\control processor\CodeReview\G4master.crp'
+        projFile = r'C:\Users\P916214\Documents\Knowlogic\CodeReviewProj\Fast\G4.crp'
+        #projFile = r'L:\FAST II\control processor\CodeReview\G4master.crp'
 
         # jvLaptop
         #projFile = r'D:\Knowlogic\Tools\CR-Projs\zzzCodereviewPROJ\G4.crp'

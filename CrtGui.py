@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'CrtGui.ui'
 #
-# Created: Thu Nov 15 15:47:37 2012
+# Created: Wed Nov 21 12:10:59 2012
 #      by: pyside-uic 0.2.13 running on PySide 1.1.0
 #
 # WARNING! All changes made in this file will be lost!
@@ -937,9 +937,9 @@ class Ui_MainWindow(object):
         self.pushButton_GotoCode.setText(QtGui.QApplication.translate("MainWindow", "Go To Code", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox_Analysis.setTitle(QtGui.QApplication.translate("MainWindow", "Enter Analysis", None, QtGui.QApplication.UnicodeUTF8))
         self.pushButtonAddCanned.setText(QtGui.QApplication.translate("MainWindow", "Add", None, QtGui.QApplication.UnicodeUTF8))
-        self.label_3.setText(QtGui.QApplication.translate("MainWindow", "Previous Reviewer:", None, QtGui.QApplication.UnicodeUTF8))
-        self.label_PrevDate.setText(QtGui.QApplication.translate("MainWindow", "Previous Date:", None, QtGui.QApplication.UnicodeUTF8))
-        self.label_PrevStatus.setText(QtGui.QApplication.translate("MainWindow", "Previous Status:", None, QtGui.QApplication.UnicodeUTF8))
+        self.label_3.setText(QtGui.QApplication.translate("MainWindow", "Reviewer:", None, QtGui.QApplication.UnicodeUTF8))
+        self.label_PrevDate.setText(QtGui.QApplication.translate("MainWindow", "Date:", None, QtGui.QApplication.UnicodeUTF8))
+        self.label_PrevStatus.setText(QtGui.QApplication.translate("MainWindow", "Status:", None, QtGui.QApplication.UnicodeUTF8))
         self.pushButton_MarkReviewed.setText(QtGui.QApplication.translate("MainWindow", "Mark Reviewed", None, QtGui.QApplication.UnicodeUTF8))
         self.pushButton_MarkAccepted.setText(QtGui.QApplication.translate("MainWindow", "Mark Accepted", None, QtGui.QApplication.UnicodeUTF8))
         self.applyToAll.setText(QtGui.QApplication.translate("MainWindow", "Apply to All", None, QtGui.QApplication.UnicodeUTF8))

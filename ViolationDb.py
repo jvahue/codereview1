@@ -445,7 +445,7 @@ class ViolationDb( DB_SQLite):
             desc: the string to modify
             sql: create a SQL wildcard search
         """
-        lineRe = re.compile(r'[Ll]ine[ \t]+([0-9]+)')
+        lineRe = re.compile(r'[Ll]ine[s \t]+([0-9]+)')
         m = lineRe.findall( desc)
 
         if not sql:
