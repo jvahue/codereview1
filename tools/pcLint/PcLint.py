@@ -404,62 +404,29 @@ class PcLint( ToolManager):
             e.g.,
             [Reference: file D:\knowlogic\FAST\dev\CP\drivers\FPGA.c: line 559]
             (line 62, file D:\knowlogic\FAST\dev\CP\drivers\RTC.c)
-            (line 61, file D:\knowlogic\FAST\dev\CP\drivers\EvaluatorInterface.h, module D:\knowlogic\FAST\dev\CP\application\AircraftConfigMgr.c)
+            (line 61, file <path>\drivers\EvaluatorInterface.h, module <path>\application\AircraftConfigMgr.c)
         """
-        debug = True
+        debug = False
         desc0 = desc
+        srcRoots = self.projFile.paths[PF.ePathSrcRoot]
+        incRoots = self.projFile.paths[PF.ePathInclude]
 
-        qFile = "file '"
-        rFile = 'file '
-        rModule = 'module '
+        replacement = False
 
-        for i in (qFile, rFile, rModule):
-            desc =  self.Handle( i, desc)
+        # compute the relative path from a srcRoot
+        for sr in srcRoots:
+            if desc.find( sr) != -1:
+                desc = desc.replace( sr, '<srcRoot>')
+                replacement = True
+
+        # compute the relative path from a srcRoot
+        for sr in incRoots:
+            if desc.find( sr) != -1:
+                desc = desc.replace( sr, '<incRoot>')
+                replacement = True
+
+        if debug and replacement:
+            print( 'Was: %s\n Is:%s' %  (desc0, desc))
 
         return desc
 
-    def Handle(self, pattern, desc):
-        """
-        Header file 'c:\path\stdio.h' repeatedly included but does not have a standard include guard
-        Ignoring return value of function 'CfgMgr_StoreConfigItem(void *, void *, unsigned short)' (compare with line 189, file D:path\CfgManager.h)
-        macro 'SPI_DEV' was defined differently in another module (line 30, file D:\path\SPIManager.h, module D:path\AircraftConfigMgr.c)
-        """
-        pAt = desc.find( pattern)
-        newDesc = ''
-        while pAt != -1 and desc:
-            start = pAt + len(pattern)
-
-            for i in ");,'":
-                fe = desc.find(i, start+1)
-                if fe != -1:
-                    newDesc0, desc = self.CheckAndReplace( desc, start, fe)
-                    newDesc += newDesc0
-            else:
-                # end of the line
-                fe = len(desc)
-                newDesc0, desc = self.CheckAndReplace( desc, start, fe)
-                newDesc += newDesc0
-
-            pAt = desc.find( pattern)
-
-        return newDesc
-
-    def CheckAndReplace(self, desc, start, fe):
-        """
-        """
-        newDesc = ''
-        fname = desc[start:fe]
-        if os.path.isfile( fname):
-            sname, title = self.projFile.RelativePathName(fname)
-            if sname != fname:
-                newDesc += desc[:start]
-                newDesc += sname + desc[fe]
-                desc = desc[fe+1:]
-            else:
-                newDesc = desc[:fe]
-
-        else:
-            newDesc += desc[:fe]
-
-        desc = desc[fe:]
-        return newDesc, desc

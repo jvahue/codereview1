@@ -358,6 +358,16 @@ class ProjectFile:
                 if not vx or not self.CheckPath( vx):
                     self.errors.append( '%s Invalid Path/File: <%s>' % (p, vx))
 
+        # normalize the paths
+        # TODO: not needed when the proj builder is completed
+        for vx,vl in enumerate(self.paths[ePathSrcRoot]):
+            self.paths[ePathSrcRoot][vx] = os.path.normpath( vl)
+
+        # TODO: not needed when the proj builder is completed
+        for vx,vl in enumerate(self.paths[ePathInclude]):
+            self.paths[ePathInclude][vx] = os.path.normpath( vl)
+
+
     #-----------------------------------------------------------------------------------------------
     def CheckPath( self, aPath):
         """ Validate the path info provided in the project file.
