@@ -13,19 +13,16 @@ paths = (
 )
 
 def CleanUp():
-
     db = database.DB_SQLite()
     db.Connect(dbName)
 
+    # clean path information
     s = '''select rowId,description
            from violations
            where
            status is not null'''
-
     data = db.Query( s)
-
     u = 'update violations set description=? where rowId = ?'
-
     for i in data:
         desc0 = i.description
         desc = CleanFpfn( i.description)
@@ -33,6 +30,19 @@ def CleanUp():
             db.Execute( u, desc, i.rowId)
 
     db.Commit()
+
+    # clean Metric.File length
+    s = "select rowId, description, details from violations where violationId = 'Metric.File'"
+    data = db.Query( s)
+    u = 'Update violations set description=?, details=? where rowId=?'
+
+    for i in data:
+        desc = i.description + ' total lines 2001'
+        dets = 'Total line count exceeds project maximum 2000'
+        db.Execute( u, desc, dets, i.rowId)
+
+    db.Commit()
+
     db.Close()
 
 #-----------------------------------------------------------------------------------------------

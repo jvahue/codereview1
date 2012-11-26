@@ -326,9 +326,8 @@ class U4c( ToolManager):
                 line = fileSize
                 severity = 'Error'
                 violationId = 'Metric.File'
-                desc = 'File Length Exceeded: %s' % (fn)
-                details = 'Total line count (lines %d) exceeds project maximum (lines %d)' % (fileSize,
-                                                                                  fileLimit)
+                desc = 'File Length Exceeded: %s total lines %d' % (fn, fileSize)
+                details = 'Total line count exceeds project maximum %d' % (fileLimit)
                 self.vDb.Insert(rpfn, func, severity, violationId, desc,
                                 details, line, eDbDetectId, self.updateTime)
                 self.vDb.Commit()
