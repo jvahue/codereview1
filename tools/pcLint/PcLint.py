@@ -411,20 +411,21 @@ class PcLint( ToolManager):
         srcRoots = self.projFile.paths[PF.ePathSrcRoot]
         incRoots = self.projFile.paths[PF.ePathInclude]
 
-        replacement = False
-
         # compute the relative path from a srcRoot
         for theDirs, thePattern in ((srcRoots, '<srcRoot>'), (incRoots, '<incRoot>')):
             for sr in theDirs:
                 srl = sr.lower()
-                dl = desc.lower()
-                at = dl.find( srl)
-                if at != -1:
-                    end = at + len(srl)
-                    desc = desc[0:at] + thePattern + desc[end:]
-                    replacement = True
+                # replace all paths in the description
+                while True:
+                    dl = desc.lower()
+                    at = dl.find( srl)
+                    if at != -1:
+                        end = at + len(srl)
+                        desc = desc[0:at] + thePattern + desc[end:]
+                    else:
+                        break
 
-        if debug and replacement:
+        if debug and desc0 != desc:
             print( 'Was: %s\n Is:%s' %  (desc0, desc))
 
         return desc
