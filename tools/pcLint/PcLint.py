@@ -414,16 +414,15 @@ class PcLint( ToolManager):
         replacement = False
 
         # compute the relative path from a srcRoot
-        for sr in srcRoots:
-            if desc.find( sr) != -1:
-                desc = desc.replace( sr, '<srcRoot>')
-                replacement = True
-
-        # compute the relative path from a srcRoot
-        for sr in incRoots:
-            if desc.find( sr) != -1:
-                desc = desc.replace( sr, '<incRoot>')
-                replacement = True
+        for theDirs, thePattern in ((srcRoots, '<srcRoot>'), (incRoots, '<incRoot>')):
+            for sr in theDirs:
+                srl = sr.lower()
+                dl = desc.lower()
+                at = dl.find( srl)
+                if at != -1:
+                    end = at + len(srl)
+                    desc = desc[0:at] + thePattern + desc[end:]
+                    replacement = True
 
         if debug and replacement:
             print( 'Was: %s\n Is:%s' %  (desc0, desc))

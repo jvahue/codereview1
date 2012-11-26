@@ -153,11 +153,11 @@ if __name__ == '__main__':
         u4cRun = True
     else:
         #jvDesk
-        projFile = r'C:\Knowlogic\tools\CR-Projs\G4-A\G4A.crp'
+        #projFile = r'C:\Knowlogic\tools\CR-Projs\G4-A\G4A.crp'
         #projFile = r'C:\Knowlogic\tools\CR-Projs\Rypos\Rypos.crp'
 
         # PWC desk
-        #projFile = r'C:\Users\P916214\Documents\Knowlogic\CodeReviewProj\Fast\G4.crp'
+        projFile = r'C:\Users\P916214\Documents\Knowlogic\CodeReviewProj\Fast\G4.crp'
         #projFile = r'L:\FAST II\control processor\CodeReview\G4master.crp'
 
         # jvLaptop
