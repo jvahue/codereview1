@@ -43,7 +43,7 @@ import ProjFile as PF
 #---------------------------------------------------------------------------------------------------
 # Data
 #---------------------------------------------------------------------------------------------------
-eVersion = 'v0.3.0'
+eVersion = 'v0.3.1'
 
 eKsCrtIni = 'KsCrt'
 eLogPc = 'PcLint'
@@ -761,7 +761,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
                     # special handling for filenames to remove the (W)
                     if dd == 'Filename':
-                        comboList = [i.data for i in q if i.data.find('(W)') == -1]
+                        stripped = [i.data for i in q if i.data.find('(W)') == -1]
+                        comboList = []
+                        lc = []
+                        for i in stripped:
+                            if i.lower() not in lc:
+                                comboList.append( i)
+                                lc.append(i.lower())
                     else:
                         comboList = [i.data for i in q]
 
@@ -792,8 +798,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 text = gui.currentText()
                 filterOff = noFilterRe.search( text)
                 if filterOff is None:
-                    # ok we have something to filter on
-                    filterText = "%s = '%s'" % (self.filterInfo[dd], text)
+                    if dd == 'Filename':
+                        filterText = "%s like '%s'" % (self.filterInfo[dd], text)
+                    else:
+                        # ok we have something to filter on
+                        filterText = "%s = '%s'" % (self.filterInfo[dd], text)
                     constraints.append( filterText)
                 elif text == '':
                     # ok we want an empty string

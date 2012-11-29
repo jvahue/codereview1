@@ -1,11 +1,12 @@
 __author__ = 'p916214'
 
 import csv
+import os
 
 from utils.DB.sqlLite import database
 
 
-dbName = r'C:\Users\P916214\Documents\Knowlogic\CodeReviewProj\KsCrDb.db'
+dbName = r'C:\Users\P916214\Documents\Knowlogic\CodeReviewProj\FAST\db\KsCrDb.db'
 
 paths = (
     (r'C:\ghs\multi506\ansi', '<incRoot>'),
@@ -13,6 +14,29 @@ paths = (
     (r'D:\FAST_Testing\dev\G4E\G4_CP', '<srcRoot>'),
     (r'L:\FAST II\control processor\code', '<srcRoot>'),
 )
+def FileNameCheck():
+    db = database.DB_SQLite()
+    db.Connect(dbName)
+
+    s = 'select distinct(filename) from violations'
+    data = db.Query(s)
+
+    count = 0
+    for i in data:
+        tgtName = i.filename.replace(' (W)', '').strip()
+        title = os.path.split(tgtName)[1]
+        s = "select filename from violations where filename like '%%%s'" % title
+        q = db.Query(s)
+        reported = []
+        for x in q:
+            tstName = x.filename.replace(' (W)', '').strip()
+            if tstName != tgtName and tstName not in reported:
+                count += 1
+                print('%s => ' % tgtName, tstName)
+                reported.append(tstName)
+
+    print ('total: ', count)
+
 
 def CleanUp():
     db = database.DB_SQLite()
@@ -79,4 +103,5 @@ def CleanFpfn( desc):
     return desc
 
 if __name__ == '__main__':
-    CleanUp()
+    #CleanUp()
+    FileNameCheck()
