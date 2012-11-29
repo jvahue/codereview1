@@ -10,6 +10,8 @@ dbName = r'C:\Users\P916214\Documents\Knowlogic\CodeReviewProj\KsCrDb.db'
 paths = (
     (r'C:\ghs\multi506\ansi', '<incRoot>'),
     (r'D:\FAST\dev\cp\G4_CP', '<srcRoot>'),
+    (r'D:\FAST_Testing\dev\G4E\G4_CP', '<srcRoot>'),
+    (r'L:\FAST II\control processor\code', '<srcRoot>'),
 )
 
 def CleanUp():
@@ -17,10 +19,7 @@ def CleanUp():
     db.Connect(dbName)
 
     # clean path information
-    s = '''select rowId,description
-           from violations
-           where
-           status is not null'''
+    s = 'select rowId,description from violations'
     data = db.Query( s)
     u = 'update violations set description=? where rowId = ?'
     for i in data:
@@ -28,6 +27,7 @@ def CleanUp():
         desc = CleanFpfn( i.description)
         if desc0 != desc:
             db.Execute( u, desc, i.rowId)
+            print('%s' % desc)
 
     db.Commit()
 
@@ -37,9 +37,10 @@ def CleanUp():
     u = 'Update violations set description=?, details=? where rowId=?'
 
     for i in data:
-        desc = i.description + ' total lines 2001'
-        dets = 'Total line count exceeds project maximum 2000'
-        db.Execute( u, desc, dets, i.rowId)
+        if i.description.find( 'total lines') == -1:
+            desc = i.description + ' total lines 2001'
+            dets = 'Total line count exceeds project maximum 2000'
+            db.Execute( u, desc, dets, i.rowId)
 
     db.Commit()
 
