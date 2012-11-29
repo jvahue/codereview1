@@ -322,7 +322,7 @@ class Query:
 
     #------------------------------------------------------------------------------------------
     def __iter__(self):
-        """ Initialize the ieterator """
+        """ Initialize the iterator """
         self.index = 0
         if self.length > 0:
             self.data = self.dataSet[self.index]

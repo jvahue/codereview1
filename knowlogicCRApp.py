@@ -43,7 +43,7 @@ import ProjFile as PF
 #---------------------------------------------------------------------------------------------------
 # Data
 #---------------------------------------------------------------------------------------------------
-eVersion = 'v0.3.1'
+eVersion = 'v0.3.2'
 
 eKsCrtIni = 'KsCrt'
 eLogPc = 'PcLint'
@@ -168,6 +168,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.pushButton_ApplyFilters.clicked.connect(self.ApplyFilters)
 
         self.resetFilters.clicked.connect( self.ResetFilters)
+        self.clearAnalysis.clicked.connect( self.ClearAnalysis)
 
         #------------------------------------------------------------------------------
         # Manage the violations horizontal slider scroll bar
@@ -544,6 +545,30 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.db.Export( fn)
         else:
             self.CrErrPopup('You must select a project first')
+
+    #-----------------------------------------------------------------------------------------------
+    def ClearAnalysis( self):
+        """ For the currently displayed issue clear any analysis
+        """
+
+        s = """
+            update violations
+            set status = NULL, analysis = NULL, who = NULL, reviewDate=NULL
+            where
+            filename=?, function=?, severity=?, violationId=?, description=?, details=?, linenumber=?
+            """
+        v = self.v
+        p = (v.filename, v.function, v.severity, v.violationId, v.description, v.details, v.lineNumber)
+        self.db.Execute(s, *p)
+        self.db.Commit()
+
+        # update our cache
+        self.violationsData.data.status = None
+        self.violationsData.data.analysis = None
+        self.violationsData.data.who = None
+        self.violationsData.data.reviewDate = None
+
+        self.DisplayViolationsData()
 
     #-----------------------------------------------------------------------------------------------
     def ClearRemoved( self):

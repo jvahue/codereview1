@@ -80,6 +80,20 @@ class ResultRow:
             return None
 
     #------------------------------------------------------------------------------------------
+    def __setattr__( self, name, value):
+        """ Set the value of a field in our cached data
+        """
+        if self.data:
+            if name in self.fields:
+                x = self.fields.index(name)
+                self.data[x] = value
+
+            elif self.fields == []:
+                self.data = value
+            else:
+                raise AttributeError
+
+    #------------------------------------------------------------------------------------------
     def __iter__(self):
         """ Initialize the iterator """
         self.index = 0

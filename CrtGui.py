@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'CrtGui.ui'
 #
-# Created: Wed Nov 21 12:10:59 2012
+# Created: Thu Nov 29 16:01:38 2012
 #      by: pyside-uic 0.2.13 running on PySide 1.1.0
 #
 # WARNING! All changes made in this file will be lost!
@@ -493,7 +493,15 @@ class Ui_MainWindow(object):
         self.verticalLayout_3.setObjectName("verticalLayout_3")
         self.horizontalLayout_9 = QtGui.QHBoxLayout()
         self.horizontalLayout_9.setObjectName("horizontalLayout_9")
+        self.clearAnalysis = QtGui.QPushButton(self.groupBox_Analysis)
+        self.clearAnalysis.setObjectName("clearAnalysis")
+        self.horizontalLayout_9.addWidget(self.clearAnalysis)
         self.cannedAnalysisSelector = QtGui.QComboBox(self.groupBox_Analysis)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(1)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.cannedAnalysisSelector.sizePolicy().hasHeightForWidth())
+        self.cannedAnalysisSelector.setSizePolicy(sizePolicy)
         self.cannedAnalysisSelector.setObjectName("cannedAnalysisSelector")
         self.horizontalLayout_9.addWidget(self.cannedAnalysisSelector)
         self.pushButtonAddCanned = QtGui.QPushButton(self.groupBox_Analysis)
@@ -936,6 +944,7 @@ class Ui_MainWindow(object):
         self.syncCode.setText(QtGui.QApplication.translate("MainWindow", "Auto-GoTo", None, QtGui.QApplication.UnicodeUTF8))
         self.pushButton_GotoCode.setText(QtGui.QApplication.translate("MainWindow", "Go To Code", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox_Analysis.setTitle(QtGui.QApplication.translate("MainWindow", "Enter Analysis", None, QtGui.QApplication.UnicodeUTF8))
+        self.clearAnalysis.setText(QtGui.QApplication.translate("MainWindow", "Clear Analysis", None, QtGui.QApplication.UnicodeUTF8))
         self.pushButtonAddCanned.setText(QtGui.QApplication.translate("MainWindow", "Add", None, QtGui.QApplication.UnicodeUTF8))
         self.label_3.setText(QtGui.QApplication.translate("MainWindow", "Reviewer:", None, QtGui.QApplication.UnicodeUTF8))
         self.label_PrevDate.setText(QtGui.QApplication.translate("MainWindow", "Date:", None, QtGui.QApplication.UnicodeUTF8))
