@@ -1210,6 +1210,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.StopTimerEvent()
             self.performMerge.setEnabled(True)
             self.mergeResults.setText( sts + '\n\nDone')
+            self.mergeProgress.setValue( 100)
 
     #-----------------------------------------------------------------------------------------------
     # Report Tab
