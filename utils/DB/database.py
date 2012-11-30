@@ -381,12 +381,10 @@ class Query:
         selAt = query.lower().find('select')
         newFields = []
         if selAt != -1:
-            selAt += len('select')
-            fromAt = query.lower().find('from')
-            fields = query[selAt:fromAt]
-            fields = fields.replace('\n', ' ')
+            fields = self.FindFields( query)
+
             # remove SQL functions
-            fields = self.SQLfields( fields)
+            fields = self.SqlFields( fields)
             fields = fields.split(',')
             fields = [i.strip() for i in fields]
 
@@ -411,13 +409,46 @@ class Query:
         self.fields = newFields
 
     #------------------------------------------------------------------------------------------
-    def SQLfields( self, fields):
-        """ return a string with SQL functions removed by parameter count
+    def FindFields( self, query):
+        """ Extract the fields of the select handle sub-selects
         """
+        def Replace( query, txt):
+            txtRe = re.compile( txt, re.I)
+            texts = txtRe.findall( query)
+            for i in texts:
+                query = query.replace(i, txt)
+            return query
+
+        # Replace from and where keywords
+        query = Replace( query, 'select')
+        query = Replace( query, 'from')
+        query = Replace( query, 'where')
+
+        parts = query.split('from')
+        if len( parts) == 2:
+            fields = parts[0:1]
+        else:
+            fields = []
+            for x,i in enumerate(parts):
+                if (i.find('where') != -1 and i.find(')') == -1) or i.find('where') == -1 and x > 0:
+                    break
+                else:
+                    fields.append( i)
+
+        fields = 'from'.join( fields)
+        fields = fields.replace( 'select', '').strip()
+        fields = fields.replace('\n', ' ')
+
+        return fields
+
+    #------------------------------------------------------------------------------------------
+    def SqlFields( self, fields):
+        """ return a string with SQL functions removed by parameter count """
         castRE = re.compile( r'cast *\(.+?\)', re.IGNORECASE)
         convertRE = re.compile( r'convert *\(.+?\)', re.IGNORECASE)
         isnullRE = re.compile( r'isnull *\(.+?\)', re.IGNORECASE)
         fieldRE = { castRE:0, convertRE:1, isnullRE:0}
+
         for theRE in fieldRE:
             paramNum = fieldRE[theRE]
             fields = self.FieldSearch( fields, theRE, paramNum)
