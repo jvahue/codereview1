@@ -165,7 +165,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.dispositioned.stateChanged.connect( lambda a,x='',
                                                  fx=self.FillFilters: fx(a,x))
 
-        self.pushButton_ApplyFilters.clicked.connect(self.ApplyFilters)
+        self.pushButton_ApplyFilters.clicked.connect(self.UserApplyFilters)
 
         self.resetFilters.clicked.connect( self.ResetFilters)
         self.clearAnalysis.clicked.connect( self.ClearAnalysis)
@@ -555,20 +555,19 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             update violations
             set status = NULL, analysis = NULL, who = NULL, reviewDate=NULL
             where
-            filename=?, function=?, severity=?, violationId=?, description=?, details=?, linenumber=?
+            filename=? and function=? and severity=? and violationId=? and description=? and
+            details=? and lineNumber=?
             """
         v = self.v
-        p = (v.filename, v.function, v.severity, v.violationId, v.description, v.details, v.lineNumber)
-        self.db.Execute(s, *p)
-        self.db.Commit()
-
-        # update our cache
-        self.violationsData.data.status = None
-        self.violationsData.data.analysis = None
-        self.violationsData.data.who = None
-        self.violationsData.data.reviewDate = None
-
-        self.DisplayViolationsData()
+        p = (v.filename, v.function, v.severity, v.violationId, v.description,
+             v.details, v.lineNumber)
+        if self.db.Execute(s, *p):
+            self.db.Commit()
+            self.plainTextEdit_Analysis.clear()
+            self.textBrowser_PrevReviewer.clear()
+            self.textBrowser_PrevDate.clear()
+            self.textBrowser_PrevStatus.clear()
+            self.ApplyFilters(enableGoto=False)
 
     #-----------------------------------------------------------------------------------------------
     def ClearRemoved( self):
@@ -849,11 +848,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         return whereClause
 
     #-----------------------------------------------------------------------------------------------
-    def ApplyFilters(self):
-        """ Display the violations information based on selected filters """
-
+    def UserApplyFilters(self):
         # don't automatically accept the select canned analysis
         self.autoAcceptCanned = False
+
+        self.ApplyFilters()
+
+    #-----------------------------------------------------------------------------------------------
+    def ApplyFilters(self, enableGoto=True):
+        """ Display the violations information based on selected filters """
 
         # Query the database using filters selected
         s = """
@@ -870,6 +873,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.violationsData = []
         self.violationsData = self.db.Query( sql)
 
+        if not enableGoto:
+            # keep where we are and try to go back there
+            at = self.horizontalScrollBar.value()
+
         # Display Violations Data
         if self.violationsData:
             self.horizontalScrollBar.setMinimum(0)
@@ -879,10 +886,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.horizontalScrollBar.setMinimum(0)
             self.horizontalScrollBar.setMaximum(0)
 
-        self.DisplayViolationsData()
+        if not enableGoto:
+            # return to where we were in the list
+            self.horizontalScrollBar.setValue(at)
+
+        self.DisplayViolationsData(enableGoto)
 
     #-----------------------------------------------------------------------------------------------
-    def DisplayViolationsData(self):
+    def DisplayViolationsData(self, enableGoto = True):
         """ Display violations data """
         at = self.horizontalScrollBar.value()
         at += 1
@@ -925,7 +936,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.plainTextEdit_Analysis.setPlainText(self.v.analysis)
 
             # are we autosyncing the code with the scroll bar?
-            if self.syncCode.isChecked():
+            if enableGoto and self.syncCode.isChecked():
                 self.GotoCode()
 
         else:
@@ -1028,14 +1039,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 # remember where we are to the next issue
                 at = self.horizontalScrollBar.value()
 
-                # refresh the data in our cache, save autoAcceptCanned State
-                temp = self.autoAcceptCanned
-
-                keepState = self.syncCode.checkState()
-                self.syncCode.setCheckState(QtCore.Qt.Unchecked)
-                self.ApplyFilters()
-                self.syncCode.setCheckState(keepState)
-                self.autoAcceptCanned = temp
+                self.ApplyFilters(enableGoto=False)
 
                 # now go there - scroll bar handles setting to locations that do not exist
                 # i.e., if we accepted the last violation in a set
