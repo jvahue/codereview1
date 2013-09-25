@@ -140,6 +140,9 @@ class Analyzer:
         msg = m0 + '\n'.join(m1 + m2)
         self.SetStatus( msg)
 
+        del pcl
+        del u4co
+
         time.sleep(1)
         return status
 
@@ -157,7 +160,9 @@ if __name__ == '__main__':
         #projFile = r'C:\Knowlogic\tools\CR-Projs\Rypos\Rypos.crp'
 
         # PWC desk
-        projFile = r'C:\Users\P916214\Documents\Knowlogic\CodeReviewProj\Fast\G4.crp'
+        #projFile = r'C:\Knowlogic\tools\CR-Projs\ASE\Ase.crp'
+        projFile = r'C:\Knowlogic\tools\CR-Projs\eFAST\eFast.crp'
+
         #projFile = r'L:\FAST II\control processor\CodeReview\G4master.crp'
 
         # jvLaptop
@@ -183,3 +188,5 @@ if __name__ == '__main__':
     else:
         print( 'Errors:\n%s' % '\n'.join(analyzer.projFile.errors))
 
+    x = 1
+    pass

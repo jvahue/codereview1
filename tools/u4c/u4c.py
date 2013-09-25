@@ -27,8 +27,9 @@ import subprocess
 # Knowlogic Modules
 #---------------------------------------------------------------------------------------------------
 from FormatChecker import FormatChecker
-from tools.u4c import u4cDbWrapper as udb
+print('%s : PYTHONPATH=%s' % (__name__, os.environ['PYTHONPATH']))
 from tools.u4c import U4cFileTemplates
+from tools.u4c import u4cDbWrapper as udb
 from tools.ToolMgr import ToolSetup, ToolManager
 
 import ProjFile as PF
@@ -187,7 +188,8 @@ class U4c( ToolManager):
             This function should be run as a thread by the caller becuase this will allow
             the caller to report on the status of the process as it runs. (i.e., % complete)
         """
-        #self.Log ('Thread %s' % eDbDetectId, os.getpid())
+
+        self.Log('Thread %s %s' % (eDbDetectId, os.getpid()))
 
         # Run the PC-Lint bat file
         self.jobCmd = '%s' % os.path.join( self.projToolRoot, eBatchName)

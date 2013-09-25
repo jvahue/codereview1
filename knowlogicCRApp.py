@@ -1314,12 +1314,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 #------------------------------------------------------------------------------------
 def main():
     # Create Application
-    app = QApplication(sys.argv)
+    try:
+        app = QApplication(sys.argv)
+    except RuntimeError:
+        app = QtCore.QCoreApplication.instance()
     frame = MainWindow()
 
     # Launch Main Window
     frame.show()
     app.exec_()
+
+
 
 if __name__=='__main__':
     main()
