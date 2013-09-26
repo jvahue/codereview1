@@ -612,7 +612,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             # TODO can be removed when project file editing is working
             self.ResetProject( self.projFile)
 
-            # see if understand is open they may have been edting something
+            # see if understand is open they may have been editing something
             # give them a chance to save it.
             op = subprocess.check_output( 'tasklist')
             opStr = op.decode()
@@ -635,7 +635,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             cwd = os.getcwd()
             cmdPath = os.path.join( cwd, 'Analyze.py')
-            cmd = 'c:\python32\python.exe "%s" "%s"' % (cmdPath, self.projFileName)
+            cmd = 'c:\python33\python.exe "%s" "%s"' % (cmdPath, self.projFileName)
             rootDir = self.projFile.paths[PF.ePathProject]
 
             self.analysisProcess = subprocess.Popen( cmd,

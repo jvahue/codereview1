@@ -245,7 +245,8 @@ class U4c( ToolManager):
 
         excludeDirs = self.projFile.exclude[PF.eExcludeDirs]
         excludeFiles = self.projFile.exclude[PF.eExcludeU4c]
-        x, srcFiles = self.projFile.GetSrcCodeFiles( ['.h','.c','.cpp','.hpp'], excludeDirs, excludeFiles)
+        x, srcFiles = self.projFile.GetSrcCodeFiles( ['.h','.c','.cpp','.hpp'],
+                                                     excludeDirs, excludeFiles)
 
         # exclude all files that reside in library directories
         self.srcFiles = [i for i in srcFiles if not self.projFile.IsLibraryFile(i)]
