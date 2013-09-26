@@ -27,7 +27,7 @@ import subprocess
 # Knowlogic Modules
 #---------------------------------------------------------------------------------------------------
 from FormatChecker import FormatChecker
-print('%s : PYTHONPATH=%s' % (__name__, os.environ['PYTHONPATH']))
+#print('%s : PYTHONPATH=%s' % (__name__, os.environ['PYTHONPATH']))
 from tools.u4c import U4cFileTemplates
 from tools.u4c import u4cDbWrapper as udb
 from tools.ToolMgr import ToolSetup, ToolManager
