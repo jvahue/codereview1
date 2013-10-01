@@ -290,6 +290,7 @@ class U4c( ToolManager):
             except:
                 raise
             finally:
+                self.udb.Close()
                 self.projFile.dbLock.release()
                 pass
         else:
@@ -464,7 +465,7 @@ class U4c( ToolManager):
                 if func is None:
                     func = 'N/A'
                     for ds,de in data:
-                        if u4cLine >= ds and u4cLine <= de:
+                        if ds <= u4cLine <= de:
                             func = data[(ds,de)]
                 severity = 'Info'
                 violationId = 'Misc.TODO'

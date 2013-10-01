@@ -72,7 +72,12 @@ class U4cDb:
     def __del__(self):
         """ delete the db connection """
         if self.db:
+            self.Close()
             del self.db
+
+    #-----------------------------------------------------------------------------------------------
+    def Close(self):
+        self.db.close()
 
     #-----------------------------------------------------------------------------------------------
     def FindEnt(self, item):
