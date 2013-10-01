@@ -309,7 +309,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 u4cPath, prog = os.path.split(undPath)
                 understand = os.path.join(u4cPath, 'understand.exe')
                 cmd = '%s -db "%s"' % (understand, u4co.dbName)
-                subprocess.Popen( cmd)
+                subprocess.Popen( cmd, shell=True)
 
             # indicate the user has the U4C Db open that they want open
             self.programOpenedU4c = True
@@ -641,7 +641,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.analysisProcess = subprocess.Popen( cmd,
                                                      cwd=rootDir,
                                                      stderr=subprocess.STDOUT,
-                                                     stdout=subprocess.PIPE)
+                                                     stdout=subprocess.PIPE,
+                                                     shell=True)
 
             # launch our thread to collect results
             t1 = util.ThreadSignal( self.CollectToolAnalysisOutput)
@@ -1081,7 +1082,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         cmd = 'start %s\n' % fn
         f.write( cmd)
         f.close()
-        t = subprocess.Popen( 'pcLintManual.bat')
+        t = subprocess.Popen( 'pcLintManual.bat', shell=True)
 
     #-----------------------------------------------------------------------------------------------
     def GotoCode(self):
@@ -1098,11 +1099,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
                     linenumber = self.v.lineNumber
                     if linenumber >= 0:
-                        viewerCommand = viewerCommand.replace( '<lineNumber>', str(linenumber))
+                        viewerCommand = viewerCommand.replace('<lineNumber>', str(linenumber))
                     else:
-                        viewerCommand = viewerCommand.replace( '<lineNumber>', '')
+                        viewerCommand = viewerCommand.replace('<lineNumber>', '')
 
-                    subprocess.Popen( viewerCommand)
+                    # with shell=True U4C did not open on Win7
+                    subprocess.Popen(viewerCommand)
             else:
                 if filename:
                     msg = 'Ambiguous filename (%s)\n%s' % (filename,'\n'.join(fpfn))

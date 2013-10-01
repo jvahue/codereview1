@@ -112,7 +112,8 @@ class ToolManager:
         self.toolProcess = subprocess.Popen( self.jobCmd,
                                              cwd=self.projToolRoot,
                                              stderr=subprocess.STDOUT,
-                                             stdout=subprocess.PIPE)
+                                             stdout=subprocess.PIPE,
+                                             shell=True)
 
     #-----------------------------------------------------------------------------------------------
     def AnalyzeActive(self):

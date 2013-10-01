@@ -177,7 +177,7 @@ class U4c( ToolManager):
 
     #-----------------------------------------------------------------------------------------------
     def KillU4c(self):
-        proc = subprocess.Popen( 'taskkill /im understand.exe /f')
+        proc = subprocess.Popen( 'taskkill /im understand.exe /f', shell=True)
         proc.wait()
 
     #-----------------------------------------------------------------------------------------------
