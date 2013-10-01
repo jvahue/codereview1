@@ -16,6 +16,7 @@ import datetime
 import os
 import re
 import socket
+import stat
 import sys
 import subprocess
 import time
@@ -309,7 +310,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 u4cPath, prog = os.path.split(undPath)
                 understand = os.path.join(u4cPath, 'understand.exe')
                 cmd = '%s -db "%s"' % (understand, u4co.dbName)
-                subprocess.Popen( cmd, shell=True)
+                subprocess.Popen( cmd)
 
             # indicate the user has the U4C Db open that they want open
             self.programOpenedU4c = True
@@ -633,24 +634,39 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.toolOutputText = []
             self.startAnalysis = DateTime.DateTime.today()
 
-            cwd = os.getcwd()
-            cmdPath = os.path.join( cwd, 'Analyze.py')
-            cmd = 'c:\python33\python.exe "%s" "%s"' % (cmdPath, self.projFileName)
-            rootDir = self.projFile.paths[PF.ePathProject]
+            # detect Python 3.x - must be the same as the one running the GUI
+            # check via sys.path
+            path = sys.path
+            pythons = [i for i in path if i.lower().find('python3') != -1]
+            pythonExePath = None
+            for i in pythons:
+                if pythonExePath is None or len(i) < len(pythonExePath):
+                    if os.path.isdir(i):
+                        tgt = os.path.join(i, 'python.exe')
+                        if os.path.isfile(tgt):
+                            pythonExePath = i
 
-            self.analysisProcess = subprocess.Popen( cmd,
-                                                     cwd=rootDir,
-                                                     stderr=subprocess.STDOUT,
-                                                     stdout=subprocess.PIPE,
-                                                     shell=True)
+            if pythonExePath is not None:
+                cwd = os.getcwd()
+                cmdPath = os.path.join( cwd, 'Analyze.py')
+                cmd = '%s\python.exe "%s" "%s"' % (pythonExePath, cmdPath, self.projFileName)
+                rootDir = self.projFile.paths[PF.ePathProject]
 
-            # launch our thread to collect results
-            t1 = util.ThreadSignal( self.CollectToolAnalysisOutput)
-            t1.Go()
+                self.analysisProcess = subprocess.Popen( cmd,
+                                                         cwd=rootDir,
+                                                         stderr=subprocess.STDOUT,
+                                                         stdout=subprocess.PIPE,
+                                                         shell=True)
 
-            self.toolOutput.clear()
+                # launch our thread to collect results
+                t1 = util.ThreadSignal( self.CollectToolAnalysisOutput)
+                t1.Go()
 
-            self.StartTimerEvent( self.AnalysisUpdate, 250)
+                self.toolOutput.clear()
+
+                self.StartTimerEvent( self.AnalysisUpdate, 250)
+            else:
+                self.CrErrPopup('Python 3.x executable image not found.')
         else:
             self.CrErrPopup('Please select a project file.')
 
@@ -1075,14 +1091,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     #-----------------------------------------------------------------------------------------------
     def OpenPcLintManual(self):
         """ open the PC-Lint PDF """
-        # remove the exe
-        f = open('pcLintManual.bat', 'w')
+        # make sure this is writable
+        #batFn = 'pcLintManual.bat'
+        #os.chmod( batFn, stat.S_IWRITE )
+        #f = open(batFn, 'w')
         path, exe = os.path.split(self.projFile.paths[PF.ePathPcLint])
         fn = os.path.join( path, 'PC-lint.pdf')
-        cmd = 'start %s\n' % fn
-        f.write( cmd)
-        f.close()
-        t = subprocess.Popen( 'pcLintManual.bat', shell=True)
+        #cmd = 'start %s\n' % fn
+        #f.write( cmd)
+        #f.close()
+        #t = subprocess.Popen( 'pcLintManual.bat', shell=True)
+        t = subprocess.Popen( ['start', fn], shell=True)
 
     #-----------------------------------------------------------------------------------------------
     def GotoCode(self):
@@ -1103,7 +1122,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     else:
                         viewerCommand = viewerCommand.replace('<lineNumber>', '')
 
-                    # with shell=True U4C did not open on Win7
                     subprocess.Popen(viewerCommand)
             else:
                 if filename:
