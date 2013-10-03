@@ -634,39 +634,26 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.toolOutputText = []
             self.startAnalysis = DateTime.DateTime.today()
 
-            # detect Python 3.x - must be the same as the one running the GUI
-            # check via sys.path
-            path = sys.path
-            pythons = [i for i in path if i.lower().find('python3') != -1]
-            pythonExePath = None
-            for i in pythons:
-                if pythonExePath is None or len(i) < len(pythonExePath):
-                    if os.path.isdir(i):
-                        tgt = os.path.join(i, 'python.exe')
-                        if os.path.isfile(tgt):
-                            pythonExePath = i
+            cwd = os.getcwd()
+            cmdPath = os.path.join( cwd, 'Analyze.py')
+            #cmd = '%s "%s" "%s"' % (sys.executable, cmdPath, self.projFileName)
+            cmd = [sys.executable, cmdPath, self.projFileName]
+            rootDir = self.projFile.paths[PF.ePathProject]
 
-            if pythonExePath is not None:
-                cwd = os.getcwd()
-                cmdPath = os.path.join( cwd, 'Analyze.py')
-                cmd = '%s\python.exe "%s" "%s"' % (pythonExePath, cmdPath, self.projFileName)
-                rootDir = self.projFile.paths[PF.ePathProject]
+            self.analysisProcess = subprocess.Popen( cmd,
+                                                     cwd=rootDir,
+                                                     stderr=subprocess.STDOUT,
+                                                     stdout=subprocess.PIPE,
+                                                     shell=True)
 
-                self.analysisProcess = subprocess.Popen( cmd,
-                                                         cwd=rootDir,
-                                                         stderr=subprocess.STDOUT,
-                                                         stdout=subprocess.PIPE,
-                                                         shell=True)
+            # launch our thread to collect results
+            t1 = util.ThreadSignal( self.CollectToolAnalysisOutput)
+            t1.Go()
 
-                # launch our thread to collect results
-                t1 = util.ThreadSignal( self.CollectToolAnalysisOutput)
-                t1.Go()
+            self.toolOutput.clear()
 
-                self.toolOutput.clear()
+            self.StartTimerEvent( self.AnalysisUpdate, 250)
 
-                self.StartTimerEvent( self.AnalysisUpdate, 250)
-            else:
-                self.CrErrPopup('Python 3.x executable image not found.')
         else:
             self.CrErrPopup('Please select a project file.')
 
