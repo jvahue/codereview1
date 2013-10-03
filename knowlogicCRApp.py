@@ -636,7 +636,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             cwd = os.getcwd()
             cmdPath = os.path.join( cwd, 'Analyze.py')
-            #cmd = '%s "%s" "%s"' % (sys.executable, cmdPath, self.projFileName)
             cmd = [sys.executable, cmdPath, self.projFileName]
             rootDir = self.projFile.paths[PF.ePathProject]
 
