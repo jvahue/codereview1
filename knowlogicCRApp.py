@@ -24,6 +24,7 @@ import time
 #---------------------------------------------------------------------------------------------------
 # Third Party Modules
 #---------------------------------------------------------------------------------------------------
+import PySide
 from PySide import QtCore
 from PySide.QtGui import QApplication, QMainWindow, QMessageBox
 from PySide.QtGui import QFileDialog
@@ -1319,6 +1320,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 # Instantiates the QApplication and Displays the Main Window.
 #------------------------------------------------------------------------------------
 def main():
+    print('Python: %s' % sys.version)
+    print('PySide: %s QtCore: %s' % (PySide.__version__,  PySide.QtCore.__version__))
     # Create Application
     try:
         app = QApplication(sys.argv)

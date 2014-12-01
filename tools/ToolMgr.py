@@ -107,8 +107,9 @@ class ToolManager:
     def RunToolAsProcess(self):
         """ Run a Review based on this tools capability.  This is generally a two step process:
           1. Update the tool output
-          2. Generate Reivew data
+          2. Generate Review data
         """
+        print('RunToolAsProcess: %s' % self.jobCmd)
         self.toolProcess = subprocess.Popen( self.jobCmd,
                                              cwd=self.projToolRoot,
                                              stderr=subprocess.STDOUT,

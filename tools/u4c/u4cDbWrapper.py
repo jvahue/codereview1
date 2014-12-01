@@ -14,7 +14,6 @@ import os
 # Third Party Modules
 #---------------------------------------------------------------------------------------------------
 #print('%s : PYTHONPATH=%s' % (__name__, os.environ['PYTHONPATH']))
-import understand
 
 #---------------------------------------------------------------------------------------------------
 # Knowlogic Modules
@@ -57,6 +56,7 @@ class U4cDb:
             tryCount += 1
             try:
                 # open the named DB
+                import understand
                 self.db = understand.open( name)
                 self.status = 'DB Open'
                 self.isOpen = True

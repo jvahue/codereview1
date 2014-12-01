@@ -182,10 +182,10 @@ class U4c( ToolManager):
 
     #-----------------------------------------------------------------------------------------------
     def RunToolAsProcess(self):
-        """ This function runs a thrid party tool as a process to update any data generated
+        """ This function runs a third party tool as a process to update any data generated
             by the third party tool.
 
-            This function should be run as a thread by the caller becuase this will allow
+            This function should be run as a thread by the caller because this will allow
             the caller to report on the status of the process as it runs. (i.e., % complete)
         """
 
@@ -198,17 +198,17 @@ class U4c( ToolManager):
         fileCount = 0
         fileList = []
         analyzing = False
-        self.SetStatusMsg( msg = 'Parsing Source Files')
+        self.SetStatusMsg(msg='Parsing Source Files')
         line = ''
         while self.AnalyzeActive():
             for line in self.toolProcess.stdout:
                 line = line.decode(encoding='windows-1252').strip()
-                self.Log( '<%s>' % line)
+                self.Log('<%s>' % line)
                 self.LogFlush()
                 if line == 'Analyze':
                     analyzing = True
-                    fileCount = len( fileList)
-                elif line.find( 'File: ') != -1:
+                    fileCount = len(fileList)
+                elif line.find('File: ') != -1:
                     line = line.replace('File: ', '').replace(' has been added.', '')
                     # add the .c files so we can track the analysis
                     if os.path.splitext( line)[1] == '.c':
@@ -219,7 +219,7 @@ class U4c( ToolManager):
                         v = 100 - (len(fileList)/float(fileCount)*100.0)
                         self.SetStatusMsg( v)
 
-        self.SetStatusMsg( 100)
+        self.SetStatusMsg(100)
         self.Sleep()
 
         self.LoadViolations()
