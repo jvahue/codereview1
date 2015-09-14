@@ -1112,7 +1112,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     subprocess.Popen(viewerCommand)
             else:
                 if filename:
-                    msg = 'Ambiguous filename (%s)\n%s' % (filename,'\n'.join(fpfn))
+                    if fpfn:
+                        theFpfn = '\n'.join(fpfn)
+                    else:
+                        theFpfn = "No file found"
+                    msg = 'Ambiguous filename (%s)\n%s' % (filename, theFpfn)
                     self.CrErrPopup( msg)
         else:
             msg = 'No matching violations.'

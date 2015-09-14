@@ -66,7 +66,7 @@ class U4cSetup( ToolSetup):
         """
         assert( isinstance( projFile, PF.ProjectFile))
         self.projFile = projFile
-        self.projRoot = projFile.paths['ProjectRoot']
+        self.projRoot = projFile.paths[PF.ePathProject]
 
         ToolSetup.__init__( self, self.projRoot)
         self.projToolRoot = os.path.join( self.projRoot, eToolRoot)
@@ -544,25 +544,40 @@ class U4c( ToolManager):
         self.SetStatusMsg( msg = 'Naming Checks [Step %d of %d]'%(step,totalTasks))
 
         size, fmt = self.projFile.naming[PF.eNameVar]
-        varRe = re.compile( fmt)
+        try:
+            varRe = re.compile( fmt)
+        except:
+            print("Failed variable re compile <%s>" % fmt)
+            raise
         theItems = self.udb.db.lookup( re.compile(r'.*'), 'Object')
         self.NamingChecker( step, totalTasks, varRe, size, theItems,
                             'Var', 'Variable', self.GetFuncVarName)
 
         size, fmt = self.projFile.naming[PF.eNameFunc]
-        funcRe  = re.compile( fmt)
+        try:
+            funcRe  = re.compile( fmt)
+        except:
+            print("Failed function re compile <%s>" % fmt)
+            raise
         theItems = self.udb.db.lookup( re.compile(r'.*'), 'Function')
         self.NamingChecker( step+0.25, totalTasks, funcRe, size, theItems,
                             'Func', 'Function', self.GetFuncFuncName)
 
         size, fmt = self.projFile.naming[PF.eNameDef]
-        macRe  = re.compile( fmt)
+        try:
+            macRe  = re.compile( fmt)
+        except:
+            print("Failed Define re compile <%s>" % fmt)
+            raise
         theItems = self.udb.db.lookup( re.compile(r'.*'), 'Macro')
         self.NamingChecker( step+0.25, totalTasks, macRe, size, theItems,
                             'Def', 'Define', self.GetFuncVarName)
 
         size, fmt = self.projFile.naming[PF.eNameEnum]
-        enumRe  = re.compile( fmt)
+        try:
+            enumRe  = re.compile( fmt)
+        except:
+            print("Failed Enum re compile <%s>" % fmt)
         theItems = self.udb.db.lookup( re.compile(r'.*'), 'Enumerator')
         self.NamingChecker( step+0.25, totalTasks, enumRe, size, theItems,
                             'Enum', 'Enum', self.GetFuncVarName)

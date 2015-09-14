@@ -68,7 +68,7 @@ class PcLintSetup( ToolSetup):
         """
         assert( isinstance( projFile, PF.ProjectFile))
         self.projFile = projFile
-        self.projRoot = projFile.paths['ProjectRoot']
+        self.projRoot = projFile.paths[PF.ePathProject]
 
         ToolSetup.__init__( self, self.projRoot)
         self.projToolRoot = os.path.join( self.projRoot, eToolRoot)
@@ -93,7 +93,8 @@ class PcLintSetup( ToolSetup):
 
         excludeDirs = self.projFile.exclude['Dirs']
         excludeFiles = self.projFile.exclude['Files_PcLint']
-        srcIncludeDirs, srcCodeFiles = self.projFile.GetSrcCodeFiles( ['.c','.cpp'], excludeDirs, excludeFiles)
+        srcIncludeDirs, srcCodeFiles = self.projFile.GetSrcCodeFiles( ['.c','.cpp'],
+                                                                      excludeDirs, excludeFiles)
 
         # put all the PcLint Options together
         userOptions = self.projFile.options['PcLint']
@@ -110,11 +111,6 @@ class PcLintSetup( ToolSetup):
         # Specify all the include dirs
         options  = '%s\n' % '\n'.join( ['-i"%s"' % i for i in srcIncludeDirs+includeDirs])
 
-        # specify the user defined options
-        options += '\n// User Options\n%s\n' % ( userOptions)
-        options += '\n// User Defines\n%s\n' % ( defines)
-        options += '\n// User Undefines\n%s\n' % ( undefines)
-
         # tag all the extra IncludeDirs as libdir so PC-LINT does not report errors against them
         options += '\n// Library Dirs\n%s\n' % '\n'.join( ['+libdir(%s)' % i for i in includeDirs])
         # make sure this is last to ensure these are not treated as library dirs
@@ -122,6 +118,12 @@ class PcLintSetup( ToolSetup):
 
         # STD PC Lint Options
         options += '%s\n' % (ePcLintStdOptions)
+
+        # specify the user defined options
+        # - have these alst to over ride any of our computed options
+        options += '\n// User Options\n%s\n' % ( userOptions)
+        options += '\n// User Defines\n%s\n' % ( defines)
+        options += '\n// User Undefines\n%s\n' % ( undefines)
 
         # create the required files
         self.CreateFile( eBatchName, batTmpl % (toolExe, pcLintRoot, eResultFile))
@@ -270,8 +272,8 @@ class PcLint( ToolManager):
                         if line[eFn].find('<*>') == -1:
                             details = ','.join( line)
                         else:
-                            # the format puts a '<*>' on the front of each error report to distinguish
-                            # it from details
+                            # the format puts a '<*>' on the front of each error report to
+                            # distinguish it from details
                             line[eFn] = line[eFn].replace('<*>', '')
 
                             if len(line) != eFieldCount:# and l[1:6] == l[6:]:
@@ -298,7 +300,15 @@ class PcLint( ToolManager):
                             # remove full pathname
                             if line[eFn] and line[eFn][0] != '.':
                                 path, fn = os.path.split(line[eFn])
-                                subdir = os.path.split( path)[1]
+                                srcRoot = self.projFile.paths[PF.ePathSrcRoot]
+                                for sd in srcRoot:
+                                    subdir = path.replace(sd, '')
+                                    if subdir != path:
+                                        # make sure this is not interpreted as an absolute path
+                                        if subdir and subdir[0] in ('\\', r'/'):
+                                            subdir = subdir[1:]
+                                        break
+                                #subdir = os.path.split( path)[1]
                                 if subdir:
                                     aFilename = r'%s\%s' % (subdir, fn)
                                 else:
