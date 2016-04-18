@@ -161,7 +161,7 @@ if __name__ == '__main__':
 
         # PWC desk
         #projFile = r'C:\Knowlogic\tools\CR-Projs\ASE\Ase.crp'
-        projFile = r'C:\Knowlogic\tools\CR-Projs\Rypos\DPF\DFP.crp'
+        projFile = r'C:/Users/P916214/Documents/Knowlogic/CodeReviewProj/FAST/G4.crp'
 
         #projFile = r'L:\FAST II\control processor\CodeReview\G4master.crp'
 
