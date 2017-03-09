@@ -509,8 +509,10 @@ class ViolationDb( DB_SQLite):
         """
 
         s = """
-        select filename,function,severity,violationId,description,details,lineNumber,
-               detectedBy,firstReport,lastReport,status,analysis,who,reviewDate
+        select filename,function,severity,violationId,
+               lineNumber,description,details,
+               analysis,who,status,reviewDate,
+               firstReport,lastReport,detectedBy
                from violations
                order by filename, function, lineNumber, description, details
         """
