@@ -827,7 +827,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 filterOff = noFilterRe.search( text)
                 if filterOff is None:
                     if dd == 'Filename':
-                        filterText = "%s like '%s'" % (self.filterInfo[dd], text)
+                        # handle (W)
+                        filterText = "%s like '%s%%'" % (self.filterInfo[dd], text)
                     else:
                         # ok we have something to filter on
                         filterText = "%s = '%s'" % (self.filterInfo[dd], text)
